@@ -1,0 +1,6 @@
+﻿services:
+  tradingbot:
+    image: tradingbot
+    build:
+      context: .
+      dockerfile: TradingBot/Dockerfile
