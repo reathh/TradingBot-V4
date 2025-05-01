@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using Scrutor;
 using TradingBot.Data;
+using TradingBot.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,12 +17,15 @@ else
         options.UseNpgsql(connectionString));
 }
 
-// Register all IHostedService implementations automatically
+// Register all services with implemented interfaces as scoped, except for IHostedService
 builder.Services.Scan(scan => scan
     .FromAssemblyOf<Program>()
-    .AddClasses(classes => classes.AssignableTo<IHostedService>())
+    .AddClasses(classes => classes.Where(type => type != typeof(IHostedService)))
     .AsImplementedInterfaces()
-    .WithSingletonLifetime());
+    .WithScopedLifetime());
+
+// Ensure IHostedService is registered as Singleton
+builder.Services.AddSingleton<IHostedService, BackgroundJobProcessor>();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();

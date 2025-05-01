@@ -10,6 +10,18 @@ namespace TradingBot.Data
         public decimal? MinPrice { get; set; }
         public decimal Quantity { get; set; }
         public bool Enabled { get; set; }
+        public bool PlaceOrdersInAdvance { get; set; }
+        public bool StartFromMaxPrice
+        {
+            get; set
+            {
+                if (MaxPrice is null && value)
+                {
+                    throw new InvalidOperationException($"{nameof(MaxPrice)} must be set if {nameof(StartFromMaxPrice)} is true.");
+                }
+                field = value;
+            }
+        }
         public decimal? ExitStep
         {
             get;
@@ -19,7 +31,7 @@ namespace TradingBot.Data
                 {
                     if (ExitStepPercentage is null)
                     {
-                        throw new ArgumentNullException(nameof(ExitStep), "Either ExitStep or ExitStepPercentage must be provided.");
+                        throw new InvalidOperationException($"Either {nameof(ExitStep)} or {nameof(ExitStepPercentage)} must be provided.");
                     }
                 }
 
@@ -35,7 +47,7 @@ namespace TradingBot.Data
                 {
                     if (ExitStep is null)
                     {
-                        throw new ArgumentNullException(nameof(ExitStepPercentage), "Either ExitStep or ExitStepPercentage must be provided.");
+                        throw new InvalidOperationException($"Either {nameof(ExitStep)} or {nameof(ExitStepPercentage)} must be provided.");
                     }
                 }
                 field = value;
