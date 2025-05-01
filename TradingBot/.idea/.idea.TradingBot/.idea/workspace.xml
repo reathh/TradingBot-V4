@@ -9,9 +9,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="17a7922b-6263-41a2-be06-3fcd55419155" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Program.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TradingBot.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/TradingBot.csproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appsettings.json" beforeDir="false" afterPath="$PROJECT_DIR$/appsettings.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.TradingBot/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.TradingBot/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Application/Commands/PlaceOpeningOrders/PlaceOpeningOrdersCommand.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Application/Commands/PlaceOpeningOrders/PlaceOpeningOrdersCommand.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Data/Bot.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Data/Bot.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Data/BotConfiguration.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Data/OrderConfiguration.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Data/Strategy.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Data/StrategyConfiguration.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Data/Trade.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Data/Trade.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Data/TradingBotContext.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Data/TradingBotContext.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -129,7 +135,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1745918403083</updated>
-      <workItem from="1745918404237" duration="2108000" />
+      <workItem from="1745918404237" duration="3097000" />
     </task>
     <servers />
   </component>

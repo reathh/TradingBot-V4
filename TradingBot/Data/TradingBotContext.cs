@@ -7,7 +7,6 @@ namespace TradingBot.Data
         public TradingBotDbContext(DbContextOptions<TradingBotDbContext> options) : base(options) { }
 
         public DbSet<Bot> Bots { get; set; }
-        public DbSet<Strategy> Strategies { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<Trade> Trades { get; set; }
 
