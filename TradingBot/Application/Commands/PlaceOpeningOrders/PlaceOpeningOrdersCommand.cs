@@ -1,10 +1,8 @@
 using MediatR;
 using TradingBot.Data;
 using Microsoft.EntityFrameworkCore;
-using Binance.Net.Clients;
-using Binance.Net.Objects;
-using Binance.Net.Enums;
-using CryptoExchange.Net.Authentication;
+using TradingBot.Services;
+using Microsoft.Extensions.Logging;
 
 namespace TradingBot.Application;
 
@@ -12,9 +10,11 @@ public class PlaceOpeningOrdersCommand : IRequest
 {
     public required Ticker Ticker { get; set; }
 
-    public class PlaceOpeningOrdersCommandHandler(TradingBotDbContext dbContext) : IRequestHandler<PlaceOpeningOrdersCommand>
+    public class PlaceOpeningOrdersCommandHandler(TradingBotDbContext dbContext, IExchangeApi exchangeApi, ILogger<PlaceOpeningOrdersCommandHandler> logger) : IRequestHandler<PlaceOpeningOrdersCommand>
     {
         private readonly TradingBotDbContext db = dbContext;
+        private readonly IExchangeApi exchangeApi = exchangeApi;
+        private readonly ILogger<PlaceOpeningOrdersCommandHandler> logger = logger;
 
         public async Task Handle(PlaceOpeningOrdersCommand request, CancellationToken cancellationToken)
         {
@@ -31,21 +31,22 @@ public class PlaceOpeningOrdersCommand : IRequest
                 .Where(b =>
                     !b.PlaceOrdersInAdvance
                     || (b.PlaceOrdersInAdvance
-                    && b.Trades.Count(t => t.Profit == null) < b.MaxOrders))
+                    && b.Trades.Count(t => t.Profit == null) < b.MaxOrdersInAdvance))
                 .Select(b => new
                 {
                     Bot = b,
-                    HasOpenTrades = b.Trades.Any(t => t.Profit == null),
                     FirstTradePrice = b.IsLong
                         ? b.Trades.Where(t => t.Profit == null).Max(t => t.EntryOrder.Price)
                         : b.Trades.Where(t => t.Profit == null).Min(t => t.EntryOrder.Price),
                     CurrentVolume = b.Trades.Where(t => t.Profit == null).Sum(t => t.EntryOrder.Quantity),
-                    CurrentPrice = b.IsLong ? request.Ticker.Ask : request.Ticker.Bid
+                    CurrentPrice = b.IsLong ? request.Ticker.Ask : request.Ticker.Bid,
+                    OpenTradesCount = b.Trades.Count(t => t.Profit == null)
                 })
                 .Select(x => new
                 {
                     x.Bot,
-                    Quantity = !x.HasOpenTrades
+                    x.OpenTradesCount,
+                    Quantity = x.OpenTradesCount == 0
                         ? x.Bot.EntryQuantity
                         : (int)((x.CurrentPrice - x.FirstTradePrice) / x.Bot.EntryStep * x.Bot.EntryQuantity) - x.CurrentVolume
                 })
@@ -54,40 +55,69 @@ public class PlaceOpeningOrdersCommand : IRequest
 
             await Parallel.ForEachAsync(botsWithQuantities, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, async (botWithQuantity, token) =>
             {
-                await PlaceOrder(botWithQuantity.Bot, request.Ticker, botWithQuantity.Quantity, token);
+                try
+                {
+                    await PlaceOrder(botWithQuantity.Bot, request.Ticker, botWithQuantity.Quantity, botWithQuantity.OpenTradesCount, token);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to place orders for bot {BotId} with quantity {Quantity}", botWithQuantity.Bot.Id, botWithQuantity.Quantity);
+                }
             });
         }
 
-        private async Task PlaceOrder(Bot bot, Ticker ticker, decimal quantity, CancellationToken cancellationToken)
+        private async Task PlaceOrder(Bot bot, Ticker ticker, decimal quantity, int openTradesCount, CancellationToken cancellationToken)
         {
-            using var client = new BinanceRestClient(options =>
+            var currentPrice = bot.IsLong ? ticker.Ask : ticker.Bid;
+            var stepDirection = bot.IsLong ? 1 : -1;
+
+            var orderTasks = new List<Task<Order>>
             {
-                options.ApiCredentials = new ApiCredentials(bot.PublicKey, bot.PrivateKey);
-            });
+                exchangeApi.PlaceOrder(
+                    bot,
+                    bot.IsLong ? ticker.Bid : ticker.Ask,
+                    quantity,
+                    bot.IsLong,
+                    cancellationToken)
+            };
 
-            var order = await client.SpotApi.Trading.PlaceOrderAsync(
-                symbol: ticker.Symbol,
-                side: bot.IsLong ? OrderSide.Buy : OrderSide.Sell,
-                type: SpotOrderType.Limit,
-                quantity: quantity,
-                price: bot.IsLong ? ticker.Ask : ticker.Bid,
-                timeInForce: TimeInForce.GoodTillCanceled);
-
-            if (order.Success)
+            if (bot.PlaceOrdersInAdvance)
             {
-                var dbOrder = new Order(
-                    id: 0,
-                    symbol: ticker.Symbol,
-                    price: order.Data.Price,
-                    quantity: order.Data.Quantity,
-                    isBuy: bot.IsLong,
-                    createdAt: DateTime.UtcNow);
+                var ordersToPlace = bot.MaxOrdersInAdvance - openTradesCount;
 
-                var trade = new Trade(dbOrder);
-
-                bot.Trades.Add(trade);
-                await db.SaveChangesAsync(cancellationToken);
+                if (ordersToPlace > 0)
+                {
+                    orderTasks.AddRange(Enumerable.Range(1, ordersToPlace)
+                        .Select(i =>
+                        {
+                            var nextPrice = currentPrice + (bot.EntryStep * stepDirection * i);
+                            return exchangeApi.PlaceOrder(
+                                bot,
+                                nextPrice,
+                                bot.EntryQuantity,
+                                bot.IsLong,
+                                cancellationToken);
+                        }));
+                }
             }
+
+            var orders = await Task.WhenAll(orderTasks);
+
+            foreach (var order in orders)
+            {
+                var trade = new Trade(order);
+                bot.Trades.Add(trade);
+                logger.LogInformation(
+                    "Bot {BotId} placed {Side} order at {Price} for {Quantity} units ({OrderId})",
+                    bot.Id,
+                    order.IsBuy ? "buy" : "sell",
+                    order.Price,
+                    order.Quantity,
+                    order.ExchangeOrderId);
+            }
+
+            await db.SaveChangesAsync(cancellationToken);
+            logger.LogInformation("Successfully placed {OrderCount} entry orders for bot {BotId}", orders.Length, bot.Id);
         }
     }
 }

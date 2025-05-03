@@ -10,13 +10,14 @@ namespace TradingBot.Data
         public string Name { get; set; } = name;
         public string PublicKey { get; set; } = publicKey;
         public string PrivateKey { get; set; } = privateKey;
+        public string Symbol { get; set; } = string.Empty;
         public bool Enabled { get; set; }
         public decimal? MaxPrice { get; set; }
         public decimal? MinPrice { get; set; }
         public decimal Quantity { get; set; }
         public bool PlaceOrdersInAdvance { get; set; }
         public bool IsLong { get; set; } = true;
-        public int MaxOrders { get; set; } = 100;
+        public int MaxOrdersInAdvance { get; set; } = 100;
         public decimal ExitStep { get; set; }
         public decimal EntryStep { get; set; }
         public decimal EntryQuantity { get; set; }

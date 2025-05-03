@@ -17,6 +17,9 @@ else
         options.UseNpgsql(connectionString));
 }
 
+// Register TimeProvider as a singleton
+builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
+
 // Register all services with implemented interfaces as scoped, except for IHostedService
 builder.Services.Scan(scan => scan
     .FromAssemblyOf<Program>()
