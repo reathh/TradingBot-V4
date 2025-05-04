@@ -128,6 +128,55 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
 
         var savedTrades = await DbContext.Trades.ToListAsync();
         Assert.Equal(3, savedTrades.Count);
+
+        // Now update the bot to have 5 orders in advance
+        ExchangeApiMock.Reset();
+        bot.OrdersInAdvance = 5;
+        await DbContext.SaveChangesAsync();
+
+        // Create a new ticker with lower prices (96/100)
+        var newTicker = CreateTicker(96, 100);
+        var newCommand = new PlaceOpeningOrdersCommand { Ticker = newTicker };
+
+        // We should place 2 orders:
+        // 1. For 2 units (for prices 97 and 96) because we need to catch up with price movement
+        // 2. For 1 unit (at price 95) as the new order in advance
+        var additionalOrders = new[]
+        {
+            CreateOrder(bot, 96, 2, bot.IsLong),  // Catch up order for 97 and 96
+            CreateOrder(bot, 95, 1, bot.IsLong)   // Order in advance based on entryQuantity
+        };
+
+        ExchangeApiMock.SetupSequence(x => x.PlaceOrder(
+                It.IsAny<Bot>(),
+                It.IsAny<decimal>(),
+                It.IsAny<decimal>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(additionalOrders[0])
+            .ReturnsAsync(additionalOrders[1]);
+
+        // Act again with the new ticker command
+        await Handler.Handle(newCommand, CancellationToken.None);
+
+        // Assert that both orders were placed with correct parameters
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.Is<Bot>(b => b.Id == bot.Id),
+            It.Is<decimal>(p => p == 96),  // First order at price 96
+            It.Is<decimal>(q => q == 2),   // For 2 units
+            It.Is<bool>(b => b == bot.IsLong),
+            It.IsAny<CancellationToken>()), Times.Once);
+
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.Is<Bot>(b => b.Id == bot.Id),
+            It.Is<decimal>(p => p == 95),  // Second order at price 95
+            It.Is<decimal>(q => q == 1),   // For 1 unit (entryQuantity)
+            It.Is<bool>(b => b == bot.IsLong),
+            It.IsAny<CancellationToken>()), Times.Once);
+
+        // Check that we now have 5 trades total
+        savedTrades = await DbContext.Trades.ToListAsync();
+        Assert.Equal(5, savedTrades.Count);
     }
 
     [Fact]
