@@ -95,7 +95,7 @@ public class PlaceOpeningOrdersCommand : IRequest
 
                 for (int i = 0; i < ordersToPlace; i++)
                 {
-                    var orderPrice = currentPrice + (bot.EntryStep * stepDirection * i);
+                    var orderPrice = currentPrice - (bot.EntryStep * stepDirection * i);
                     var orderQuantity = i == 0 ? quantity : bot.EntryQuantity;
 
                     orderTasks.Add(exchangeApi.PlaceOrder(
