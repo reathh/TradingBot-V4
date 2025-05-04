@@ -1,10 +1,9 @@
 using MediatR;
-using TradingBot.Data;
 using Microsoft.EntityFrameworkCore;
+using TradingBot.Data;
 using TradingBot.Services;
-using Microsoft.Extensions.Logging;
 
-namespace TradingBot.Application;
+namespace TradingBot.Application.Commands.PlaceOpeningOrders;
 
 public class PlaceOpeningOrdersCommand : IRequest
 {
@@ -39,7 +38,7 @@ public class PlaceOpeningOrdersCommand : IRequest
                         ? b.Trades.Where(t => t.Profit == null).Max(t => t.EntryOrder.Price)
                         : b.Trades.Where(t => t.Profit == null).Min(t => t.EntryOrder.Price),
                     CurrentVolume = b.Trades.Where(t => t.Profit == null).Sum(t => t.EntryOrder.Quantity),
-                    CurrentPrice = b.IsLong ? request.Ticker.Ask : request.Ticker.Bid,
+                    CurrentPrice = b.IsLong ? request.Ticker.Bid : request.Ticker.Ask,
                     OpenTradesCount = b.Trades.Count(t => t.Profit == null)
                 })
                 .Select(x => new
@@ -48,7 +47,7 @@ public class PlaceOpeningOrdersCommand : IRequest
                     x.OpenTradesCount,
                     Quantity = x.OpenTradesCount == 0
                         ? x.Bot.EntryQuantity
-                        : (int)((x.CurrentPrice - x.FirstTradePrice) / x.Bot.EntryStep * x.Bot.EntryQuantity) - x.CurrentVolume
+                        : (int)((x.Bot.IsLong ? 1 : -1) * (x.CurrentPrice - x.FirstTradePrice) / x.Bot.EntryStep * x.Bot.EntryQuantity) - x.CurrentVolume
                 })
                 .Where(x => x.Quantity > 0)
                 .ToListAsync(cancellationToken);
@@ -68,7 +67,7 @@ public class PlaceOpeningOrdersCommand : IRequest
 
         private async Task PlaceOrder(Bot bot, Ticker ticker, decimal quantity, int openTradesCount, CancellationToken cancellationToken)
         {
-            var currentPrice = bot.IsLong ? ticker.Ask : ticker.Bid;
+            var currentPrice = bot.IsLong ? ticker.Bid : ticker.Ask;
             var stepDirection = bot.IsLong ? 1 : -1;
 
             var orderTasks = new List<Task<Order>>
