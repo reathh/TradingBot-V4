@@ -88,7 +88,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
     }
 
     [Fact]
-    public async Task Handle_ShouldPlaceOrdersInAdvance_WhenConfigured()
+    public async Task Handle_ShouldPlaceOrdersInAdvance_WhenConfigured_LongBot()
     {
         // Arrange
         var bot = await CreateBotAsync(
@@ -171,6 +171,99 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
             It.Is<Bot>(b => b.Id == bot.Id),
             It.Is<decimal>(p => p == 95),  // Second order at price 95
             It.Is<decimal>(q => q == 1),   // For 1 unit (entryQuantity)
+            It.Is<bool>(b => b == bot.IsLong),
+            It.IsAny<CancellationToken>()), Times.Once);
+
+        // Check that we now have 5 trades total
+        savedTrades = await DbContext.Trades.ToListAsync();
+        Assert.Equal(5, savedTrades.Count);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldPlaceOrdersInAdvance_WhenConfigured_ShortBot()
+    {
+        // Arrange
+        var bot = await CreateBotAsync(
+            placeOrdersInAdvance: true,
+            ordersInAdvance: 3,
+            entryStep: 1m,
+            isLong: false);
+        var ticker = CreateTicker(100, 101);
+        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+
+        var orders = new[]
+        {
+            CreateOrder(bot, 101, bot.EntryQuantity, bot.IsLong), // Ask price
+            CreateOrder(bot, 102, bot.EntryQuantity, bot.IsLong), // Ask + 1
+            CreateOrder(bot, 103, bot.EntryQuantity, bot.IsLong)  // Ask + 2
+        };
+
+        ExchangeApiMock.SetupSequence(x => x.PlaceOrder(
+                It.IsAny<Bot>(),
+                It.IsAny<decimal>(),
+                It.IsAny<decimal>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(orders[0])
+            .ReturnsAsync(orders[1])
+            .ReturnsAsync(orders[2]);
+
+        // Act
+        await Handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.IsAny<Bot>(),
+            It.IsAny<decimal>(),
+            It.IsAny<decimal>(),
+            It.IsAny<bool>(),
+            It.IsAny<CancellationToken>()), Times.Exactly(3));
+
+        var savedTrades = await DbContext.Trades.ToListAsync();
+        Assert.Equal(3, savedTrades.Count);
+
+        // Now update the bot to have 5 orders in advance
+        ExchangeApiMock.Reset();
+        bot.OrdersInAdvance = 5;
+        await DbContext.SaveChangesAsync();
+
+        // Create a new ticker with higher prices (105/106)
+        var newTicker = CreateTicker(105, 106);
+        var newCommand = new PlaceOpeningOrdersCommand { Ticker = newTicker };
+
+        // We should place 2 orders:
+        // 1. For 3 units (for prices 104, 105, and 106) because we need to catch up with price movement
+        // 2. For 1 unit (at price 107) as the new order in advance
+        var additionalOrders = new[]
+        {
+            CreateOrder(bot, 106, 3, bot.IsLong),  // Catch up order for 104, 105, 106
+            CreateOrder(bot, 107, 1, bot.IsLong)   // Order in advance based on entryQuantity
+        };
+
+        ExchangeApiMock.SetupSequence(x => x.PlaceOrder(
+                It.IsAny<Bot>(),
+                It.IsAny<decimal>(),
+                It.IsAny<decimal>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(additionalOrders[0])
+            .ReturnsAsync(additionalOrders[1]);
+
+        // Act again with the new ticker command
+        await Handler.Handle(newCommand, CancellationToken.None);
+
+        // Assert that both orders were placed with correct parameters
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.Is<Bot>(b => b.Id == bot.Id),
+            It.Is<decimal>(p => p == 106),  // First order at price 106
+            It.Is<decimal>(q => q == 3),    // For 3 units
+            It.Is<bool>(b => b == bot.IsLong),
+            It.IsAny<CancellationToken>()), Times.Once);
+
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.Is<Bot>(b => b.Id == bot.Id),
+            It.Is<decimal>(p => p == 107),  // Second order at price 107
+            It.Is<decimal>(q => q == 1),    // For 1 unit (entryQuantity)
             It.Is<bool>(b => b == bot.IsLong),
             It.IsAny<CancellationToken>()), Times.Once);
 
