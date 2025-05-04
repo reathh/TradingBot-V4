@@ -171,7 +171,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
 
         // We need orders at 102,103,104,105,106 (5 units)
         // We already have an order at 101
-        var secondOrder = CreateOrder(bot, 106, 5, bot.IsLong); 
+        var secondOrder = CreateOrder(bot, 106, 5, bot.IsLong);
         ExchangeApiMock.Setup(x => x.PlaceOrder(
                 It.IsAny<Bot>(),
                 It.IsAny<decimal>(),
@@ -228,8 +228,8 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
 
         // We need orders at 107,108,109,110,111 (5 units)
         // We already have orders at 101,102,103,104,105,106
-        // For short position, (111-101)/1*1 - 6 = 4 (we already have 6 orders)
-        var fourthOrder = CreateOrder(bot, 111, 4, bot.IsLong);
+        // Total needed: (111-101)/1 + 1 = 11 orders, we have 6, so 5 more needed
+        var fourthOrder = CreateOrder(bot, 111, 5, bot.IsLong);
         ExchangeApiMock.Setup(x => x.PlaceOrder(
                 It.IsAny<Bot>(),
                 It.IsAny<decimal>(),
@@ -245,7 +245,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
         ExchangeApiMock.Verify(x => x.PlaceOrder(
             It.Is<Bot>(b => b.Id == bot.Id),
             It.Is<decimal>(p => p == 111),
-            It.Is<decimal>(q => q == 4), // Corrected value: (111-101)/1*1 - 6 = 4
+            It.Is<decimal>(q => q == 5),
             It.Is<bool>(b => b == bot.IsLong),
             It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -347,7 +347,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
 
         // We need orders at 94,93,92,91 (4 units)
         // We already have orders at 100,99,98,97,96,95
-        // For long position, (100-91)/1*1 - 6 = 3 (but we need to check the calculation)
+        // Total needed: (100-91)/1 + 1 = 10 orders, we have 6, so 4 more needed
         var fourthOrder = CreateOrder(bot, 91, 4, bot.IsLong);
         ExchangeApiMock.Setup(x => x.PlaceOrder(
                 It.IsAny<Bot>(),
