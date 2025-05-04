@@ -37,7 +37,7 @@ public abstract class BaseTest
         decimal? maxPrice = null,
         decimal? minPrice = null,
         bool placeOrdersInAdvance = false,
-        int maxOrdersInAdvance = 0,
+        int ordersInAdvance = 0,
         decimal entryQuantity = 1,
         decimal entryStep = 0.1m)
     {
@@ -48,7 +48,7 @@ public abstract class BaseTest
             MaxPrice = maxPrice,
             MinPrice = minPrice,
             PlaceOrdersInAdvance = placeOrdersInAdvance,
-            MaxOrdersInAdvance = maxOrdersInAdvance,
+            OrdersInAdvance = ordersInAdvance,
             EntryQuantity = entryQuantity,
             EntryStep = entryStep,
             Trades = new HashSet<Trade>()

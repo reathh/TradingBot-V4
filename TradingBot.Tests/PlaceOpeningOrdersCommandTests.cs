@@ -93,7 +93,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
         // Arrange
         var bot = await CreateBotAsync(
             placeOrdersInAdvance: true,
-            maxOrdersInAdvance: 2,
+            ordersInAdvance: 3,
             entryStep: 1m);
         var ticker = CreateTicker(100, 101);
         var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
@@ -130,9 +130,8 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
         Assert.Equal(3, savedTrades.Count);
     }
 
-
     [Fact]
-    public async Task Handle_ShouldCalculateCorrectQuantity_WhenPriceMovesUpAndDown_ShortPosition()
+    public async Task Handle_ShouldCalculateCorrectQuantity_WhenPriceMovesUpAndDown_ShortBot()
     {
         // Arrange
         var bot = await CreateBotAsync(entryQuantity: 1, entryStep: 1m, isLong: false);
@@ -251,7 +250,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
     }
 
     [Fact]
-    public async Task Handle_ShouldCalculateCorrectQuantity_WhenPriceMovesUpAndDown_LongPosition()
+    public async Task Handle_ShouldCalculateCorrectQuantity_WhenPriceMovesUpAndDown_LongBot()
     {
         // Arrange
         var bot = await CreateBotAsync(entryQuantity: 1, entryStep: 1m, isLong: true);
