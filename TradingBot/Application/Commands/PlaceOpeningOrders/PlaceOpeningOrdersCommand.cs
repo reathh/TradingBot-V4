@@ -53,9 +53,9 @@ public class PlaceOpeningOrdersCommand : IRequest
                         // For existing positions, calculate required quantity based on price movement
                         : x.Bot.IsLong
                             // Long positions: calculate difference when price moves down
-                            ? Math.Max(0, ((int)Math.Ceiling(Math.Abs(x.FirstTradePrice - x.CurrentPrice) / x.Bot.EntryStep) + 1) * x.Bot.EntryQuantity - x.CurrentVolume)
+                            ? Math.Max(0, ((int)Math.Floor(Math.Abs(x.FirstTradePrice - x.CurrentPrice) / x.Bot.EntryStep) + 1) * x.Bot.EntryQuantity - x.CurrentVolume)
                             // Short positions: calculate difference when price moves up
-                            : Math.Max(0, ((int)Math.Ceiling(Math.Abs(x.CurrentPrice - x.FirstTradePrice) / x.Bot.EntryStep) + 1) * x.Bot.EntryQuantity - x.CurrentVolume)
+                            : Math.Max(0, ((int)Math.Floor(Math.Abs(x.CurrentPrice - x.FirstTradePrice) / x.Bot.EntryStep) + 1) * x.Bot.EntryQuantity - x.CurrentVolume)
                 })
                 // Only include bots that need to place orders
                 .Where(x => x.Quantity > 0)

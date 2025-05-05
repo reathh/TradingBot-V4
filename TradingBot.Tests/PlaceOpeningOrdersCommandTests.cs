@@ -88,6 +88,46 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
     }
 
     [Fact]
+    public async Task Handle_ShouldNotPlaceOrder_WhenPriceIsBelowMinPrice()
+    {
+        // Arrange
+        var bot = await CreateBotAsync(minPrice: 100);
+        var ticker = CreateTicker(98, 99);
+        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+
+        // Act
+        await Handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.IsAny<Bot>(),
+            It.IsAny<decimal>(),
+            It.IsAny<decimal>(),
+            It.IsAny<bool>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldNotPlaceOrder_WhenPriceIsBelowMinPrice_ShortBot()
+    {
+        // Arrange
+        var bot = await CreateBotAsync(minPrice: 100, isLong: false);
+        var ticker = CreateTicker(98, 99);  // Both bid and ask are below MinPrice
+        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+
+        // Act
+        await Handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.IsAny<Bot>(),
+            It.IsAny<decimal>(),
+            It.IsAny<decimal>(),
+            It.IsAny<bool>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task Handle_ShouldPlaceOrdersInAdvance_WhenConfigured_LongBot()
     {
         // Arrange
@@ -538,5 +578,325 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldPlaceOrdersForMultipleBots_ThatMeetCriteria()
+    {
+        // Arrange
+        var bot1 = await CreateBotAsync(entryQuantity: 1);
+        var bot2 = await CreateBotAsync(entryQuantity: 2);
+        var disabledBot = await CreateBotAsync();
+        disabledBot.Enabled = false;
+        await DbContext.SaveChangesAsync();
+
+        var ticker = CreateTicker(100, 101);
+        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+
+        var order1 = CreateOrder(bot1, bot1.IsLong ? ticker.Bid : ticker.Ask, bot1.EntryQuantity, bot1.IsLong);
+        var order2 = CreateOrder(bot2, bot2.IsLong ? ticker.Bid : ticker.Ask, bot2.EntryQuantity, bot2.IsLong);
+
+        ExchangeApiMock.SetupSequence(x => x.PlaceOrder(
+                It.IsAny<Bot>(),
+                It.IsAny<decimal>(),
+                It.IsAny<decimal>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order1)
+            .ReturnsAsync(order2);
+
+        // Act
+        await Handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.Is<Bot>(b => b.Id == bot1.Id || b.Id == bot2.Id),
+            It.IsAny<decimal>(),
+            It.IsAny<decimal>(),
+            It.IsAny<bool>(),
+            It.IsAny<CancellationToken>()), Times.Exactly(2));
+
+        var savedTrades = await DbContext.Trades.ToListAsync();
+        Assert.Equal(2, savedTrades.Count);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldNotPlaceOrder_WhenOrdersInAdvanceEqualsOpenTrades()
+    {
+        // Arrange
+        var bot = await CreateBotAsync(placeOrdersInAdvance: true, ordersInAdvance: 1);
+        var ticker = CreateTicker(100, 101);
+
+        // Place one order first
+        var firstOrder = CreateOrder(bot, bot.IsLong ? ticker.Bid : ticker.Ask, bot.EntryQuantity, bot.IsLong);
+        ExchangeApiMock.Setup(x => x.PlaceOrder(
+                It.IsAny<Bot>(),
+                It.IsAny<decimal>(),
+                It.IsAny<decimal>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(firstOrder);
+
+        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+        await Handler.Handle(command, CancellationToken.None);
+
+        // Reset mock for second attempt
+        ExchangeApiMock.Reset();
+
+        // Act - Try to place another order
+        await Handler.Handle(command, CancellationToken.None);
+
+        // Assert - Verify no additional orders were placed
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.IsAny<Bot>(),
+            It.IsAny<decimal>(),
+            It.IsAny<decimal>(),
+            It.IsAny<bool>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldPlaceOrder_WhenPriceIsExactlyAtMinPrice()
+    {
+        // Arrange
+        var minPrice = 100m;
+        var bot = await CreateBotAsync(minPrice: minPrice);
+        var ticker = CreateTicker(minPrice - 1, minPrice); // Ask is exactly at MinPrice
+        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+
+        var expectedOrder = CreateOrder(bot, bot.IsLong ? ticker.Bid : ticker.Ask, bot.EntryQuantity, bot.IsLong);
+        ExchangeApiMock.Setup(x => x.PlaceOrder(
+                It.IsAny<Bot>(),
+                It.IsAny<decimal>(),
+                It.IsAny<decimal>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expectedOrder);
+
+        // Act
+        await Handler.Handle(command, CancellationToken.None);
+
+        // Assert - Order should be placed
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.IsAny<Bot>(),
+            It.IsAny<decimal>(),
+            It.IsAny<decimal>(),
+            It.IsAny<bool>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldPlaceOrder_WhenPriceIsExactlyAtMaxPrice()
+    {
+        // Arrange
+        var maxPrice = 100m;
+        var bot = await CreateBotAsync(maxPrice: maxPrice);
+        var ticker = CreateTicker(maxPrice, maxPrice + 1); // Bid is exactly at MaxPrice
+        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+
+        var expectedOrder = CreateOrder(bot, bot.IsLong ? ticker.Bid : ticker.Ask, bot.EntryQuantity, bot.IsLong);
+        ExchangeApiMock.Setup(x => x.PlaceOrder(
+                It.IsAny<Bot>(),
+                It.IsAny<decimal>(),
+                It.IsAny<decimal>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expectedOrder);
+
+        // Act
+        await Handler.Handle(command, CancellationToken.None);
+
+        // Assert - Order should be placed
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.IsAny<Bot>(),
+            It.IsAny<decimal>(),
+            It.IsAny<decimal>(),
+            It.IsAny<bool>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldNotPlaceOrder_WhenCalculatedQuantityIsZero()
+    {
+        // Arrange
+        var bot = await CreateBotAsync(entryStep: 1.0m);
+
+        // Create an initial trade
+        var existingOrder = CreateOrder(bot, 100, bot.EntryQuantity, bot.IsLong);
+        var existingTrade = new Trade(existingOrder);
+        bot.Trades.Add(existingTrade);
+        await DbContext.SaveChangesAsync();
+
+        // Create a ticker with price very close to existing order to generate 0 quantity
+        // The price movement is less than entryStep, so no new orders should be placed
+        var ticker = CreateTicker(99.9m, 100.2m);
+        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+
+        // Act
+        await Handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.IsAny<Bot>(),
+            It.IsAny<decimal>(),
+            It.IsAny<decimal>(),
+            It.IsAny<bool>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldNotPlaceOrders_WhenNoEnabledBotsExist()
+    {
+        // Arrange
+        // Clear any existing bots
+        var existingBots = await DbContext.Bots.ToListAsync();
+        DbContext.Bots.RemoveRange(existingBots);
+        await DbContext.SaveChangesAsync();
+
+        // Create a disabled bot
+        var bot = await CreateBotAsync();
+        bot.Enabled = false;
+        await DbContext.SaveChangesAsync();
+
+        var ticker = CreateTicker(100, 101);
+        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+
+        // Act
+        await Handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.IsAny<Bot>(),
+            It.IsAny<decimal>(),
+            It.IsAny<decimal>(),
+            It.IsAny<bool>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldPlaceCorrectOrders_WhenEntryStepAndQuantityAreChanged()
+    {
+        // Arrange
+        var bot = await CreateBotAsync(entryQuantity: 1, entryStep: 1m, isLong: true);
+
+        // First ticker: 100/101
+        var firstTicker = CreateTicker(100, 101);
+        var firstCommand = new PlaceOpeningOrdersCommand { Ticker = firstTicker };
+
+        // Place initial order at 100 (Bid price since we're long)
+        var firstOrder = CreateOrder(bot, 100, 1, bot.IsLong);
+        ExchangeApiMock.Setup(x => x.PlaceOrder(
+                It.IsAny<Bot>(),
+                It.IsAny<decimal>(),
+                It.IsAny<decimal>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(firstOrder);
+
+        // Act - Place first order
+        await Handler.Handle(firstCommand, CancellationToken.None);
+
+        // Assert - Verify first order
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.Is<Bot>(b => b.Id == bot.Id),
+            It.Is<decimal>(p => p == 100),
+            It.Is<decimal>(q => q == 1),
+            It.Is<bool>(b => b == bot.IsLong),
+            It.IsAny<CancellationToken>()), Times.Once);
+
+        // Clear mock for next test
+        ExchangeApiMock.Reset();
+
+        // Second ticker: 97/98 (price dropped)
+        var secondTicker = CreateTicker(97, 98);
+        var secondCommand = new PlaceOpeningOrdersCommand { Ticker = secondTicker };
+
+        // We need orders at 99,98,97 (3 units)
+        // We already have an order at 100
+        var secondOrder = CreateOrder(bot, 97, 3, bot.IsLong);
+        ExchangeApiMock.Setup(x => x.PlaceOrder(
+                It.IsAny<Bot>(),
+                It.IsAny<decimal>(),
+                It.IsAny<decimal>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(secondOrder);
+
+        // Act - Place second order
+        await Handler.Handle(secondCommand, CancellationToken.None);
+
+        // Assert - Verify second order
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.Is<Bot>(b => b.Id == bot.Id),
+            It.Is<decimal>(p => p == 97),
+            It.Is<decimal>(q => q == 3),
+            It.Is<bool>(b => b == bot.IsLong),
+            It.IsAny<CancellationToken>()), Times.Once);
+
+        // Now change the bot's entryStep and entryQuantity
+        bot.EntryStep = 2m;     // Larger step - should place fewer orders
+        bot.EntryQuantity = 3m; // Larger quantity - each order is larger
+        await DbContext.SaveChangesAsync();
+
+        // Clear mock for next test
+        ExchangeApiMock.Reset();
+
+        // Third ticker: 93/94 (price dropped further)
+        var thirdTicker = CreateTicker(93, 94);
+        var thirdCommand = new PlaceOpeningOrdersCommand { Ticker = thirdTicker };
+
+        // With new entry step of 2, we need orders at:
+        // 99, 97, 95, 93 (with first at 100, that's 4 price levels from 100 to 93)
+        // We already have orders at 100, 99, 98, 97
+        // Calculation: (100-93)/2 + 1 = 4.5 -> 4 price levels
+        // 4 price levels × 3 units = 12 total units needed
+        // We already have 4 units (1 at 100 + 3 at 97-99), so need 8 more
+        var thirdOrder = CreateOrder(bot, 93, 8, bot.IsLong);
+        ExchangeApiMock.Setup(x => x.PlaceOrder(
+                It.IsAny<Bot>(),
+                It.IsAny<decimal>(),
+                It.IsAny<decimal>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(thirdOrder);
+
+        // Act - Place third order with updated bot parameters
+        await Handler.Handle(thirdCommand, CancellationToken.None);
+
+        // Assert - Verify third order with updated parameters
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.Is<Bot>(b => b.Id == bot.Id),
+            It.Is<decimal>(p => p == 93),
+            It.Is<decimal>(q => q == 8), // Correct quantity based on calculations
+            It.Is<bool>(b => b == bot.IsLong),
+            It.IsAny<CancellationToken>()), Times.Once);
+
+        // Clear mock for next test
+        ExchangeApiMock.Reset();
+
+        // Fourth ticker shows price movement in the opposite direction
+        // This tests that the bot doesn't place redundant orders
+        var fourthTicker = CreateTicker(95, 96);
+        var fourthCommand = new PlaceOpeningOrdersCommand { Ticker = fourthTicker };
+
+        // No new orders needed since we already have orders covering this price range
+        ExchangeApiMock.Setup(x => x.PlaceOrder(
+                It.IsAny<Bot>(),
+                It.IsAny<decimal>(),
+                It.IsAny<decimal>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Order)null!);
+
+        // Act - Try to place fourth order
+        await Handler.Handle(fourthCommand, CancellationToken.None);
+
+        // Assert - Verify no new orders were placed
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.IsAny<Bot>(),
+            It.IsAny<decimal>(),
+            It.IsAny<decimal>(),
+            It.IsAny<bool>(),
+            It.IsAny<CancellationToken>()), Times.Never);
     }
 }

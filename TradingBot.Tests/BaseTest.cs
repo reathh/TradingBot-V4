@@ -32,6 +32,8 @@ public abstract class BaseTest
             LoggerMock.Object);
     }
 
+    private int _nextBotId = 1;
+    
     protected async Task<Bot> CreateBotAsync(
         bool isLong = true,
         decimal? maxPrice = null,
@@ -41,7 +43,8 @@ public abstract class BaseTest
         decimal entryQuantity = 1,
         decimal entryStep = 0.1m)
     {
-        var bot = new Bot(1, "TestBot", "BTCUSDT", "Test bot for unit tests")
+        var botId = _nextBotId++;
+        var bot = new Bot(botId, "TestBot" + botId, "BTCUSDT", "Test bot for unit tests")
         {
             Enabled = true,
             IsLong = isLong,
