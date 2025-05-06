@@ -47,7 +47,7 @@ public abstract class ScheduledBackgroundService : BackgroundService
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogError(ex, "Error updating stale orders", ServiceName);
+                    Logger.LogError(ex, "Error in {ServiceName}", ServiceName);
                 }
 
                 await Task.Delay(Interval, stoppingToken);
@@ -59,7 +59,7 @@ public abstract class ScheduledBackgroundService : BackgroundService
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error updating stale orders", ServiceName);
+            Logger.LogError(ex, "Error in {ServiceName}", ServiceName);
         }
         finally
         {
@@ -96,8 +96,8 @@ public abstract class ScheduledBackgroundService : BackgroundService
         IServiceScope scope,
         TCommand command,
         CancellationToken cancellationToken,
-        string successMessage = null,
-        string failureMessage = null)
+        string successMessage = "",
+        string failureMessage = "")
         where TCommand : IRequest<Result<TResult>>
     {
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
@@ -126,8 +126,8 @@ public abstract class ScheduledBackgroundService : BackgroundService
         IServiceScope scope,
         TCommand command,
         CancellationToken cancellationToken,
-        string successMessage = null,
-        string failureMessage = null)
+        string successMessage = "",
+        string failureMessage = "")
         where TCommand : IRequest<Result>
     {
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();

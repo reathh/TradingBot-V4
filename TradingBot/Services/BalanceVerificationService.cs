@@ -67,7 +67,7 @@ public class BalanceVerificationService : ScheduledBackgroundService
             scope,
             command,
             cancellationToken,
-            successMessage: null, // No success message needed as command handler already logs
+            successMessage: "", // No success message needed as command handler already logs
             failureMessage: "❌ {Errors}");
     }
 

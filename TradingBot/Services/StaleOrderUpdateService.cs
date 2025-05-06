@@ -25,7 +25,7 @@ public class StaleOrderUpdateService : ScheduledBackgroundService
         // Create and send the command using the base class helper
         var command = new UpdateStaleOrdersCommand();
         await SendCommandAndLogResult<UpdateStaleOrdersCommand, int>(
-            scope.ServiceProvider,
+            scope,
             command,
             cancellationToken,
             "Updated {Count} stale orders",
