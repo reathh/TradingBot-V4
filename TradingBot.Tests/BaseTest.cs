@@ -34,7 +34,7 @@ public abstract class BaseTest
 
     private int _nextBotId = 1;
 
-    protected async Task<Bot> CreateBotAsync(
+    protected async Task<Bot> CreateBot(
         bool isLong = true,
         decimal? maxPrice = null,
         decimal? minPrice = null,

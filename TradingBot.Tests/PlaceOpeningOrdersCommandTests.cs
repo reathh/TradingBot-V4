@@ -14,7 +14,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
     public async Task Handle_ShouldPlaceOrder_WhenBotIsEnabledAndNoOpenTrades()
     {
         // Arrange
-        var bot = await CreateBotAsync();
+        var bot = await CreateBot();
         var ticker = CreateTicker(100, 101);
         var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
 
@@ -48,7 +48,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
     public async Task Handle_ShouldNotPlaceOrder_WhenBotIsDisabled()
     {
         // Arrange
-        var bot = await CreateBotAsync();
+        var bot = await CreateBot();
         bot.Enabled = false;
         await DbContext.SaveChangesAsync();
 
@@ -71,7 +71,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
     public async Task Handle_ShouldNotPlaceOrder_WhenPriceIsAboveMaxPrice()
     {
         // Arrange
-        var bot = await CreateBotAsync(maxPrice: 100);
+        var bot = await CreateBot(maxPrice: 100);
         var ticker = CreateTicker(101, 102);
         var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
 
@@ -91,7 +91,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
     public async Task Handle_ShouldNotPlaceOrder_WhenPriceIsBelowMinPrice()
     {
         // Arrange
-        var bot = await CreateBotAsync(minPrice: 100);
+        var bot = await CreateBot(minPrice: 100);
         var ticker = CreateTicker(98, 99);
         var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
 
@@ -111,7 +111,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
     public async Task Handle_ShouldNotPlaceOrder_WhenPriceIsBelowMinPrice_ShortBot()
     {
         // Arrange
-        var bot = await CreateBotAsync(minPrice: 100, isLong: false);
+        var bot = await CreateBot(minPrice: 100, isLong: false);
         var ticker = CreateTicker(98, 99);  // Both bid and ask are below MinPrice
         var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
 
@@ -131,7 +131,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
     public async Task Handle_ShouldPlaceOrdersInAdvance_WhenConfigured_LongBot()
     {
         // Arrange
-        var bot = await CreateBotAsync(
+        var bot = await CreateBot(
             placeOrdersInAdvance: true,
             ordersInAdvance: 3,
             entryStep: 1m);
@@ -223,7 +223,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
     public async Task Handle_ShouldPlaceOrdersInAdvance_WhenConfigured_ShortBot()
     {
         // Arrange
-        var bot = await CreateBotAsync(
+        var bot = await CreateBot(
             placeOrdersInAdvance: true,
             ordersInAdvance: 3,
             entryStep: 1m,
@@ -316,7 +316,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
     public async Task Handle_ShouldCalculateCorrectQuantity_WhenPriceMovesUpAndDown_ShortBot()
     {
         // Arrange
-        var bot = await CreateBotAsync(entryQuantity: 1, entryStep: 1m, isLong: false);
+        var bot = await CreateBot(entryQuantity: 1, entryStep: 1m, isLong: false);
 
         // First ticker: 100/101
         var firstTicker = CreateTicker(100, 101);
@@ -435,7 +435,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
     public async Task Handle_ShouldCalculateCorrectQuantity_WhenPriceMovesUpAndDown_LongBot()
     {
         // Arrange
-        var bot = await CreateBotAsync(entryQuantity: 1, entryStep: 1m, isLong: true);
+        var bot = await CreateBot(entryQuantity: 1, entryStep: 1m, isLong: true);
 
         // First ticker: 100/101
         var firstTicker = CreateTicker(100, 101);
@@ -554,7 +554,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
     public async Task Handle_ShouldLogError_WhenOrderPlacementFails()
     {
         // Arrange
-        var bot = await CreateBotAsync();
+        var bot = await CreateBot();
         var ticker = CreateTicker(100, 101);
         var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
 
@@ -584,9 +584,9 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
     public async Task Handle_ShouldPlaceOrdersForMultipleBots_ThatMeetCriteria()
     {
         // Arrange
-        var bot1 = await CreateBotAsync(entryQuantity: 1);
-        var bot2 = await CreateBotAsync(entryQuantity: 2);
-        var disabledBot = await CreateBotAsync();
+        var bot1 = await CreateBot(entryQuantity: 1);
+        var bot2 = await CreateBot(entryQuantity: 2);
+        var disabledBot = await CreateBot();
         disabledBot.Enabled = false;
         await DbContext.SaveChangesAsync();
 
@@ -624,7 +624,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
     public async Task Handle_ShouldNotPlaceOrder_WhenOrdersInAdvanceEqualsOpenTrades()
     {
         // Arrange
-        var bot = await CreateBotAsync(placeOrdersInAdvance: true, ordersInAdvance: 1);
+        var bot = await CreateBot(placeOrdersInAdvance: true, ordersInAdvance: 1);
         var ticker = CreateTicker(100, 101);
 
         // Place one order first
@@ -660,7 +660,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
     {
         // Arrange
         var minPrice = 100m;
-        var bot = await CreateBotAsync(minPrice: minPrice);
+        var bot = await CreateBot(minPrice: minPrice);
         var ticker = CreateTicker(minPrice - 1, minPrice); // Ask is exactly at MinPrice
         var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
 
@@ -690,7 +690,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
     {
         // Arrange
         var maxPrice = 100m;
-        var bot = await CreateBotAsync(maxPrice: maxPrice);
+        var bot = await CreateBot(maxPrice: maxPrice);
         var ticker = CreateTicker(maxPrice, maxPrice + 1); // Bid is exactly at MaxPrice
         var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
 
@@ -719,7 +719,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
     public async Task Handle_ShouldNotPlaceOrder_WhenCalculatedQuantityIsZero()
     {
         // Arrange
-        var bot = await CreateBotAsync(entryStep: 1.0m);
+        var bot = await CreateBot(entryStep: 1.0m);
 
         // Create an initial trade
         var existingOrder = CreateOrder(bot, 100, bot.EntryQuantity, bot.IsLong);
@@ -754,7 +754,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
         await DbContext.SaveChangesAsync();
 
         // Create a disabled bot
-        var bot = await CreateBotAsync();
+        var bot = await CreateBot();
         bot.Enabled = false;
         await DbContext.SaveChangesAsync();
 
@@ -777,7 +777,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
     public async Task Handle_ShouldPlaceCorrectOrders_WhenEntryStepAndQuantityAreChanged()
     {
         // Arrange
-        var bot = await CreateBotAsync(entryQuantity: 1, entryStep: 1m, isLong: true);
+        var bot = await CreateBot(entryQuantity: 1, entryStep: 1m, isLong: true);
 
         // First ticker: 100/101
         var firstTicker = CreateTicker(100, 101);

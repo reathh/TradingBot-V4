@@ -25,7 +25,6 @@ public class PlaceExitOrdersCommand : IRequest
                     t.Profit == null &&
                     t.EntryOrder.Closed &&
                     t.EntryOrder.QuantityFilled > 0)) // Only consider trades without exit orders, where entry orders are closed and filled
-                                                      // Select all data needed for calculation
                 .Select(b => new
                 {
                     Bot = b,
