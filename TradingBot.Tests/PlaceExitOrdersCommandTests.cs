@@ -720,7 +720,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
         _exitLoggerMock = new Mock<ILogger<PlaceExitOrdersCommand.PlaceExitOrdersCommandHandler>>();
         _exitOrdersHandler = new PlaceExitOrdersCommand.PlaceExitOrdersCommandHandler(
             DbContext,
-            ExchangeApiMock.Object,
+            ExchangeApiRepositoryMock.Object,
             _exitLoggerMock.Object);
     }
 

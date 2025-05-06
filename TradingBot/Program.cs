@@ -20,15 +20,21 @@ else
 // Register TimeProvider as a singleton
 builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
 
+// Register ExchangeApiRepository as a singleton
+builder.Services.AddSingleton<IExchangeApiRepository, BinanceExchangeApiRepository>();
+
 // Register all services with implemented interfaces as scoped, except for IHostedService
 builder.Services.Scan(scan => scan
     .FromAssemblyOf<Program>()
-    .AddClasses(classes => classes.Where(type => type != typeof(IHostedService)))
+    .AddClasses(classes => classes.Where(type =>
+        type != typeof(IHostedService) &&
+        type != typeof(IExchangeApiRepository))) // Don't auto-register IExchangeApiRepository
     .AsImplementedInterfaces()
     .WithScopedLifetime());
 
-// Ensure IHostedService is registered as Singleton
+// Register hosted services
 builder.Services.AddSingleton<IHostedService, BackgroundJobProcessor>();
+builder.Services.AddSingleton<IHostedService, OrderUpdateService>();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();

@@ -1,22 +1,45 @@
 using TradingBot.Data;
 using Binance.Net.Clients;
 using Binance.Net.Enums;
+using Binance.Net.Objects.Models.Spot.Socket;
 using CryptoExchange.Net.Authentication;
+using Microsoft.Extensions.Logging;
 
 namespace TradingBot.Services;
 
-public class BinanceExchangeApi(TimeProvider timeProvider) : IExchangeApi
+public class BinanceExchangeApi : IExchangeApi
 {
-    private readonly TimeProvider _timeProvider = timeProvider;
+    private readonly TimeProvider _timeProvider;
+    private readonly ILogger<BinanceExchangeApi> _logger;
+    private readonly Dictionary<string, List<Func<OrderUpdate, Task>>> _orderCallbacks = new();
+    private readonly Dictionary<string, bool> _userDataSubscribed = new();
+    private readonly BinanceRestClient _restClient;
+    private readonly BinanceSocketClient _socketClient;
+
+    public BinanceExchangeApi(
+        string publicKey,
+        string privateKey,
+        TimeProvider timeProvider,
+        ILogger<BinanceExchangeApi> logger)
+    {
+        _timeProvider = timeProvider;
+        _logger = logger;
+
+        // Create a single instance of REST and Socket clients
+        _restClient = new BinanceRestClient(options =>
+        {
+            options.ApiCredentials = new ApiCredentials(publicKey, privateKey);
+        });
+
+        _socketClient = new BinanceSocketClient(options =>
+        {
+            options.ApiCredentials = new ApiCredentials(publicKey, privateKey);
+        });
+    }
 
     public async Task<Order> PlaceOrder(Bot bot, decimal price, decimal quantity, bool isBuy, CancellationToken cancellationToken)
     {
-        using var client = new BinanceRestClient(options =>
-        {
-            options.ApiCredentials = new ApiCredentials(bot.PublicKey, bot.PrivateKey);
-        });
-
-        var order = await client.SpotApi.Trading.PlaceOrderAsync(
+        var order = await _restClient.SpotApi.Trading.PlaceOrderAsync(
             symbol: bot.Symbol,
             side: isBuy ? OrderSide.Buy : OrderSide.Sell,
             type: SpotOrderType.Limit,
@@ -42,4 +65,94 @@ public class BinanceExchangeApi(TimeProvider timeProvider) : IExchangeApi
             Closed = false // Initially not closed
         };
     }
+
+    public async Task SubscribeToOrderUpdates(Func<OrderUpdate, Task> callback, Bot bot, CancellationToken cancellationToken = default)
+    {
+        // Add callback to the list
+        string key = $"{bot.PublicKey}:{bot.PrivateKey}";
+        if (!_orderCallbacks.ContainsKey(key))
+        {
+            _orderCallbacks[key] = new List<Func<OrderUpdate, Task>>();
+        }
+        _orderCallbacks[key].Add(callback);
+
+        // If already subscribed for this bot, we're done
+        if (_userDataSubscribed.ContainsKey(key) && _userDataSubscribed[key])
+        {
+            return;
+        }
+
+        // Get listen key for user data stream
+        var response = await _restClient.SpotApi.Account.StartUserStreamAsync(cancellationToken);
+        if (!response.Success)
+        {
+            throw new Exception($"Could not start user data stream: {response.Error?.Message}");
+        }
+
+        var listenKey = response.Data;
+        _logger.LogInformation("Started user data stream with listen key {ListenKey}", listenKey);
+
+        // Subscribe to user data updates
+        var subscriptionResult = await _socketClient.SpotApi.Account.SubscribeToUserDataUpdatesAsync(
+            listenKey,
+            data =>
+            {
+                if (data.Data is BinanceStreamOrderUpdate orderUpdate)
+                {
+                    var update = MapBinanceOrderToOrderUpdate(orderUpdate);
+                    _logger.LogTrace("Order update received: {@OrderUpdate}", update);
+
+                    if (_orderCallbacks.ContainsKey(key))
+                    {
+                        foreach (var cb in _orderCallbacks[key])
+                        {
+                            _ = cb(update);
+                        }
+                    }
+                }
+            },
+            ct: cancellationToken);
+
+        if (!subscriptionResult.Success)
+        {
+            throw new Exception($"Could not subscribe to user data updates: {subscriptionResult.Error?.Message}");
+        }
+
+        // Start keep-alive task to maintain the listen key
+        _ = Task.Run(async () =>
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(TimeSpan.FromMinutes(30), cancellationToken);
+                    await _restClient.SpotApi.Account.KeepAliveUserStreamAsync(listenKey, cancellationToken);
+                    _logger.LogDebug("Refreshed listen key {ListenKey}", listenKey);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    _logger.LogError(ex, "Error refreshing listen key {ListenKey}", listenKey);
+                }
+            }
+        }, cancellationToken);
+
+        _userDataSubscribed[key] = true;
+    }
+
+    private static OrderUpdate MapBinanceOrderToOrderUpdate(BinanceStreamOrderUpdate order)
+    {
+        return new OrderUpdate(
+            Id: order.Id.ToString(),
+            Symbol: order.Symbol,
+            Price: order.Price,
+            Quantity: order.Quantity,
+            QuantityFilled: order.QuantityFilled,
+            AverageFillPrice: order.QuoteQuantityFilled == 0 ? null : order.QuoteQuantityFilled / order.QuantityFilled,
+            IsBuy: order.Side == OrderSide.Buy,
+            Canceled: order.Status == OrderStatus.Canceled,
+            Closed: IsOrderClosed(order.Status)
+        );
+    }
+
+    private static bool IsOrderClosed(OrderStatus status) => status is OrderStatus.Filled or OrderStatus.Canceled or OrderStatus.Expired or OrderStatus.Rejected;
 }

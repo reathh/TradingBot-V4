@@ -10,15 +10,25 @@ public class PlaceOpeningOrdersCommand : IRequest
 {
     public required Ticker Ticker { get; set; }
 
-    public class PlaceOpeningOrdersCommandHandler(TradingBotDbContext dbContext, IExchangeApi exchangeApi, ILogger<PlaceOpeningOrdersCommandHandler> logger) : IRequestHandler<PlaceOpeningOrdersCommand>
+    public class PlaceOpeningOrdersCommandHandler : IRequestHandler<PlaceOpeningOrdersCommand>
     {
-        private readonly TradingBotDbContext db = dbContext;
-        private readonly IExchangeApi exchangeApi = exchangeApi;
-        private readonly ILogger<PlaceOpeningOrdersCommandHandler> logger = logger;
+        private readonly TradingBotDbContext _db;
+        private readonly IExchangeApiRepository _exchangeApiRepository;
+        private readonly ILogger<PlaceOpeningOrdersCommandHandler> _logger;
+
+        public PlaceOpeningOrdersCommandHandler(
+            TradingBotDbContext dbContext,
+            IExchangeApiRepository exchangeApiRepository,
+            ILogger<PlaceOpeningOrdersCommandHandler> logger)
+        {
+            _db = dbContext;
+            _exchangeApiRepository = exchangeApiRepository;
+            _logger = logger;
+        }
 
         public async Task Handle(PlaceOpeningOrdersCommand request, CancellationToken cancellationToken)
         {
-            var botsWithQuantities = await db.Bots
+            var botsWithQuantities = await _db.Bots
                 .Where(b => b.Enabled)
                 // Price range filters
                 .Where(b =>
@@ -72,7 +82,7 @@ public class PlaceOpeningOrdersCommand : IRequest
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError(ex, "Failed to place orders for bot {BotId} with quantity {Quantity}",
+                        _logger.LogError(ex, "Failed to place orders for bot {BotId} with quantity {Quantity}",
                             botWithQuantity.Bot.Id, botWithQuantity.Quantity);
                     }
                 });
@@ -80,6 +90,9 @@ public class PlaceOpeningOrdersCommand : IRequest
 
         private async Task PlaceOrders(Bot bot, Ticker ticker, decimal quantity, int openTradesCount, CancellationToken cancellationToken)
         {
+            // Get the appropriate exchange API for this bot
+            var exchangeApi = _exchangeApiRepository.GetExchangeApi(bot);
+
             var currentPrice = bot.IsLong ? ticker.Bid : ticker.Ask;
             var stepDirection = bot.IsLong ? 1 : -1;
 
@@ -113,7 +126,7 @@ public class PlaceOpeningOrdersCommand : IRequest
                 {
                     var trade = new Trade(order);
                     bot.Trades.Add(trade);
-                    logger.LogInformation(
+                    _logger.LogInformation(
                         "Bot {BotId} placed {Side} order at {Price} for {Quantity} units ({OrderId})",
                         bot.Id,
                         order.IsBuy ? "buy" : "sell",
@@ -122,8 +135,8 @@ public class PlaceOpeningOrdersCommand : IRequest
                         order.Id);
                 }
 
-                await db.SaveChangesAsync(cancellationToken);
-                logger.LogInformation("Successfully placed {OrderCount} entry orders for bot {BotId}", orders.Length, bot.Id);
+                await _db.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation("Successfully placed {OrderCount} entry orders for bot {BotId}", orders.Length, bot.Id);
             }
             else
             {
@@ -137,7 +150,7 @@ public class PlaceOpeningOrdersCommand : IRequest
 
                 var trade = new Trade(order);
                 bot.Trades.Add(trade);
-                logger.LogInformation(
+                _logger.LogInformation(
                     "Bot {BotId} placed {Side} order at {Price} for {Quantity} units ({OrderId})",
                     bot.Id,
                     order.IsBuy ? "buy" : "sell",
@@ -145,8 +158,8 @@ public class PlaceOpeningOrdersCommand : IRequest
                     order.Quantity,
                     order.Id);
 
-                await db.SaveChangesAsync(cancellationToken);
-                logger.LogInformation("Successfully placed 1 entry order for bot {BotId}", bot.Id);
+                await _db.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation("Successfully placed 1 entry order for bot {BotId}", bot.Id);
             }
         }
     }

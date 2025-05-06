@@ -10,6 +10,7 @@ namespace TradingBot.Tests;
 public abstract class BaseTest
 {
     protected readonly Mock<IExchangeApi> ExchangeApiMock;
+    protected readonly Mock<IExchangeApiRepository> ExchangeApiRepositoryMock;
     protected readonly Mock<ILogger<PlaceOpeningOrdersCommand.PlaceOpeningOrdersCommandHandler>> LoggerMock;
     protected readonly TradingBotDbContext DbContext;
     protected readonly PlaceOpeningOrdersCommand.PlaceOpeningOrdersCommandHandler Handler;
@@ -19,7 +20,12 @@ public abstract class BaseTest
     protected BaseTest()
     {
         ExchangeApiMock = new Mock<IExchangeApi>();
+        ExchangeApiRepositoryMock = new Mock<IExchangeApiRepository>();
         LoggerMock = new Mock<ILogger<PlaceOpeningOrdersCommand.PlaceOpeningOrdersCommandHandler>>();
+
+        // Configure the repository mock to return the exchange API mock
+        ExchangeApiRepositoryMock.Setup(x => x.GetExchangeApi(It.IsAny<Bot>()))
+            .Returns(ExchangeApiMock.Object);
 
         var options = new DbContextOptionsBuilder<TradingBotDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
@@ -28,7 +34,7 @@ public abstract class BaseTest
         DbContext = new TradingBotDbContext(options);
         Handler = new PlaceOpeningOrdersCommand.PlaceOpeningOrdersCommandHandler(
             DbContext,
-            ExchangeApiMock.Object,
+            ExchangeApiRepositoryMock.Object,
             LoggerMock.Object);
     }
 

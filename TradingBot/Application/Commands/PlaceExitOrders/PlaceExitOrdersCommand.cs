@@ -10,15 +10,25 @@ public class PlaceExitOrdersCommand : IRequest
 {
     public required Ticker Ticker { get; set; }
 
-    public class PlaceExitOrdersCommandHandler(TradingBotDbContext dbContext, IExchangeApi exchangeApi, ILogger<PlaceExitOrdersCommandHandler> logger) : IRequestHandler<PlaceExitOrdersCommand>
+    public class PlaceExitOrdersCommandHandler : IRequestHandler<PlaceExitOrdersCommand>
     {
-        private readonly TradingBotDbContext db = dbContext;
-        private readonly IExchangeApi exchangeApi = exchangeApi;
-        private readonly ILogger<PlaceExitOrdersCommandHandler> logger = logger;
+        private readonly TradingBotDbContext _db;
+        private readonly IExchangeApiRepository _exchangeApiRepository;
+        private readonly ILogger<PlaceExitOrdersCommandHandler> _logger;
+
+        public PlaceExitOrdersCommandHandler(
+            TradingBotDbContext dbContext,
+            IExchangeApiRepository exchangeApiRepository,
+            ILogger<PlaceExitOrdersCommandHandler> logger)
+        {
+            _db = dbContext;
+            _exchangeApiRepository = exchangeApiRepository;
+            _logger = logger;
+        }
 
         public async Task Handle(PlaceExitOrdersCommand request, CancellationToken cancellationToken)
         {
-            var botsWithTrades = await db.Bots
+            var botsWithTrades = await _db.Bots
                 .Where(b => b.Enabled)
                 .Where(b => b.Trades.Any(t =>
                     t.ExitOrder == null &&
@@ -61,7 +71,7 @@ public class PlaceExitOrdersCommand : IRequest
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError(ex, "Failed to place exit orders for bot {BotId}",
+                        _logger.LogError(ex, "Failed to place exit orders for bot {BotId}",
                             botWithTrades.Bot.Id);
                     }
                 });
@@ -78,6 +88,8 @@ public class PlaceExitOrdersCommand : IRequest
             {
                 return;
             }
+
+            var exchangeApi = _exchangeApiRepository.GetExchangeApi(bot);
 
             if (bot.PlaceOrdersInAdvance)
             {
@@ -106,7 +118,7 @@ public class PlaceExitOrdersCommand : IRequest
                     var trade = eligibleTrades[i].Trade;
                     trade.ExitOrder = order;
 
-                    logger.LogInformation(
+                    _logger.LogInformation(
                         "Bot {BotId} placed exit {Side} order at {Price} for {Quantity} units ({OrderId})",
                         bot.Id,
                         order.IsBuy ? "buy" : "sell",
@@ -115,8 +127,8 @@ public class PlaceExitOrdersCommand : IRequest
                         order.Id);
                 }
 
-                await db.SaveChangesAsync(cancellationToken);
-                logger.LogInformation("Successfully placed {OrderCount} exit orders for bot {BotId}", orders.Length, bot.Id);
+                await _db.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation("Successfully placed {OrderCount} exit orders for bot {BotId}", orders.Length, bot.Id);
             }
             else
             {
@@ -137,7 +149,7 @@ public class PlaceExitOrdersCommand : IRequest
 
                     trade.ExitOrder = order;
 
-                    logger.LogInformation(
+                    _logger.LogInformation(
                         "Bot {BotId} placed exit {Side} order at {Price} for {Quantity} units ({OrderId})",
                         bot.Id,
                         order.IsBuy ? "buy" : "sell",
@@ -146,8 +158,8 @@ public class PlaceExitOrdersCommand : IRequest
                         order.Id);
                 }
 
-                await db.SaveChangesAsync(cancellationToken);
-                logger.LogInformation("Successfully placed {OrderCount} exit orders for bot {BotId}", eligibleTrades.Count, bot.Id);
+                await _db.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation("Successfully placed {OrderCount} exit orders for bot {BotId}", eligibleTrades.Count, bot.Id);
             }
         }
     }
