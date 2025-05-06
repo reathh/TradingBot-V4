@@ -80,8 +80,7 @@ public abstract class BaseTest
             Quantity = quantity,
             QuantityFilled = quantity,
             AverageFillPrice = price,
-            Fees = 0.001m * price * quantity,
-            Closed = true
+            Fees = 0.001m * price * quantity
         };
     }
 }

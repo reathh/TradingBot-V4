@@ -108,7 +108,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
     public async Task Handle_ShouldNotPlaceExitOrder_WhenPriceIsLowerThanExitStep_LongBot()
     {
         // Arrange
-        var bot = await CreateBot(exitStep: 1.0m, isLong: true);
+        var bot = await CreateBot(exitStep: 1.0m);
         var entryPrice = 100m;
         var entryOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
         entryOrder.Closed = true;
@@ -166,8 +166,8 @@ public class PlaceExitOrdersCommandTests : BaseTest
     public async Task Handle_ShouldNotPlaceExitOrder_WhenBotIsDisabled()
     {
         // Arrange
-        var bot = await CreateBot(exitStep: 1.0m);
-        var entryPrice = bot.IsLong ? 100m : 101m;
+        var bot = await CreateBot(exitStep: 1.0m, isLong: true);
+        var entryPrice = 100m;
         var entryOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
         entryOrder.Closed = true;
         entryOrder.QuantityFilled = entryOrder.Quantity;
@@ -178,12 +178,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
         bot.Enabled = false;
         await DbContext.SaveChangesAsync();
 
-        // Create ticker with price that reaches exit step
-        var exitPrice = bot.IsLong ? 101m : 100m;
-        var ticker = bot.IsLong
-            ? CreateTicker(100.5m, 101m)
-            : CreateTicker(100m, 100.5m);
-
+        var ticker = CreateTicker(100.5m, 101m);
         var command = new PlaceExitOrdersCommand { Ticker = ticker };
 
         // Act
@@ -199,15 +194,13 @@ public class PlaceExitOrdersCommandTests : BaseTest
     }
 
     [Fact]
-    public async Task Handle_ShouldPlaceExitOrdersForMultipleTrades_WhenPriceReachesExitStep()
+    public async Task Handle_ShouldPlaceExitOrdersForMultipleTrades_WhenPriceReachesExitStep_LongBot()
     {
         // Arrange
-        var bot = await CreateBot(exitStep: 1.0m);
+        var bot = await CreateBot(exitStep: 1.0m, isLong: true);
 
         // Create multiple trades at different entry prices
-        var entryPrices = bot.IsLong
-            ? new[] { 100m, 99m, 98m }
-            : new[] { 101m, 102m, 103m };
+        var entryPrices = new[] { 100m, 99m, 98m };
 
         foreach (var price in entryPrices)
         {
@@ -220,9 +213,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
         await DbContext.SaveChangesAsync();
 
         // Create ticker with price that reaches exit step for all trades
-        var ticker = bot.IsLong
-            ? CreateTicker(100.5m, 101m) // Exit at 101 for long (entry + exitStep)
-            : CreateTicker(100m, 100.5m); // Exit at 100 for short (entry - exitStep)
+        var ticker = CreateTicker(100.5m, 101m); // Exit at 101 for long (entry + exitStep)
 
         var command = new PlaceExitOrdersCommand { Ticker = ticker };
 
@@ -230,8 +221,72 @@ public class PlaceExitOrdersCommandTests : BaseTest
         var exitOrders = new List<Order>();
         foreach (var price in entryPrices)
         {
-            var exitPrice = bot.IsLong ? price + bot.ExitStep : price - bot.ExitStep;
-            var exitOrder = CreateOrder(bot, bot.IsLong ? ticker.Ask : ticker.Bid, bot.EntryQuantity, !bot.IsLong);
+            var exitPrice = price + bot.ExitStep;
+            var exitOrder = CreateOrder(bot, ticker.Ask, bot.EntryQuantity, !bot.IsLong);
+            exitOrders.Add(exitOrder);
+        }
+
+        var sequence = ExchangeApiMock.SetupSequence(x => x.PlaceOrder(
+            It.IsAny<Bot>(),
+            It.IsAny<decimal>(),
+            It.IsAny<decimal>(),
+            It.IsAny<bool>(),
+            It.IsAny<CancellationToken>()));
+
+        foreach (var order in exitOrders)
+        {
+            sequence = sequence.ReturnsAsync(order);
+        }
+
+        // Act
+        await Handle(command, CancellationToken.None);
+
+        // Assert
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.IsAny<Bot>(),
+            It.IsAny<decimal>(),
+            It.IsAny<decimal>(),
+            It.IsAny<bool>(),
+            It.IsAny<CancellationToken>()), Times.Exactly(exitOrders.Count));
+
+        // Verify all trades have exit orders
+        var updatedTrades = await DbContext.Trades.Include(t => t.ExitOrder).ToListAsync();
+        foreach (var trade in updatedTrades)
+        {
+            Assert.NotNull(trade.ExitOrder);
+        }
+    }
+
+    [Fact]
+    public async Task Handle_ShouldPlaceExitOrdersForMultipleTrades_WhenPriceReachesExitStep_ShortBot()
+    {
+        // Arrange
+        var bot = await CreateBot(exitStep: 1.0m, isLong: false);
+
+        // Create multiple trades at different entry prices
+        var entryPrices = new[] { 101m, 102m, 103m };
+
+        foreach (var price in entryPrices)
+        {
+            var entryOrder = CreateOrder(bot, price, bot.EntryQuantity, bot.IsLong);
+            entryOrder.Closed = true;
+            entryOrder.QuantityFilled = entryOrder.Quantity;
+            var trade = new Trade(entryOrder);
+            bot.Trades.Add(trade);
+        }
+        await DbContext.SaveChangesAsync();
+
+        // Create ticker with price that reaches exit step for all trades
+        var ticker = CreateTicker(100m, 100.5m); // Exit at 100 for short (entry - exitStep)
+
+        var command = new PlaceExitOrdersCommand { Ticker = ticker };
+
+        // Setup mocks for exit orders
+        var exitOrders = new List<Order>();
+        foreach (var price in entryPrices)
+        {
+            var exitPrice = price - bot.ExitStep;
+            var exitOrder = CreateOrder(bot, ticker.Bid, bot.EntryQuantity, !bot.IsLong);
             exitOrders.Add(exitOrder);
         }
 
