@@ -13,7 +13,6 @@ namespace TradingBot.Data
         public decimal Fees { get; set; }
         public bool Canceled { get; set; }
         public bool Closed { get; set; }
-        public string? ExchangeOrderId { get; set; }
         public DateTime LastUpdated { get; set; } = createdAt;
 
         #region Navigation Properties

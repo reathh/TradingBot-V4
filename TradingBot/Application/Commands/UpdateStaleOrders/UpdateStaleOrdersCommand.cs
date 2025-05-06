@@ -62,13 +62,12 @@ public class UpdateStaleOrdersCommandHandler(
 
                 var exchangeApi = _exchangeApiRepository.GetExchangeApi(bot);
 
-                // Check if we should use the exchange order ID or internal ID
-                string orderIdToUse = order.ExchangeOrderId ?? order.Id;
+
 
                 try
                 {
                     // Fetch the current order status from the exchange
-                    var updatedOrder = await exchangeApi.GetOrderStatus(orderIdToUse, bot, cancellationToken);
+                    var updatedOrder = await exchangeApi.GetOrderStatus(order.Id, bot, cancellationToken);
 
                     // Update order properties with the latest information
                     order.QuantityFilled = updatedOrder.QuantityFilled;
