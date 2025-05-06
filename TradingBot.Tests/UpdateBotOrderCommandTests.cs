@@ -60,7 +60,7 @@ public class UpdateBotOrderCommandTests : BaseTest
         // Verify order was updated in database
         var updatedOrder = await DbContext.Orders.FirstOrDefaultAsync(o => o.Id == order.Id);
         Assert.NotNull(updatedOrder);
-        Assert.Equal(orderUpdate.QuantityFilled, updatedOrder.QuantityFilled);
+        Assert.Equal(orderUpdate.QuantityFilled, updatedOrder!.QuantityFilled);
         Assert.Equal(orderUpdate.AverageFillPrice, updatedOrder.AverageFillPrice);
         Assert.Equal(orderUpdate.Closed, updatedOrder.Closed);
     }
@@ -95,20 +95,19 @@ public class UpdateBotOrderCommandTests : BaseTest
             x => x.Log(
                 LogLevel.Warning,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((o, t) => o != null && o.ToString().Contains(nonExistentOrderId)),
+                It.Is<It.IsAnyType>((o, t) => o != null && o.ToString()!.Contains(nonExistentOrderId)),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
 
     [Fact]
-    public async Task Handle_ShouldFindOrderByExchangeOrderId_WhenIdDoesNotMatch()
+    public async Task Handle_ShouldFindOrderById_WhenOrderExists()
     {
         // Arrange
         var bot = await CreateBot();
         var order = CreateOrder(bot, 100m, 1m, true);
-        order.Id = "internal-id";
-        order.ExchangeOrderId = "exchange-id";
+        order.Id = "order-id";
         order.QuantityFilled = 0;
         order.Closed = false;
 
@@ -116,7 +115,7 @@ public class UpdateBotOrderCommandTests : BaseTest
         await DbContext.SaveChangesAsync();
 
         var orderUpdate = new OrderUpdate(
-            Id: "exchange-id",  // This matches ExchangeOrderId, not Id
+            Id: "order-id",  // This matches the order Id
             Symbol: order.Symbol,
             Price: order.Price,
             Quantity: order.Quantity,
@@ -136,9 +135,9 @@ public class UpdateBotOrderCommandTests : BaseTest
         Assert.True(result);
 
         // Verify order was updated in database
-        var updatedOrder = await DbContext.Orders.FirstOrDefaultAsync(o => o.Id == "internal-id");
+        var updatedOrder = await DbContext.Orders.FirstOrDefaultAsync(o => o.Id == "order-id");
         Assert.NotNull(updatedOrder);
-        Assert.Equal(orderUpdate.QuantityFilled, updatedOrder.QuantityFilled);
+        Assert.Equal(orderUpdate.QuantityFilled, updatedOrder!.QuantityFilled);
         Assert.Equal(orderUpdate.Closed, updatedOrder.Closed);
     }
 }

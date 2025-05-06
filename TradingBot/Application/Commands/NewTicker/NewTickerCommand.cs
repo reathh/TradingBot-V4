@@ -9,7 +9,7 @@ public class NewTickerCommand : IRequest<Result>
 {
     public required Ticker Ticker { get; set; }
 
-    public class NewTickerCommandHandler(TradingBotDbContext db, ILogger<NewTickerCommand.NewTickerCommandHandler> logger) : BaseCommandHandler<NewTickerCommand>(logger)
+    public class NewTickerCommandHandler(TradingBotDbContext db, ILogger<NewTickerCommandHandler> logger) : BaseCommandHandler<NewTickerCommand>(logger)
     {
         private readonly TradingBotDbContext _db = db;
 

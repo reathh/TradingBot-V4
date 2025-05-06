@@ -44,6 +44,8 @@ public class BackgroundJobProcessor(IServiceProvider serviceProvider, ILogger<Ba
 
     private static bool IsResultCommand<TRequest>(TRequest request)
     {
+        if (request == null) return false;
+
         var requestType = request.GetType();
         var interfaces = requestType.GetInterfaces();
 
@@ -59,31 +61,36 @@ public class BackgroundJobProcessor(IServiceProvider serviceProvider, ILogger<Ba
 
     private async Task HandleResultCommand<TRequest>(IMediator mediator, TRequest request) where TRequest : IRequest
     {
+        if (request == null) return;
+
         // Use reflection to safely call Send and get the result
         var requestType = request.GetType();
         var sendMethod = typeof(IMediator).GetMethod("Send", [requestType, typeof(CancellationToken)]);
 
         if (sendMethod != null)
         {
-            var task = (Task)sendMethod.Invoke(mediator, [request, CancellationToken.None]);
-            await task;
-
-            // Get the result from the Task using reflection
-            var resultProperty = task.GetType().GetProperty("Result");
-            if (resultProperty != null)
+            var task = sendMethod.Invoke(mediator, [request, CancellationToken.None]) as Task;
+            if (task != null)
             {
-                var result = resultProperty.GetValue(task);
+                await task;
 
-                // Check if the result is a Result type
-                if (result is Result resultObj && !resultObj.Succeeded)
+                // Get the result from the Task using reflection
+                var resultProperty = task.GetType().GetProperty("Result");
+                if (resultProperty != null)
                 {
-                    _logger.LogError("Command {RequestType} failed: {Errors}",
-                        typeof(TRequest).Name,
-                        string.Join(", ", resultObj.Errors));
-                }
-                else if (result is IResult iresult && !iresult.Succeeded)
-                {
-                    _logger.LogError("Command {RequestType} failed", typeof(TRequest).Name);
+                    var result = resultProperty.GetValue(task);
+
+                    // Check if the result is a Result type
+                    if (result is Result resultObj && !resultObj.Succeeded)
+                    {
+                        _logger.LogError("Command {RequestType} failed: {Errors}",
+                            typeof(TRequest).Name,
+                            string.Join(", ", resultObj.Errors));
+                    }
+                    else if (result is Application.Common.IResult iresult && !iresult.Succeeded)
+                    {
+                        _logger.LogError("Command {RequestType} failed", typeof(TRequest).Name);
+                    }
                 }
             }
         }
@@ -130,10 +137,4 @@ public class BackgroundJobProcessor(IServiceProvider serviceProvider, ILogger<Ba
             }
         }
     }
-}
-
-// Interface for objects that represent a result
-public interface IResult
-{
-    bool Succeeded { get; }
 }

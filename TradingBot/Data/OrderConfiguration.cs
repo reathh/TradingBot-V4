@@ -7,9 +7,7 @@ namespace TradingBot.Data
     {
         public void Configure(EntityTypeBuilder<Order> builder)
         {
-            builder.HasIndex(o => o.ExchangeOrderId)
-                .IsUnique()
-                .HasFilter("[ExchangeOrderId] IS NOT NULL");
+            builder.HasKey(o => o.Id);
         }
     }
 }

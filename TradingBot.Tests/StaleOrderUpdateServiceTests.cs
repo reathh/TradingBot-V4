@@ -91,7 +91,7 @@ public class StaleOrderUpdateServiceTests : BaseTest, IDisposable
             x => x.Log(
                 LogLevel.Warning,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((o, t) => o != null && o.ToString().Contains("Failed to update stale orders")),
+                It.Is<It.IsAnyType>((o, t) => o != null && o.ToString()!.Contains("Failed to update stale orders")),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.AtLeastOnce);
@@ -125,7 +125,7 @@ public class StaleOrderUpdateServiceTests : BaseTest, IDisposable
             x => x.Log(
                 LogLevel.Error,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((o, t) => o != null && o.ToString().Contains("Error updating stale orders")),
+                It.Is<It.IsAnyType>((o, t) => o != null && o.ToString()!.Contains("Error updating stale orders")),
                 expectedException,
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.AtLeastOnce);

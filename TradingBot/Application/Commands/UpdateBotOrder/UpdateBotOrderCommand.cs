@@ -24,7 +24,7 @@ public class UpdateBotOrderCommandHandler(
 
         // Find the order in the database
         var order = await _dbContext.Orders.FirstOrDefaultAsync(
-            o => o.Id == orderUpdate.Id || o.ExchangeOrderId == orderUpdate.Id,
+            o => o.Id == orderUpdate.Id,
             cancellationToken);
 
         if (order == null)

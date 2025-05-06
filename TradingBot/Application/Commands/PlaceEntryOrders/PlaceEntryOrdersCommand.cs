@@ -14,7 +14,7 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
     public class PlaceEntryOrdersCommandHandler(
         TradingBotDbContext dbContext,
         IExchangeApiRepository exchangeApiRepository,
-        ILogger<PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler> logger) : BaseCommandHandler<PlaceEntryOrdersCommand>(logger)
+        ILogger<PlaceEntryOrdersCommandHandler> logger) : BaseCommandHandler<PlaceEntryOrdersCommand>(logger)
     {
         private readonly TradingBotDbContext _db = dbContext;
         private readonly IExchangeApiRepository _exchangeApiRepository = exchangeApiRepository;

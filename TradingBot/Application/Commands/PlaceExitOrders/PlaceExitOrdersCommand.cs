@@ -13,7 +13,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
     public class PlaceExitOrdersCommandHandler(
         TradingBotDbContext dbContext,
         IExchangeApiRepository exchangeApiRepository,
-        ILogger<PlaceExitOrdersCommand.PlaceExitOrdersCommandHandler> logger) : BaseCommandHandler<PlaceExitOrdersCommand>(logger)
+        ILogger<PlaceExitOrdersCommandHandler> logger) : BaseCommandHandler<PlaceExitOrdersCommand>(logger)
     {
         private readonly TradingBotDbContext _db = dbContext;
         private readonly IExchangeApiRepository _exchangeApiRepository = exchangeApiRepository;

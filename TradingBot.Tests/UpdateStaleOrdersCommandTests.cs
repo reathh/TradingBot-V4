@@ -205,7 +205,7 @@ public class UpdateStaleOrdersCommandTests : BaseTest
             x => x.Log(
                 LogLevel.Error,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((o, t) => o != null && o.ToString().Contains("Failed to get status for order")),
+                It.Is<It.IsAnyType>((o, t) => o != null && o.ToString()!.Contains("Failed to get status for order")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
