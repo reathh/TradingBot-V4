@@ -35,6 +35,7 @@ builder.Services.Scan(scan => scan
 // Register hosted services
 builder.Services.AddSingleton<IHostedService, BackgroundJobProcessor>();
 builder.Services.AddSingleton<IHostedService, OrderUpdateService>();
+builder.Services.AddSingleton<IHostedService, StaleOrderUpdateService>();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();

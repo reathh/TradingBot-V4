@@ -153,7 +153,7 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                     bot.IsLong,
                     cancellationToken);
 
-                var trade = new Trade(order);
+                var trade = new Trade(order) { Bot = bot, BotId = bot.Id };
                 bot.Trades.Add(trade);
                 _logger.LogInformation(
                     "Bot {BotId} placed {Side} order at {Price} for {Quantity} units ({OrderId})",

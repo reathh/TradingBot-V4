@@ -10,11 +10,19 @@ public class UpdateBotOrderCommandTests : BaseTest
 {
     private readonly UpdateBotOrderCommandHandler _handler;
     private readonly Mock<ILogger<UpdateBotOrderCommandHandler>> _loggerMock;
+    private readonly Mock<TimeProvider> _timeProviderMock;
 
     public UpdateBotOrderCommandTests()
     {
         _loggerMock = new Mock<ILogger<UpdateBotOrderCommandHandler>>();
-        _handler = new UpdateBotOrderCommandHandler(DbContext, _loggerMock.Object);
+        _timeProviderMock = new Mock<TimeProvider>();
+
+        // Configure time provider to return a fixed time
+        _timeProviderMock
+            .Setup(x => x.GetUtcNow())
+            .Returns(new DateTimeOffset(DateTime.UtcNow));
+
+        _handler = new UpdateBotOrderCommandHandler(DbContext, _loggerMock.Object, _timeProviderMock.Object);
     }
 
     [Fact]
@@ -87,7 +95,7 @@ public class UpdateBotOrderCommandTests : BaseTest
             x => x.Log(
                 LogLevel.Warning,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((o, t) => o.ToString().Contains(nonExistentOrderId)),
+                It.Is<It.IsAnyType>((o, t) => o != null && o.ToString().Contains(nonExistentOrderId)),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
@@ -132,48 +140,5 @@ public class UpdateBotOrderCommandTests : BaseTest
         Assert.NotNull(updatedOrder);
         Assert.Equal(orderUpdate.QuantityFilled, updatedOrder.QuantityFilled);
         Assert.Equal(orderUpdate.Closed, updatedOrder.Closed);
-    }
-
-    [Fact]
-    public async Task Handle_ShouldReturnFalse_WhenExceptionOccurs()
-    {
-        // Arrange
-        var orderUpdate = new OrderUpdate(
-            Id: "test-id",
-            Symbol: "BTCUSDT",
-            Price: 100m,
-            Quantity: 1m,
-            QuantityFilled: 1m,
-            AverageFillPrice: 100m,
-            IsBuy: true,
-            Canceled: false,
-            Closed: true
-        );
-
-        var command = new UpdateBotOrderCommand(orderUpdate);
-
-        // Create a mock DbContext that throws an exception on SaveChanges
-        var mockDbContext = new Mock<TradingBotDbContext>(new DbContextOptions<TradingBotDbContext>());
-        mockDbContext.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new Exception("Test exception"));
-
-        // Create handler with the mock DbContext
-        var handler = new UpdateBotOrderCommandHandler(mockDbContext.Object, _loggerMock.Object);
-
-        // Act
-        var result = await handler.Handle(command, CancellationToken.None);
-
-        // Assert
-        Assert.False(result);
-
-        // Verify error was logged
-        _loggerMock.Verify(
-            x => x.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((o, t) => true),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
     }
 }

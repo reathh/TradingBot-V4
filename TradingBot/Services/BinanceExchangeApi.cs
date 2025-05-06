@@ -140,5 +140,43 @@ public class BinanceExchangeApi(
         );
     }
 
-    private static bool IsOrderClosed(OrderStatus status) => status is OrderStatus.Filled or OrderStatus.Canceled or OrderStatus.Expired or OrderStatus.Rejected;
+    public async Task<OrderUpdate> GetOrderStatus(string orderId, Bot bot, CancellationToken cancellationToken = default)
+    {
+        // Try to parse the order ID as a long (Binance order IDs are numeric)
+        if (!long.TryParse(orderId, out var binanceOrderId))
+        {
+            throw new ArgumentException($"Invalid order ID format: {orderId}. Expected a numeric value.", nameof(orderId));
+        }
+
+        // Query the order status from Binance
+        var orderResult = await _restClient.SpotApi.Trading.GetOrderAsync(
+            symbol: bot.Symbol,
+            orderId: binanceOrderId,
+            ct: cancellationToken);
+
+        if (!orderResult.Success)
+        {
+            throw new Exception($"Failed to get order status: {orderResult.Error?.Message}");
+        }
+
+        var order = orderResult.Data;
+
+        // Map the Binance order to our OrderUpdate model
+        return new OrderUpdate(
+            Id: order.Id.ToString(),
+            Symbol: order.Symbol,
+            Price: order.Price,
+            Quantity: order.Quantity,
+            QuantityFilled: order.QuantityFilled,
+            AverageFillPrice: order.AverageFillPrice > 0 ? order.AverageFillPrice : null,
+            IsBuy: order.Side == OrderSide.Buy,
+            Canceled: order.Status == OrderStatus.Canceled,
+            Closed: IsOrderClosedStatus(order.Status)
+        );
+    }
+
+    private static bool IsOrderClosed(OrderStatus status) => IsOrderClosedStatus(status);
+
+    private static bool IsOrderClosedStatus(OrderStatus status) =>
+        status is OrderStatus.Filled or OrderStatus.Canceled or OrderStatus.Expired or OrderStatus.Rejected;
 }

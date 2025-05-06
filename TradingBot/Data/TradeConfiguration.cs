@@ -17,6 +17,10 @@ namespace TradingBot.Data
                     .HasForeignKey<Order>(o => o.ExitTradeId)
                     .OnDelete(DeleteBehavior.Restrict);
 
+            builder.HasOne(t => t.Bot)
+                    .WithMany(b => b.Trades)
+                    .HasForeignKey(t => t.BotId)
+                    .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

@@ -14,6 +14,10 @@ namespace TradingBot.Data
         public Order? ExitOrder { get; set; }
         public decimal? Profit { get; set; }
 
+        // Navigation property to Bot
+        public int BotId { get; set; }
+        public Bot Bot { get; set; } = null!;
+
         public bool IsCompleted => ExitOrder != null && ExitOrder.Closed && ExitOrder.QuantityFilled > 0;
 
         // Calculate profit based on filled quantities and average prices

@@ -11,10 +11,12 @@ public record UpdateBotOrderCommand(OrderUpdate OrderUpdate) : IRequest<Result>
 
 public class UpdateBotOrderCommandHandler(
     TradingBotDbContext dbContext,
-    ILogger<UpdateBotOrderCommandHandler> logger) : BaseCommandHandler<UpdateBotOrderCommand>(logger)
+    ILogger<UpdateBotOrderCommandHandler> logger,
+    TimeProvider timeProvider) : BaseCommandHandler<UpdateBotOrderCommand>(logger)
 {
     private readonly TradingBotDbContext _dbContext = dbContext;
     private readonly ILogger<UpdateBotOrderCommandHandler> _logger = logger;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     protected override async Task<Result> HandleCore(UpdateBotOrderCommand request, CancellationToken cancellationToken)
     {
@@ -35,6 +37,7 @@ public class UpdateBotOrderCommandHandler(
         order.QuantityFilled = orderUpdate.QuantityFilled;
         order.Closed = orderUpdate.Closed;
         order.Canceled = orderUpdate.Canceled;
+        order.LastUpdated = _timeProvider.GetUtcNow().DateTime;
 
         if (orderUpdate.AverageFillPrice.HasValue)
         {

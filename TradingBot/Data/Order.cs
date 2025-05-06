@@ -14,6 +14,7 @@ namespace TradingBot.Data
         public bool Canceled { get; set; }
         public bool Closed { get; set; }
         public string? ExchangeOrderId { get; set; }
+        public DateTime LastUpdated { get; set; } = createdAt;
 
         #region Navigation Properties
         public int? EntryTradeId { get; set; }
