@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using TradingBot.Data;
 using TradingBot.Services;
 
@@ -118,7 +119,7 @@ public class PlaceOpeningOrdersCommand : IRequest
                         order.IsBuy ? "buy" : "sell",
                         order.Price,
                         order.Quantity,
-                        order.ExchangeOrderId);
+                        order.Id);
                 }
 
                 await db.SaveChangesAsync(cancellationToken);
@@ -142,7 +143,7 @@ public class PlaceOpeningOrdersCommand : IRequest
                     order.IsBuy ? "buy" : "sell",
                     order.Price,
                     order.Quantity,
-                    order.ExchangeOrderId);
+                    order.Id);
 
                 await db.SaveChangesAsync(cancellationToken);
                 logger.LogInformation("Successfully placed 1 entry order for bot {BotId}", bot.Id);

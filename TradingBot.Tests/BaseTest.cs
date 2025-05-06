@@ -33,7 +33,7 @@ public abstract class BaseTest
     }
 
     private int _nextBotId = 1;
-    
+
     protected async Task<Bot> CreateBotAsync(
         bool isLong = true,
         decimal? maxPrice = null,
@@ -41,11 +41,13 @@ public abstract class BaseTest
         bool placeOrdersInAdvance = false,
         int ordersInAdvance = 0,
         decimal entryQuantity = 1,
-        decimal entryStep = 0.1m)
+        decimal entryStep = 0.1m,
+        decimal exitStep = 0.1m)
     {
         var botId = _nextBotId++;
-        var bot = new Bot(botId, "TestBot" + botId, "BTCUSDT", "Test bot for unit tests")
+        var bot = new Bot(botId, "TestBot" + botId, "public_key_" + botId, "private_key_" + botId)
         {
+            Symbol = "BTCUSDT",
             Enabled = true,
             IsLong = isLong,
             MaxPrice = maxPrice,
@@ -54,6 +56,7 @@ public abstract class BaseTest
             OrdersInAdvance = ordersInAdvance,
             EntryQuantity = entryQuantity,
             EntryStep = entryStep,
+            ExitStep = exitStep,
             Trades = new HashSet<Trade>()
         };
 
@@ -68,7 +71,13 @@ public abstract class BaseTest
     {
         return new Order(bot.Symbol, price, quantity, isBuy, DateTime.UtcNow)
         {
-            ExchangeOrderId = Guid.NewGuid().ToString()
+            Id = Guid.NewGuid().ToString(),
+            ExchangeOrderId = Guid.NewGuid().ToString(),
+            Quantity = quantity,
+            QuantityFilled = quantity,
+            AverageFillPrice = price,
+            Fees = 0.001m * price * quantity,
+            Closed = true
         };
     }
 }

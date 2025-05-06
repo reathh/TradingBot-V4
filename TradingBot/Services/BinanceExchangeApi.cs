@@ -37,7 +37,9 @@ public class BinanceExchangeApi(TimeProvider timeProvider) : IExchangeApi
             isBuy: order.Data.Side == OrderSide.Buy,
             createdAt: _timeProvider.GetUtcNow().DateTime)
         {
-            ExchangeOrderId = order.Data.Id.ToString()
+            Id = order.Data.Id.ToString(),
+            QuantityFilled = 0, // Initially not filled
+            Closed = false // Initially not closed
         };
     }
-} 
+}

@@ -2,12 +2,17 @@ namespace TradingBot.Data
 {
     public class Order(string symbol, decimal price, decimal quantity, bool isBuy, DateTime createdAt)
     {
-        public int Id { get; set; }
+        public string Id { get; set; } = null!;
         public string Symbol { get; set; } = symbol;
         public decimal Price { get; set; } = price;
         public decimal Quantity { get; set; } = quantity;
         public bool IsBuy { get; set; } = isBuy;
         public DateTime CreatedAt { get; set; } = createdAt;
+        public decimal QuantityFilled { get; set; }
+        public decimal? AverageFillPrice { get; set; }
+        public decimal Fees { get; set; }
+        public bool Canceled { get; set; }
+        public bool Closed { get; set; }
         public string? ExchangeOrderId { get; set; }
 
         #region Navigation Properties
