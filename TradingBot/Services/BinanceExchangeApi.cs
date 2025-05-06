@@ -175,6 +175,26 @@ public class BinanceExchangeApi(
         );
     }
 
+    public async Task<decimal> GetBalance(string asset, Bot bot, CancellationToken cancellationToken = default)
+    {
+        var balanceResult = await _restClient.SpotApi.Account.GetAccountInfoAsync(ct: cancellationToken);
+
+        if (!balanceResult.Success)
+        {
+            throw new Exception($"Failed to get balance information: {balanceResult.Error?.Message}");
+        }
+
+        var assetBalance = balanceResult.Data.Balances.FirstOrDefault(b => b.Asset == asset);
+
+        if (assetBalance == null)
+        {
+            _logger.LogWarning("Asset {Asset} not found in account balances", asset);
+            return 0;
+        }
+
+        return assetBalance.Total;
+    }
+
     private static bool IsOrderClosed(OrderStatus status) => IsOrderClosedStatus(status);
 
     private static bool IsOrderClosedStatus(OrderStatus status) =>

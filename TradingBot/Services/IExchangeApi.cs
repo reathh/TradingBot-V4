@@ -22,4 +22,13 @@ public interface IExchangeApi
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Updated order information</returns>
     Task<OrderUpdate> GetOrderStatus(string orderId, Bot bot, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets the current balance for a specific asset on the exchange
+    /// </summary>
+    /// <param name="asset">The asset symbol (e.g. BTC, ETH)</param>
+    /// <param name="bot">The bot used to authenticate with the exchange</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The current balance of the asset</returns>
+    Task<decimal> GetBalance(string asset, Bot bot, CancellationToken cancellationToken = default);
 }
