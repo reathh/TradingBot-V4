@@ -1,8 +1,8 @@
 namespace TradingBot.Data
 {
-    public class Order(string symbol, decimal price, decimal quantity, bool isBuy, DateTime createdAt)
+    public class Order(string id, string symbol, decimal price, decimal quantity, bool isBuy, DateTime createdAt)
     {
-        public string Id { get; set; } = null!;
+        public string Id { get; set; } = id;
         public string Symbol { get; set; } = symbol;
         public decimal Price { get; set; } = price;
         public decimal Quantity { get; set; } = quantity;

@@ -6,35 +6,24 @@ using CryptoExchange.Net.Authentication;
 
 namespace TradingBot.Services;
 
-public class BinanceExchangeApi : IExchangeApi
+public class BinanceExchangeApi(
+    string publicKey,
+    string privateKey,
+    TimeProvider timeProvider,
+    ILogger<BinanceExchangeApi> logger) : IExchangeApi
 {
-    private readonly TimeProvider _timeProvider;
-    private readonly ILogger<BinanceExchangeApi> _logger;
+    private readonly TimeProvider _timeProvider = timeProvider;
+    private readonly ILogger<BinanceExchangeApi> _logger = logger;
     private readonly Dictionary<string, List<Func<OrderUpdate, Task>>> _orderCallbacks = [];
     private readonly Dictionary<string, bool> _userDataSubscribed = [];
-    private readonly BinanceRestClient _restClient;
-    private readonly BinanceSocketClient _socketClient;
-
-    public BinanceExchangeApi(
-        string publicKey,
-        string privateKey,
-        TimeProvider timeProvider,
-        ILogger<BinanceExchangeApi> logger)
+    private readonly BinanceRestClient _restClient = new(options =>
     {
-        _timeProvider = timeProvider;
-        _logger = logger;
-
-        // Create a single instance of REST and Socket clients
-        _restClient = new BinanceRestClient(options =>
-        {
-            options.ApiCredentials = new ApiCredentials(publicKey, privateKey);
-        });
-
-        _socketClient = new BinanceSocketClient(options =>
-        {
-            options.ApiCredentials = new ApiCredentials(publicKey, privateKey);
-        });
-    }
+        options.ApiCredentials = new ApiCredentials(publicKey, privateKey);
+    });
+    private readonly BinanceSocketClient _socketClient = new(options =>
+    {
+        options.ApiCredentials = new ApiCredentials(publicKey, privateKey);
+    });
 
     public async Task<Order> PlaceOrder(Bot bot, decimal price, decimal quantity, bool isBuy, CancellationToken cancellationToken)
     {
@@ -53,30 +42,28 @@ public class BinanceExchangeApi : IExchangeApi
         }
 
         return new Order(
-            symbol: bot.Symbol,
-            price: order.Data.Price,
-            quantity: order.Data.Quantity,
-            isBuy: order.Data.Side == OrderSide.Buy,
-            createdAt: _timeProvider.GetUtcNow().DateTime)
-        {
-            Id = order.Data.Id.ToString(),
-            QuantityFilled = 0, // Initially not filled
-            Closed = false // Initially not closed
-        };
+            order.Data.Id.ToString(),
+            bot.Symbol,
+            order.Data.Price,
+            order.Data.Quantity,
+            order.Data.Side == OrderSide.Buy,
+            _timeProvider.GetUtcNow().DateTime);
     }
 
     public async Task SubscribeToOrderUpdates(Func<OrderUpdate, Task> callback, Bot bot, CancellationToken cancellationToken = default)
     {
         // Add callback to the list
         string key = $"{bot.PublicKey}:{bot.PrivateKey}";
-        if (!_orderCallbacks.ContainsKey(key))
+        if (!_orderCallbacks.TryGetValue(key, out List<Func<OrderUpdate, Task>>? value))
         {
-            _orderCallbacks[key] = new List<Func<OrderUpdate, Task>>();
+            value = [];
+            _orderCallbacks[key] = value;
         }
-        _orderCallbacks[key].Add(callback);
+
+        value.Add(callback);
 
         // If already subscribed for this bot, we're done
-        if (_userDataSubscribed.ContainsKey(key) && _userDataSubscribed[key])
+        if (_userDataSubscribed.TryGetValue(key, out bool existingValue) && existingValue)
         {
             return;
         }

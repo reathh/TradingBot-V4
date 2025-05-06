@@ -1,12 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
-using TradingBot.Application.Commands.PlaceOpeningOrders;
+using TradingBot.Application.Commands.PlaceEntryOrders;
 using TradingBot.Data;
 
 namespace TradingBot.Tests;
 
-public class PlaceOpeningOrdersCommandTests : BaseTest
+public class PlaceEntryOrdersCommandTests : BaseTest
 {
     [Fact]
     public async Task Handle_ShouldPlaceOrder_WhenBotIsEnabledAndNoOpenTrades()
@@ -14,7 +14,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
         // Arrange
         var bot = await CreateBot();
         var ticker = CreateTicker(100, 101);
-        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+        var command = new PlaceEntryOrdersCommand { Ticker = ticker };
 
         var expectedOrder = CreateOrder(bot, bot.IsLong ? ticker.Bid : ticker.Ask, bot.EntryQuantity, bot.IsLong);
         ExchangeApiMock.Setup(x => x.PlaceOrder(
@@ -51,7 +51,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
         await DbContext.SaveChangesAsync();
 
         var ticker = CreateTicker(100, 101);
-        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+        var command = new PlaceEntryOrdersCommand { Ticker = ticker };
 
         // Act
         await Handler.Handle(command, CancellationToken.None);
@@ -71,7 +71,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
         // Arrange
         var bot = await CreateBot(maxPrice: 100);
         var ticker = CreateTicker(101, 102);
-        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+        var command = new PlaceEntryOrdersCommand { Ticker = ticker };
 
         // Act
         await Handler.Handle(command, CancellationToken.None);
@@ -91,7 +91,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
         // Arrange
         var bot = await CreateBot(minPrice: 100);
         var ticker = CreateTicker(98, 99);
-        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+        var command = new PlaceEntryOrdersCommand { Ticker = ticker };
 
         // Act
         await Handler.Handle(command, CancellationToken.None);
@@ -111,7 +111,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
         // Arrange
         var bot = await CreateBot(minPrice: 100, isLong: false);
         var ticker = CreateTicker(98, 99);  // Both bid and ask are below MinPrice
-        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+        var command = new PlaceEntryOrdersCommand { Ticker = ticker };
 
         // Act
         await Handler.Handle(command, CancellationToken.None);
@@ -134,7 +134,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
             ordersInAdvance: 3,
             entryStep: 1m);
         var ticker = CreateTicker(100, 101);
-        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+        var command = new PlaceEntryOrdersCommand { Ticker = ticker };
 
         var orders = new[]
         {
@@ -174,7 +174,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
 
         // Create a new ticker with lower prices (96/100)
         var newTicker = CreateTicker(96, 100);
-        var newCommand = new PlaceOpeningOrdersCommand { Ticker = newTicker };
+        var newCommand = new PlaceEntryOrdersCommand { Ticker = newTicker };
 
         // We should place 2 orders:
         // 1. For 2 units (for prices 97 and 96) because we need to catch up with price movement
@@ -227,7 +227,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
             entryStep: 1m,
             isLong: false);
         var ticker = CreateTicker(100, 101);
-        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+        var command = new PlaceEntryOrdersCommand { Ticker = ticker };
 
         var orders = new[]
         {
@@ -267,7 +267,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
 
         // Create a new ticker with higher prices (105/106)
         var newTicker = CreateTicker(105, 106);
-        var newCommand = new PlaceOpeningOrdersCommand { Ticker = newTicker };
+        var newCommand = new PlaceEntryOrdersCommand { Ticker = newTicker };
 
         // We should place 2 orders:
         // 1. For 3 units (for prices 104, 105, and 106) because we need to catch up with price movement
@@ -318,7 +318,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
 
         // First ticker: 100/101
         var firstTicker = CreateTicker(100, 101);
-        var firstCommand = new PlaceOpeningOrdersCommand { Ticker = firstTicker };
+        var firstCommand = new PlaceEntryOrdersCommand { Ticker = firstTicker };
 
         // Place initial order at 101 (Ask price since we're short)
         var firstOrder = CreateOrder(bot, 101, 1, bot.IsLong);
@@ -346,7 +346,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
 
         // Second ticker: 105/106 (price rose)
         var secondTicker = CreateTicker(105, 106);
-        var secondCommand = new PlaceOpeningOrdersCommand { Ticker = secondTicker };
+        var secondCommand = new PlaceEntryOrdersCommand { Ticker = secondTicker };
 
         // We need orders at 102,103,104,105,106 (5 units)
         // We already have an order at 101
@@ -375,7 +375,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
 
         // Third ticker: 103/104 (price fell)
         var thirdTicker = CreateTicker(103, 104);
-        var thirdCommand = new PlaceOpeningOrdersCommand { Ticker = thirdTicker };
+        var thirdCommand = new PlaceEntryOrdersCommand { Ticker = thirdTicker };
 
         // Price fell to 104, we already have orders at 101,102,103,104,105,106
         // No new orders needed
@@ -403,7 +403,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
 
         // Fourth ticker: 110/111 (price rose further)
         var fourthTicker = CreateTicker(110, 111);
-        var fourthCommand = new PlaceOpeningOrdersCommand { Ticker = fourthTicker };
+        var fourthCommand = new PlaceEntryOrdersCommand { Ticker = fourthTicker };
 
         // We need orders at 107,108,109,110,111 (5 units)
         // We already have orders at 101,102,103,104,105,106
@@ -437,7 +437,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
 
         // First ticker: 100/101
         var firstTicker = CreateTicker(100, 101);
-        var firstCommand = new PlaceOpeningOrdersCommand { Ticker = firstTicker };
+        var firstCommand = new PlaceEntryOrdersCommand { Ticker = firstTicker };
 
         // Place initial order at 100 (Bid price since we're long)
         var firstOrder = CreateOrder(bot, 100, 1, bot.IsLong);
@@ -465,7 +465,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
 
         // Second ticker: 95/96 (price dropped)
         var secondTicker = CreateTicker(95, 96);
-        var secondCommand = new PlaceOpeningOrdersCommand { Ticker = secondTicker };
+        var secondCommand = new PlaceEntryOrdersCommand { Ticker = secondTicker };
 
         // We need orders at 99,98,97,96,95 (5 units)
         // We already have an order at 100
@@ -494,7 +494,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
 
         // Third ticker: 97/98 (price rose)
         var thirdTicker = CreateTicker(97, 98);
-        var thirdCommand = new PlaceOpeningOrdersCommand { Ticker = thirdTicker };
+        var thirdCommand = new PlaceEntryOrdersCommand { Ticker = thirdTicker };
 
         // Price rose to 97, we already have orders at 100,99,98,97,96,95
         // No new orders needed
@@ -522,7 +522,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
 
         // Fourth ticker: 91/92 (price dropped further)
         var fourthTicker = CreateTicker(91, 92);
-        var fourthCommand = new PlaceOpeningOrdersCommand { Ticker = fourthTicker };
+        var fourthCommand = new PlaceEntryOrdersCommand { Ticker = fourthTicker };
 
         // We need orders at 94,93,92,91 (4 units)
         // We already have orders at 100,99,98,97,96,95
@@ -554,7 +554,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
         // Arrange
         var bot = await CreateBot();
         var ticker = CreateTicker(100, 101);
-        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+        var command = new PlaceEntryOrdersCommand { Ticker = ticker };
 
         ExchangeApiMock.Setup(x => x.PlaceOrder(
                 It.IsAny<Bot>(),
@@ -589,7 +589,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
         await DbContext.SaveChangesAsync();
 
         var ticker = CreateTicker(100, 101);
-        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+        var command = new PlaceEntryOrdersCommand { Ticker = ticker };
 
         var order1 = CreateOrder(bot1, bot1.IsLong ? ticker.Bid : ticker.Ask, bot1.EntryQuantity, bot1.IsLong);
         var order2 = CreateOrder(bot2, bot2.IsLong ? ticker.Bid : ticker.Ask, bot2.EntryQuantity, bot2.IsLong);
@@ -635,7 +635,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(firstOrder);
 
-        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+        var command = new PlaceEntryOrdersCommand { Ticker = ticker };
         await Handler.Handle(command, CancellationToken.None);
 
         // Reset mock for second attempt
@@ -660,7 +660,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
         var minPrice = 100m;
         var bot = await CreateBot(minPrice: minPrice);
         var ticker = CreateTicker(minPrice - 1, minPrice); // Ask is exactly at MinPrice
-        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+        var command = new PlaceEntryOrdersCommand { Ticker = ticker };
 
         var expectedOrder = CreateOrder(bot, bot.IsLong ? ticker.Bid : ticker.Ask, bot.EntryQuantity, bot.IsLong);
         ExchangeApiMock.Setup(x => x.PlaceOrder(
@@ -690,7 +690,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
         var maxPrice = 100m;
         var bot = await CreateBot(maxPrice: maxPrice);
         var ticker = CreateTicker(maxPrice, maxPrice + 1); // Bid is exactly at MaxPrice
-        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+        var command = new PlaceEntryOrdersCommand { Ticker = ticker };
 
         var expectedOrder = CreateOrder(bot, bot.IsLong ? ticker.Bid : ticker.Ask, bot.EntryQuantity, bot.IsLong);
         ExchangeApiMock.Setup(x => x.PlaceOrder(
@@ -728,7 +728,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
         // Create a ticker with price very close to existing order to generate 0 quantity
         // The price movement is less than entryStep, so no new orders should be placed
         var ticker = CreateTicker(99.9m, 100.2m);
-        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+        var command = new PlaceEntryOrdersCommand { Ticker = ticker };
 
         // Act
         await Handler.Handle(command, CancellationToken.None);
@@ -757,7 +757,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
         await DbContext.SaveChangesAsync();
 
         var ticker = CreateTicker(100, 101);
-        var command = new PlaceOpeningOrdersCommand { Ticker = ticker };
+        var command = new PlaceEntryOrdersCommand { Ticker = ticker };
 
         // Act
         await Handler.Handle(command, CancellationToken.None);
@@ -779,7 +779,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
 
         // First ticker: 100/101
         var firstTicker = CreateTicker(100, 101);
-        var firstCommand = new PlaceOpeningOrdersCommand { Ticker = firstTicker };
+        var firstCommand = new PlaceEntryOrdersCommand { Ticker = firstTicker };
 
         // Place initial order at 100 (Bid price since we're long)
         var firstOrder = CreateOrder(bot, 100, 1, bot.IsLong);
@@ -807,7 +807,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
 
         // Second ticker: 97/98 (price dropped)
         var secondTicker = CreateTicker(97, 98);
-        var secondCommand = new PlaceOpeningOrdersCommand { Ticker = secondTicker };
+        var secondCommand = new PlaceEntryOrdersCommand { Ticker = secondTicker };
 
         // We need orders at 99,98,97 (3 units)
         // We already have an order at 100
@@ -841,7 +841,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
 
         // Third ticker: 93/94 (price dropped further)
         var thirdTicker = CreateTicker(93, 94);
-        var thirdCommand = new PlaceOpeningOrdersCommand { Ticker = thirdTicker };
+        var thirdCommand = new PlaceEntryOrdersCommand { Ticker = thirdTicker };
 
         // With new entry step of 2, we need orders at:
         // 99, 97, 95, 93 (with first at 100, that's 4 price levels from 100 to 93)
@@ -875,7 +875,7 @@ public class PlaceOpeningOrdersCommandTests : BaseTest
         // Fourth ticker shows price movement in the opposite direction
         // This tests that the bot doesn't place redundant orders
         var fourthTicker = CreateTicker(95, 96);
-        var fourthCommand = new PlaceOpeningOrdersCommand { Ticker = fourthTicker };
+        var fourthCommand = new PlaceEntryOrdersCommand { Ticker = fourthTicker };
 
         // No new orders needed since we already have orders covering this price range
         ExchangeApiMock.Setup(x => x.PlaceOrder(

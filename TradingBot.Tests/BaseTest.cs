@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
-using TradingBot.Application.Commands.PlaceOpeningOrders;
+using TradingBot.Application.Commands.PlaceEntryOrders;
 using TradingBot.Data;
 using TradingBot.Services;
 
@@ -11,9 +11,9 @@ public abstract class BaseTest
 {
     protected readonly Mock<IExchangeApi> ExchangeApiMock;
     protected readonly Mock<IExchangeApiRepository> ExchangeApiRepositoryMock;
-    protected readonly Mock<ILogger<PlaceOpeningOrdersCommand.PlaceOpeningOrdersCommandHandler>> LoggerMock;
+    protected readonly Mock<ILogger<PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler>> LoggerMock;
     protected readonly TradingBotDbContext DbContext;
-    protected readonly PlaceOpeningOrdersCommand.PlaceOpeningOrdersCommandHandler Handler;
+    protected readonly PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler Handler;
 
     private readonly Random _random = new();
 
@@ -21,7 +21,7 @@ public abstract class BaseTest
     {
         ExchangeApiMock = new Mock<IExchangeApi>();
         ExchangeApiRepositoryMock = new Mock<IExchangeApiRepository>();
-        LoggerMock = new Mock<ILogger<PlaceOpeningOrdersCommand.PlaceOpeningOrdersCommandHandler>>();
+        LoggerMock = new Mock<ILogger<PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler>>();
 
         // Configure the repository mock to return the exchange API mock
         ExchangeApiRepositoryMock.Setup(x => x.GetExchangeApi(It.IsAny<Bot>()))
@@ -32,7 +32,7 @@ public abstract class BaseTest
             .Options;
 
         DbContext = new TradingBotDbContext(options);
-        Handler = new PlaceOpeningOrdersCommand.PlaceOpeningOrdersCommandHandler(
+        Handler = new PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler(
             DbContext,
             ExchangeApiRepositoryMock.Object,
             LoggerMock.Object);
@@ -75,10 +75,8 @@ public abstract class BaseTest
 
     protected Order CreateOrder(Bot bot, decimal price, decimal quantity, bool isBuy)
     {
-        return new Order(bot.Symbol, price, quantity, isBuy, DateTime.UtcNow)
+        return new Order(Guid.NewGuid().ToString(), bot.Symbol, price, quantity, isBuy, DateTime.UtcNow)
         {
-            Id = Guid.NewGuid().ToString(),
-            ExchangeOrderId = Guid.NewGuid().ToString(),
             Quantity = quantity,
             QuantityFilled = quantity,
             AverageFillPrice = price,

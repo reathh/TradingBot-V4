@@ -3,38 +3,38 @@ using Microsoft.EntityFrameworkCore;
 using TradingBot.Data;
 using TradingBot.Services;
 
-namespace TradingBot.Application.Commands.PlaceOpeningOrders;
+namespace TradingBot.Application.Commands.PlaceEntryOrders;
 
-public class PlaceOpeningOrdersCommand : IRequest
+public class PlaceEntryOrdersCommand : IRequest
 {
     public required Ticker Ticker { get; set; }
 
-    public class PlaceOpeningOrdersCommandHandler : IRequestHandler<PlaceOpeningOrdersCommand>
+    public class PlaceEntryOrdersCommandHandler : IRequestHandler<PlaceEntryOrdersCommand>
     {
         private readonly TradingBotDbContext _db;
         private readonly IExchangeApiRepository _exchangeApiRepository;
-        private readonly ILogger<PlaceOpeningOrdersCommandHandler> _logger;
+        private readonly ILogger<PlaceEntryOrdersCommandHandler> _logger;
 
-        public PlaceOpeningOrdersCommandHandler(
+        public PlaceEntryOrdersCommandHandler(
             TradingBotDbContext dbContext,
             IExchangeApiRepository exchangeApiRepository,
-            ILogger<PlaceOpeningOrdersCommandHandler> logger)
+            ILogger<PlaceEntryOrdersCommandHandler> logger)
         {
             _db = dbContext;
             _exchangeApiRepository = exchangeApiRepository;
             _logger = logger;
         }
 
-        public async Task Handle(PlaceOpeningOrdersCommand request, CancellationToken cancellationToken)
+        public async Task Handle(PlaceEntryOrdersCommand request, CancellationToken cancellationToken)
         {
             var botsWithQuantities = await _db.Bots
                 .Where(b => b.Enabled)
                 // Price range filters
                 .Where(b =>
-                    (b.MaxPrice == null || (b.IsLong && b.MaxPrice >= request.Ticker.Bid) || (!b.IsLong && b.MaxPrice >= request.Ticker.Ask)) &&
-                    (b.MinPrice == null || (b.IsLong && b.MinPrice <= request.Ticker.Ask) || (!b.IsLong && b.MinPrice <= request.Ticker.Bid)))
+                    (b.MaxPrice == null || b.IsLong && b.MaxPrice >= request.Ticker.Bid || !b.IsLong && b.MaxPrice >= request.Ticker.Ask) &&
+                    (b.MinPrice == null || b.IsLong && b.MinPrice <= request.Ticker.Ask || !b.IsLong && b.MinPrice <= request.Ticker.Bid))
                 // Orders in advance filter
-                .Where(b => !b.PlaceOrdersInAdvance || (b.PlaceOrdersInAdvance && b.Trades.Count(t => t.Profit == null) < b.OrdersInAdvance))
+                .Where(b => !b.PlaceOrdersInAdvance || b.PlaceOrdersInAdvance && b.Trades.Count(t => t.Profit == null) < b.OrdersInAdvance)
                 // Select all data needed for calculation
                 .Select(b => new
                 {
@@ -108,7 +108,7 @@ public class PlaceOpeningOrdersCommand : IRequest
 
                 for (int i = 0; i < ordersToPlace; i++)
                 {
-                    var orderPrice = currentPrice - (bot.EntryStep * stepDirection * i);
+                    var orderPrice = currentPrice - bot.EntryStep * stepDirection * i;
                     var orderQuantity = i == 0 ? quantity : bot.EntryQuantity;
 
                     orderTasks.Add(exchangeApi.PlaceOrder(
