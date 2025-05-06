@@ -15,7 +15,7 @@ public class OrderUpdateServiceTests : BaseTest, IDisposable
     private readonly Mock<ILogger<OrderUpdateService>> _loggerMock;
     private readonly Mock<IMediator> _mediatorMock;
     private readonly ServiceProvider _serviceProvider;
-    private OrderUpdateService _service;
+    private readonly OrderUpdateService _service;
 
     public OrderUpdateServiceTests()
     {
@@ -112,7 +112,7 @@ public class OrderUpdateServiceTests : BaseTest, IDisposable
             .ReturnsAsync(true);
 
         // Setup exchange API to capture the callback
-        Func<OrderUpdate, Task> capturedCallback = null;
+        Func<OrderUpdate, Task>? capturedCallback = null;
         _exchangeApiMock
             .Setup(x => x.SubscribeToOrderUpdates(
                 It.IsAny<Func<OrderUpdate, Task>>(),

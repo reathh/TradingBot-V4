@@ -688,13 +688,12 @@ public class PlaceExitOrdersCommandTests : BaseTest
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    // Add a new test that specifically verifies exit orders are only placed for trades with completed entry orders
     [Fact]
-    public async Task Handle_ShouldNotPlaceExitOrder_WhenEntryOrderIsNotCompleted()
+    public async Task Handle_ShouldNotPlaceExitOrder_WhenEntryOrderIsNotCompleted_LongBot()
     {
         // Arrange
-        var bot = await CreateBot(exitStep: 1.0m);
-        var entryPrice = bot.IsLong ? 100m : 101m;
+        var bot = await CreateBot(exitStep: 1.0m, isLong: true);
+        var entryPrice = 100m;
 
         // Create first entry order that is NOT completed (not closed)
         var incompleteOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
@@ -720,10 +719,8 @@ public class PlaceExitOrdersCommandTests : BaseTest
         await DbContext.SaveChangesAsync();
 
         // Create ticker with price that reaches exit step
-        var exitPrice = bot.IsLong ? 101m : 100m;
-        var ticker = bot.IsLong
-            ? CreateTicker(100.5m, 101m)
-            : CreateTicker(100m, 100.5m);
+        var exitPrice = 101m;
+        var ticker = CreateTicker(100.5m, 101m);
 
         var command = new PlaceExitOrdersCommand { Ticker = ticker };
 
@@ -745,7 +742,80 @@ public class PlaceExitOrdersCommandTests : BaseTest
             It.Is<Bot>(b => b.Id == bot.Id),
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
-            It.IsAny<bool>(),
+            It.Is<bool>(b => b == false), // Selling for long bot
+            It.IsAny<CancellationToken>()), Times.Once);
+
+        // Check incomplete trade has no exit order
+        var updatedIncompleteTrade = await DbContext.Trades.FirstOrDefaultAsync(t => t.Id == incompleteTrade.Id);
+        Assert.NotNull(updatedIncompleteTrade);
+        Assert.Null(updatedIncompleteTrade.ExitOrder);
+
+        // Check zero filled trade has no exit order
+        var updatedZeroFilledTrade = await DbContext.Trades.FirstOrDefaultAsync(t => t.Id == zeroFilledTrade.Id);
+        Assert.NotNull(updatedZeroFilledTrade);
+        Assert.Null(updatedZeroFilledTrade.ExitOrder);
+
+        // Check completed trade has exit order
+        var updatedCompletedTrade = await DbContext.Trades.FirstOrDefaultAsync(t => t.Id == completedTrade.Id);
+        Assert.NotNull(updatedCompletedTrade);
+        Assert.NotNull(updatedCompletedTrade.ExitOrder);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldNotPlaceExitOrder_WhenEntryOrderIsNotCompleted_ShortBot()
+    {
+        // Arrange
+        var bot = await CreateBot(exitStep: 1.0m, isLong: false);
+        var entryPrice = 101m;
+
+        // Create first entry order that is NOT completed (not closed)
+        var incompleteOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
+        incompleteOrder.Closed = false;
+        incompleteOrder.QuantityFilled = 0;
+        var incompleteTrade = new Trade(incompleteOrder);
+        bot.Trades.Add(incompleteTrade);
+
+        // Create second entry order that is completed but has zero quantity filled
+        var zeroFilledOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
+        zeroFilledOrder.Closed = true;
+        zeroFilledOrder.QuantityFilled = 0;
+        var zeroFilledTrade = new Trade(zeroFilledOrder);
+        bot.Trades.Add(zeroFilledTrade);
+
+        // Create third entry order that is both closed and has quantity filled
+        var completedOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
+        completedOrder.Closed = true;
+        completedOrder.QuantityFilled = bot.EntryQuantity;
+        var completedTrade = new Trade(completedOrder);
+        bot.Trades.Add(completedTrade);
+
+        await DbContext.SaveChangesAsync();
+
+        // Create ticker with price that reaches exit step
+        var exitPrice = 100m;
+        var ticker = CreateTicker(100m, 100.5m);
+
+        var command = new PlaceExitOrdersCommand { Ticker = ticker };
+
+        // Setup mock for exit order for completed trade
+        var exitOrder = CreateOrder(bot, exitPrice, completedOrder.QuantityFilled, !bot.IsLong);
+        ExchangeApiMock.Setup(x => x.PlaceOrder(
+                It.IsAny<Bot>(),
+                It.IsAny<decimal>(),
+                It.IsAny<decimal>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(exitOrder);
+
+        // Act
+        await Handle(command, CancellationToken.None);
+
+        // Assert - verify exit order was placed only for the completed trade
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.Is<Bot>(b => b.Id == bot.Id),
+            It.IsAny<decimal>(),
+            It.IsAny<decimal>(),
+            It.Is<bool>(b => b == true), // Buying for short bot
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Check incomplete trade has no exit order
