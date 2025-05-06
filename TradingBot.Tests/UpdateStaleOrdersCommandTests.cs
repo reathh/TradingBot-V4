@@ -14,7 +14,7 @@ public class UpdateStaleOrdersCommandTests : BaseTest
     private readonly Mock<IExchangeApiRepository> _exchangeApiRepositoryMock;
     private readonly Mock<IExchangeApi> _exchangeApiMock;
     private readonly Mock<TimeProvider> _timeProviderMock;
-    private readonly DateTime _currentTime = new DateTime(2023, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+    private readonly DateTime _currentTime = new(2023, 1, 1, 12, 0, 0, DateTimeKind.Utc);
 
     public UpdateStaleOrdersCommandTests()
     {
@@ -64,17 +64,9 @@ public class UpdateStaleOrdersCommandTests : BaseTest
         await DbContext.SaveChangesAsync();
 
         // Create trades for each order and link them to the bot
-        var staleTrade = new Trade(staleOrder) { Bot = bot, BotId = bot.Id };
-        var recentTrade = new Trade(recentOrder) { Bot = bot, BotId = bot.Id };
-        var closedTrade = new Trade(closedOrder) { Bot = bot, BotId = bot.Id };
-
-        // Link orders to trades
-        staleOrder.EntryTrade = staleTrade;
-        staleOrder.EntryTradeId = staleTrade.Id;
-        recentOrder.EntryTrade = recentTrade;
-        recentOrder.EntryTradeId = recentTrade.Id;
-        closedOrder.EntryTrade = closedTrade;
-        closedOrder.EntryTradeId = closedTrade.Id;
+        var staleTrade = new Trade(staleOrder);
+        var recentTrade = new Trade(recentOrder);
+        var closedTrade = new Trade(closedOrder);
 
         // Add trades to bot
         bot.Trades.Add(staleTrade);
@@ -182,9 +174,7 @@ public class UpdateStaleOrdersCommandTests : BaseTest
         await DbContext.SaveChangesAsync();
 
         // Create trade and link to bot
-        var staleTrade = new Trade(staleOrder) { Bot = bot, BotId = bot.Id };
-        staleOrder.EntryTrade = staleTrade;
-        staleOrder.EntryTradeId = staleTrade.Id;
+        var staleTrade = new Trade(staleOrder);
         bot.Trades.Add(staleTrade);
 
         // Add trade to database
