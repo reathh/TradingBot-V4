@@ -2,30 +2,25 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using TradingBot.Data;
 using TradingBot.Services;
+using TradingBot.Application.Common;
 
 namespace TradingBot.Application.Commands.PlaceEntryOrders;
 
-public class PlaceEntryOrdersCommand : IRequest
+// Note: File name is PlaceOpeningOrdersCommand.cs but class is PlaceEntryOrdersCommand
+public class PlaceEntryOrdersCommand : IRequest<Result>
 {
     public required Ticker Ticker { get; set; }
 
-    public class PlaceEntryOrdersCommandHandler : IRequestHandler<PlaceEntryOrdersCommand>
+    public class PlaceEntryOrdersCommandHandler(
+        TradingBotDbContext dbContext,
+        IExchangeApiRepository exchangeApiRepository,
+        ILogger<PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler> logger) : BaseCommandHandler<PlaceEntryOrdersCommand>(logger)
     {
-        private readonly TradingBotDbContext _db;
-        private readonly IExchangeApiRepository _exchangeApiRepository;
-        private readonly ILogger<PlaceEntryOrdersCommandHandler> _logger;
+        private readonly TradingBotDbContext _db = dbContext;
+        private readonly IExchangeApiRepository _exchangeApiRepository = exchangeApiRepository;
+        private readonly ILogger<PlaceEntryOrdersCommandHandler> _logger = logger;
 
-        public PlaceEntryOrdersCommandHandler(
-            TradingBotDbContext dbContext,
-            IExchangeApiRepository exchangeApiRepository,
-            ILogger<PlaceEntryOrdersCommandHandler> logger)
-        {
-            _db = dbContext;
-            _exchangeApiRepository = exchangeApiRepository;
-            _logger = logger;
-        }
-
-        public async Task Handle(PlaceEntryOrdersCommand request, CancellationToken cancellationToken)
+        protected override async Task<Result> HandleCore(PlaceEntryOrdersCommand request, CancellationToken cancellationToken)
         {
             var botsWithQuantities = await _db.Bots
                 .Where(b => b.Enabled)
@@ -71,6 +66,8 @@ public class PlaceEntryOrdersCommand : IRequest
                 .Where(x => x.Quantity > 0)
                 .ToListAsync(cancellationToken);
 
+            List<string> errors = new List<string>();
+
             await Parallel.ForEachAsync(botsWithQuantities,
                 new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
                 async (botWithQuantity, token) =>
@@ -83,8 +80,17 @@ public class PlaceEntryOrdersCommand : IRequest
                     {
                         _logger.LogError(ex, "Failed to place orders for bot {BotId} with quantity {Quantity}",
                             botWithQuantity.Bot.Id, botWithQuantity.Quantity);
+
+                        lock (errors)
+                        {
+                            errors.Add($"Failed to place orders for bot {botWithQuantity.Bot.Id}: {ex.Message}");
+                        }
                     }
                 });
+
+            return errors.Count > 0
+                ? Result.Failure(errors)
+                : Result.Success;
         }
 
         private async Task PlaceOrders(Bot bot, Ticker ticker, decimal quantity, int openTradesCount, CancellationToken cancellationToken)

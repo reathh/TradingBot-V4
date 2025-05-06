@@ -2,10 +2,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace TradingBot.Data
 {
-    public class TradingBotDbContext : DbContext
+    public class TradingBotDbContext(DbContextOptions<TradingBotDbContext> options) : DbContext(options)
     {
-        public TradingBotDbContext(DbContextOptions<TradingBotDbContext> options) : base(options) { }
-
         public DbSet<Bot> Bots { get; set; } = null!;
         public DbSet<Order> Orders { get; set; } = null!;
         public DbSet<Trade> Trades { get; set; } = null!;

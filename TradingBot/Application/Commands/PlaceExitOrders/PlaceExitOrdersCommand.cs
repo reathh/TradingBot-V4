@@ -2,30 +2,24 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using TradingBot.Data;
 using TradingBot.Services;
+using TradingBot.Application.Common;
 
 namespace TradingBot.Application.Commands.PlaceExitOrders;
 
-public class PlaceExitOrdersCommand : IRequest
+public class PlaceExitOrdersCommand : IRequest<Result>
 {
     public required Ticker Ticker { get; set; }
 
-    public class PlaceExitOrdersCommandHandler : IRequestHandler<PlaceExitOrdersCommand>
+    public class PlaceExitOrdersCommandHandler(
+        TradingBotDbContext dbContext,
+        IExchangeApiRepository exchangeApiRepository,
+        ILogger<PlaceExitOrdersCommand.PlaceExitOrdersCommandHandler> logger) : BaseCommandHandler<PlaceExitOrdersCommand>(logger)
     {
-        private readonly TradingBotDbContext _db;
-        private readonly IExchangeApiRepository _exchangeApiRepository;
-        private readonly ILogger<PlaceExitOrdersCommandHandler> _logger;
+        private readonly TradingBotDbContext _db = dbContext;
+        private readonly IExchangeApiRepository _exchangeApiRepository = exchangeApiRepository;
+        private readonly ILogger<PlaceExitOrdersCommandHandler> _logger = logger;
 
-        public PlaceExitOrdersCommandHandler(
-            TradingBotDbContext dbContext,
-            IExchangeApiRepository exchangeApiRepository,
-            ILogger<PlaceExitOrdersCommandHandler> logger)
-        {
-            _db = dbContext;
-            _exchangeApiRepository = exchangeApiRepository;
-            _logger = logger;
-        }
-
-        public async Task Handle(PlaceExitOrdersCommand request, CancellationToken cancellationToken)
+        protected override async Task<Result> HandleCore(PlaceExitOrdersCommand request, CancellationToken cancellationToken)
         {
             var botsWithTrades = await _db.Bots
                 .Where(b => b.Enabled)
@@ -60,6 +54,8 @@ public class PlaceExitOrdersCommand : IRequest
                     : t.EntryPrice - x.Bot.ExitStep >= x.CurrentPrice)) // Short: current price <= entry - exit step
                 .ToListAsync(cancellationToken);
 
+            List<string> errors = new List<string>();
+
             await Parallel.ForEachAsync(botsWithTrades,
                 new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
                 async (botWithTrades, token) =>
@@ -72,8 +68,17 @@ public class PlaceExitOrdersCommand : IRequest
                     {
                         _logger.LogError(ex, "Failed to place exit orders for bot {BotId}",
                             botWithTrades.Bot.Id);
+
+                        lock (errors)
+                        {
+                            errors.Add($"Failed to place exit orders for bot {botWithTrades.Bot.Id}: {ex.Message}");
+                        }
                     }
                 });
+
+            return errors.Count > 0
+                ? Result.Failure(errors)
+                : Result.Success;
         }
 
         private async Task PlaceExitOrders(Bot bot, Ticker ticker, IList<TradeInfo> trades, CancellationToken cancellationToken)

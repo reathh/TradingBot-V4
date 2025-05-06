@@ -5,20 +5,14 @@ namespace TradingBot.Services;
 /// <summary>
 /// Repository for managing and reusing BinanceExchangeApi instances
 /// </summary>
-public class BinanceExchangeApiRepository : IExchangeApiRepository
+public class BinanceExchangeApiRepository(
+    TimeProvider timeProvider,
+    ILoggerFactory loggerFactory) : IExchangeApiRepository
 {
     private readonly Dictionary<string, IExchangeApi> _apiInstances = new();
-    private readonly TimeProvider _timeProvider;
-    private readonly ILoggerFactory _loggerFactory;
+    private readonly TimeProvider _timeProvider = timeProvider;
+    private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private readonly object _lock = new();
-
-    public BinanceExchangeApiRepository(
-        TimeProvider timeProvider,
-        ILoggerFactory loggerFactory)
-    {
-        _timeProvider = timeProvider;
-        _loggerFactory = loggerFactory;
-    }
 
     /// <summary>
     /// Gets or creates an IExchangeApi instance for the specified bot

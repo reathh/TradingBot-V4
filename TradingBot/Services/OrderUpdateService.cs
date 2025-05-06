@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using TradingBot.Application.Commands.UpdateBotOrder;
+using TradingBot.Application.Common;
 using TradingBot.Data;
 
 namespace TradingBot.Services;
@@ -8,21 +9,14 @@ namespace TradingBot.Services;
 /// <summary>
 /// Background service that subscribes to order updates for all enabled bots
 /// </summary>
-public class OrderUpdateService : BackgroundService
+public class OrderUpdateService(
+    IServiceProvider serviceProvider,
+    IExchangeApiRepository exchangeApiRepository,
+    ILogger<OrderUpdateService> logger) : BackgroundService
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly IExchangeApiRepository _exchangeApiRepository;
-    private readonly ILogger<OrderUpdateService> _logger;
-
-    public OrderUpdateService(
-        IServiceProvider serviceProvider,
-        IExchangeApiRepository exchangeApiRepository,
-        ILogger<OrderUpdateService> logger)
-    {
-        _serviceProvider = serviceProvider;
-        _exchangeApiRepository = exchangeApiRepository;
-        _logger = logger;
-    }
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
+    private readonly IExchangeApiRepository _exchangeApiRepository = exchangeApiRepository;
+    private readonly ILogger<OrderUpdateService> _logger = logger;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -82,10 +76,14 @@ public class OrderUpdateService : BackgroundService
             using var scope = _serviceProvider.CreateScope();
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-            // Send the order update to the command handler
-            var result = await mediator.Send(new UpdateBotOrderCommand(orderUpdate), cancellationToken);
+            // Send the order update to the command handler and log on failure
+            var command = new UpdateBotOrderCommand(orderUpdate);
+            var succeeded = await mediator.SendAndLogOnFailure(command, _logger, cancellationToken);
 
-            _logger.LogDebug("Order update for {OrderId} processed successfully: {Result}", orderUpdate.Id, result);
+            if (succeeded)
+            {
+                _logger.LogDebug("Order update for {OrderId} processed successfully", orderUpdate.Id);
+            }
         }
         catch (Exception ex)
         {
