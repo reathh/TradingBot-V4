@@ -1,14 +1,10 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System.Threading;
-using System.Threading.Tasks;
 using TradingBot.Application.Commands.UpdateBotOrder;
 using TradingBot.Data;
 using TradingBot.Services;
-using Xunit;
 
 namespace TradingBot.Tests;
 

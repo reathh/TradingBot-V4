@@ -3,8 +3,6 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using TradingBot.Application.Commands.PlaceExitOrders;
 using TradingBot.Data;
-using TradingBot.Services;
-using Xunit;
 
 namespace TradingBot.Tests;
 

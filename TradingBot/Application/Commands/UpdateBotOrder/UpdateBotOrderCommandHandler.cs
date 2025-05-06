@@ -1,6 +1,5 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using TradingBot.Data;
 
 namespace TradingBot.Application.Commands.UpdateBotOrder;

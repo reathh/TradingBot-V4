@@ -1,8 +1,5 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using TradingBot.Application.Commands.UpdateBotOrder;
 using TradingBot.Data;
 

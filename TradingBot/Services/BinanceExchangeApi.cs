@@ -3,7 +3,6 @@ using Binance.Net.Clients;
 using Binance.Net.Enums;
 using Binance.Net.Objects.Models.Spot.Socket;
 using CryptoExchange.Net.Authentication;
-using Microsoft.Extensions.Logging;
 
 namespace TradingBot.Services;
 
@@ -11,8 +10,8 @@ public class BinanceExchangeApi : IExchangeApi
 {
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<BinanceExchangeApi> _logger;
-    private readonly Dictionary<string, List<Func<OrderUpdate, Task>>> _orderCallbacks = new();
-    private readonly Dictionary<string, bool> _userDataSubscribed = new();
+    private readonly Dictionary<string, List<Func<OrderUpdate, Task>>> _orderCallbacks = [];
+    private readonly Dictionary<string, bool> _userDataSubscribed = [];
     private readonly BinanceRestClient _restClient;
     private readonly BinanceSocketClient _socketClient;
 

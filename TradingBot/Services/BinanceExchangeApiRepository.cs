@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using TradingBot.Data;
 
 namespace TradingBot.Services;
