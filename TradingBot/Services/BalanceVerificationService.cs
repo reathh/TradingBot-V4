@@ -27,9 +27,9 @@ public class BalanceVerificationService : ScheduledBackgroundService
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<TradingBotDbContext>();
 
-        // Get all enabled bots with balance verification enabled
+        // Get all enabled bots
         var bots = await dbContext.Bots
-            .Where(b => b.Enabled && b.BalanceVerificationEnabled)
+            .Where(b => b.Enabled)
             .Include(b => b.Trades)
                 .ThenInclude(t => t.EntryOrder)
             .Include(b => b.Trades)

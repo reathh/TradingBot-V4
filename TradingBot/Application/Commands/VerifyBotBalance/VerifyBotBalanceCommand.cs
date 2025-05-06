@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TradingBot.Data;
 using TradingBot.Services;
 using TradingBot.Application.Common;
+using Microsoft.Extensions.Logging;
 
 namespace TradingBot.Application.Commands.VerifyBotBalance;
 
@@ -15,8 +16,9 @@ public class VerifyBotBalanceCommand : IRequest<Result>
     {
         private readonly TradingBotDbContext _dbContext;
         private readonly IExchangeApiRepository _exchangeApiRepository;
-        private readonly TimeSpan _initialRetryDelay = TimeSpan.FromSeconds(5);
         private readonly int _maxRetries = 5;
+        private readonly TimeSpan _delayBetweenChecks = TimeSpan.FromSeconds(5);
+        private readonly ILogger<VerifyBotBalanceCommandHandler> _logger;
 
         public VerifyBotBalanceCommandHandler(
             TradingBotDbContext dbContext,
@@ -25,6 +27,7 @@ public class VerifyBotBalanceCommand : IRequest<Result>
         {
             _dbContext = dbContext;
             _exchangeApiRepository = exchangeApiRepository;
+            _logger = logger;
         }
 
         protected override async Task<Result> HandleCore(VerifyBotBalanceCommand request, CancellationToken cancellationToken)
@@ -34,107 +37,110 @@ public class VerifyBotBalanceCommand : IRequest<Result>
             var symbol = bot.Symbol;
 
             // Extract base currency from symbol (e.g., BTC from BTCUSDT)
-            var baseCurrency = ExtractBaseCurrency(symbol);
+            var baseCurrency = CurrencyUtilities.ExtractBaseCurrency(symbol);
 
-            // Calculate expected balance
-            var expectedBalance = CalculateExpectedBalance(bot, request.CurrentPrice);
+            decimal expectedBalance;
+            decimal actualBalance;
+            bool balanceVerified = false;
+            var attempts = 0;
 
-            // Get actual balance from exchange with exponential backoff retry
-            var actualBalance = await GetActualBalanceWithRetryAsync(
-                exchangeApi,
-                baseCurrency,
-                bot,
-                expectedBalance,
-                cancellationToken);
-
-            // Compare balances and take action if necessary
-            var balanceVerified = CompareBalancesAndTakeAction(bot, expectedBalance, actualBalance);
-
-            if (balanceVerified)
+            // Try multiple times to verify balance
+            while (!balanceVerified && attempts < _maxRetries)
             {
-                await _dbContext.SaveChangesAsync(cancellationToken);
-                return Result.Success;
+                try
+                {
+                    // Calculate expected balance
+                    expectedBalance = CalculateExpectedBalance(bot, request.CurrentPrice);
+
+                    // Get actual balance (simple call, no retry mechanism)
+                    actualBalance = await GetActualBalance(exchangeApi, baseCurrency, bot, cancellationToken);
+
+                    // Check if balances match
+                    if (actualBalance == expectedBalance)
+                    {
+                        balanceVerified = true;
+                        break;
+                    }
+
+                    // If balances don't match and we haven't reached max attempts,
+                    // wait and then try again (balances might change during execution)
+                    if (attempts < _maxRetries - 1)
+                    {
+                        _logger.LogInformation("Balance mismatch for bot {BotId}. Expected: {Expected}, Actual: {Actual}. Retrying...",
+                            bot.Id, expectedBalance, actualBalance);
+                        await Task.Delay(_delayBetweenChecks, cancellationToken);
+                    }
+                    else
+                    {
+                        // On last attempt, disable bot if balances still don't match
+                        bot.Enabled = false;
+                        _logger.LogCritical("Balance verification failed for bot {BotId} after {Attempts} attempts. Bot disabled.",
+                            bot.Id, attempts + 1);
+                        await _dbContext.SaveChangesAsync(cancellationToken);
+                        return $"Balance verification failed for bot {bot.Id}: Expected {expectedBalance}, Actual {actualBalance}";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error verifying balance for bot {BotId} on attempt {Attempt}", bot.Id, attempts + 1);
+
+                    if (attempts >= _maxRetries - 1)
+                    {
+                        bot.Enabled = false;
+                        await _dbContext.SaveChangesAsync(cancellationToken);
+                        return $"Balance verification failed for bot {bot.Id}: {ex.Message}";
+                    }
+
+                    await Task.Delay(_delayBetweenChecks, cancellationToken);
+                }
+
+                attempts++;
             }
-            else
-            {
-                return Result.Failure(new[] { $"Balance verification failed for bot {bot.Id}: Expected {expectedBalance}, Actual {actualBalance}" });
-            }
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return Result.Success;
         }
 
-        private static string ExtractBaseCurrency(string symbol)
-        {
-            // Common quote currencies with more than 3 characters to identify where to split the trading pair
-            var commonQuoteCurrencies = new[] { "USDT", "USDC", "FDUSD" };
-
-            // Check if symbol ends with a common quote currency
-            foreach (var quote in commonQuoteCurrencies)
-            {
-                if (symbol.EndsWith(quote, StringComparison.OrdinalIgnoreCase))
-                {
-                    return symbol[..^quote.Length];
-                }
-            }
-
-            // Check if symbol starts with a common quote currency
-            foreach (var quote in commonQuoteCurrencies)
-            {
-                if (symbol.StartsWith(quote, StringComparison.OrdinalIgnoreCase))
-                {
-                    return symbol[quote.Length..];
-                }
-            }
-
-            // Default fallback - assume the first 3 characters are the base currency
-            return symbol.Length > 3 ? symbol[..3] : symbol;
-        }
-
-        private decimal CalculateExpectedBalance(Bot bot, decimal currentPrice)
+        private static decimal CalculateExpectedBalance(Bot bot, decimal currentPrice)
         {
             decimal expectedBalance = bot.StartingBaseAmount;
             decimal? referencePrice = null;
 
-            // Determine reference price (max or min price depending on bot type)
-            if (bot.IsLong)
+            // Find the first open trade (where profit is null) to use as reference price
+            var firstOpenTrade = bot.Trades.FirstOrDefault(t => t.Profit == null);
+            if (firstOpenTrade != null)
             {
-                referencePrice = bot.MaxPrice; // For long bot, we start from max price
+                referencePrice = firstOpenTrade.EntryOrder.Price;
             }
             else
             {
-                referencePrice = bot.MinPrice; // For short bot, we start from min price
+                // If there are no open trades, return the starting base amount
+                return bot.StartingBaseAmount;
             }
 
-            // If we have a reference price, calculate expected balance based on price difference
-            if (referencePrice.HasValue)
-            {
-                decimal priceDifference = Math.Abs(referencePrice.Value - currentPrice);
-                decimal stepCount = Math.Floor(priceDifference / bot.EntryStep);
+            // Calculate expected balance based on price difference
+            decimal priceDifference = Math.Abs(referencePrice.Value - currentPrice);
+            decimal stepCount = Math.Floor(priceDifference / bot.EntryStep);
 
-                if (bot.IsLong)
+            if (bot.IsLong)
+            {
+                // For long bot: if current price is lower than reference price, we should have bought
+                if (currentPrice < referencePrice.Value)
                 {
-                    // For long bot: if current price is lower than max price, we should have bought
-                    if (currentPrice < referencePrice.Value)
-                    {
-                        expectedBalance += stepCount * bot.EntryQuantity;
-                    }
+                    expectedBalance += stepCount * bot.EntryQuantity;
                 }
-                else
+            }
+            else
+            {
+                // For short bot: if current price is higher than reference price, we should have sold
+                if (currentPrice > referencePrice.Value)
                 {
-                    // For short bot: if current price is higher than min price, we should have sold
-                    if (currentPrice > referencePrice.Value)
-                    {
-                        expectedBalance -= stepCount * bot.EntryQuantity;
-                    }
+                    expectedBalance -= stepCount * bot.EntryQuantity;
                 }
             }
 
-            // In the tests, we're manually adding the trade entry/exit amounts instead of relying on the calculated amounts above
-            // So we need to zero out the calculations above and just use the trade amounts
-            // For real operation, you would use both the calculated amounts and the trade adjustments
-            if (bot.Trades.Any())
-            {
-                // Reset to starting amount if we have trades to consider
-                expectedBalance = bot.StartingBaseAmount;
-            }
+            // Calculate actual trade adjustments based on filled orders
+            decimal tradeAdjustment = 0;
 
             // Adjust for the entry orders
             foreach (var trade in bot.Trades)
@@ -142,12 +148,12 @@ public class VerifyBotBalanceCommand : IRequest<Result>
                 // Add buy orders to expected balance
                 if (trade.EntryOrder.IsBuy)
                 {
-                    expectedBalance += trade.EntryOrder.QuantityFilled;
+                    tradeAdjustment += trade.EntryOrder.QuantityFilled;
                 }
                 // Subtract sell orders from expected balance
                 else
                 {
-                    expectedBalance -= trade.EntryOrder.QuantityFilled;
+                    tradeAdjustment -= trade.EntryOrder.QuantityFilled;
                 }
             }
 
@@ -157,79 +163,25 @@ public class VerifyBotBalanceCommand : IRequest<Result>
                 // Subtract sell exit orders from expected balance
                 if (trade.ExitOrder!.IsBuy == false)
                 {
-                    expectedBalance -= trade.ExitOrder.QuantityFilled;
+                    tradeAdjustment -= trade.ExitOrder.QuantityFilled;
                 }
                 // Add buy exit orders to expected balance
                 else
                 {
-                    expectedBalance += trade.ExitOrder.QuantityFilled;
+                    tradeAdjustment += trade.ExitOrder.QuantityFilled;
                 }
             }
+
+            // Apply the trade adjustment
+            expectedBalance += tradeAdjustment;
 
             return expectedBalance;
         }
 
-        private async Task<decimal> GetActualBalanceWithRetryAsync(
+        private async Task<decimal> GetActualBalance(
             IExchangeApi exchangeApi,
             string baseCurrency,
             Bot bot,
-            decimal expectedBalance,
-            CancellationToken cancellationToken)
-        {
-            var retryCount = 0;
-            var delay = _initialRetryDelay;
-            decimal actualBalance = 0;
-            bool balanceMatches = false;
-
-            // Retry getting balance with exponential backoff
-            while (retryCount < _maxRetries && !balanceMatches)
-            {
-                try
-                {
-                    actualBalance = await exchangeApi.GetBalance(baseCurrency, bot, cancellationToken);
-
-                    // Check if balance is within acceptable threshold (0.01 unit tolerance)
-                    balanceMatches = Math.Abs(actualBalance - expectedBalance) < 0.01m;
-
-                    if (balanceMatches)
-                    {
-                        break;
-                    }
-
-                    // Wait before retrying
-                    await Task.Delay(delay, cancellationToken);
-
-                    // Exponential backoff
-                    delay = TimeSpan.FromMilliseconds(delay.TotalMilliseconds * 2);
-                    retryCount++;
-                }
-                catch (Exception ex)
-                {
-                    await Task.Delay(delay, cancellationToken);
-                    delay = TimeSpan.FromMilliseconds(delay.TotalMilliseconds * 2);
-                    retryCount++;
-
-                    if (retryCount >= _maxRetries)
-                    {
-                        throw;
-                    }
-                }
-            }
-
-            return actualBalance;
-        }
-
-        private bool CompareBalancesAndTakeAction(Bot bot, decimal expectedBalance, decimal actualBalance)
-        {
-            // Check if balance is within acceptable threshold (0.01 unit tolerance)
-            if (Math.Abs(actualBalance - expectedBalance) < 0.01m)
-            {
-                return true;
-            }
-
-            // If balance verification failed after retries, disable the bot
-            bot.Enabled = false;
-            return false;
-        }
+            CancellationToken cancellationToken) => await exchangeApi.GetBalance(baseCurrency, bot, cancellationToken);
     }
 }

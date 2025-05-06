@@ -57,7 +57,6 @@ public class BalanceVerificationServiceTests : BaseTest, IDisposable
             );
 
             bot.Enabled = i < 2; // First 2 are enabled
-            bot.BalanceVerificationEnabled = true;
             bots.Add(bot);
         }
 
@@ -97,7 +96,6 @@ public class BalanceVerificationServiceTests : BaseTest, IDisposable
         );
 
         bot.Enabled = true;
-        bot.BalanceVerificationEnabled = true;
         bot.Trades.Clear(); // No trades either for price reference
 
         await DbContext.SaveChangesAsync();
@@ -133,7 +131,6 @@ public class BalanceVerificationServiceTests : BaseTest, IDisposable
         );
 
         bot.Enabled = true;
-        bot.BalanceVerificationEnabled = true;
 
         await DbContext.SaveChangesAsync();
 
