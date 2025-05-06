@@ -64,14 +64,14 @@ public class OrderUpdateServiceTests : BaseTest, IDisposable
             .Callback<Func<OrderUpdate, Task>, Bot, CancellationToken>((_, bot, __) => subscriptions.Add(bot))
             .Returns(Task.CompletedTask);
 
-        // Use a token that will cancel after a short time
-        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+        // Use a token that will cancel after a very short time
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(10));
 
         // Act - start the service
         try
         {
             await _service.StartAsync(cts.Token);
-            await Task.Delay(200); // Give it time to process
+            await Task.Delay(50); // Reduced wait time
         }
         catch (OperationCanceledException)
         {
@@ -126,11 +126,11 @@ public class OrderUpdateServiceTests : BaseTest, IDisposable
         await DbContext.SaveChangesAsync();
 
         // Start the service
-        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
         try
         {
             await _service.StartAsync(cts.Token);
-            await Task.Delay(50); // Give it time to process
+            await Task.Delay(100); // Allow more time for callback to be captured
         }
         catch (OperationCanceledException)
         {

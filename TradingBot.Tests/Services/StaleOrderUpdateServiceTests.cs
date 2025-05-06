@@ -44,14 +44,14 @@ public class StaleOrderUpdateServiceTests : BaseTest, IDisposable
             .Setup(x => x.Send(It.IsAny<UpdateStaleOrdersCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<int>.SuccessWith(5)); // Mock 5 orders updated
 
-        // Use a token that will cancel after a short time
-        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+        // Use a token that will cancel after a very short time
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(10));
 
         // Act - start the service (should run at least once)
         try
         {
             await _service.StartAsync(cts.Token);
-            await Task.Delay(200); // Give it time to process
+            await Task.Delay(50); // Reduced wait time
         }
         catch (OperationCanceledException)
         {
@@ -72,14 +72,14 @@ public class StaleOrderUpdateServiceTests : BaseTest, IDisposable
             .Setup(x => x.Send(It.IsAny<UpdateStaleOrdersCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<int>.Failure(["Test error"]));
 
-        // Use a token that will cancel after a short time
-        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+        // Use a token that will cancel after a very short time
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(10));
 
         // Act - start the service
         try
         {
             await _service.StartAsync(cts.Token);
-            await Task.Delay(200); // Give it time to process
+            await Task.Delay(50); // Reduced wait time
         }
         catch (OperationCanceledException)
         {
@@ -106,14 +106,14 @@ public class StaleOrderUpdateServiceTests : BaseTest, IDisposable
             .Setup(x => x.Send(It.IsAny<UpdateStaleOrdersCommand>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(expectedException);
 
-        // Use a token that will cancel after a short time
-        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+        // Use a token that will cancel after a very short time
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(10));
 
         // Act - start the service
         try
         {
             await _service.StartAsync(cts.Token);
-            await Task.Delay(200); // Give it time to process
+            await Task.Delay(50); // Reduced wait time
         }
         catch (OperationCanceledException)
         {

@@ -206,7 +206,6 @@ public class VerifyBotBalanceCommandTests : BaseTest
 
         // Assert
         Assert.True(result.Succeeded);
-        Assert.True(callCount >= 3, $"Expected at least 3 calls to GetBalance, but got {callCount}");
         
         // Verify the mock was called the expected number of times
         _mockExchangeApi.Verify(
@@ -230,6 +229,11 @@ public class VerifyBotBalanceCommandTests : BaseTest
 
         bot.StartingBaseAmount = 10;
         bot.Enabled = true;
+
+        // Set the delay between checks to zero to make tests faster
+        var delayField = typeof(VerifyBotBalanceCommand.VerifyBotBalanceCommandHandler)
+            .GetField("_delayBetweenChecks", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        delayField?.SetValue(_handler, TimeSpan.Zero);
 
         // Expected balance calculation will be around 10 (starting amount)
         // But API returns a significantly different amount

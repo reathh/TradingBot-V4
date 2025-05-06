@@ -70,11 +70,7 @@ public class VerifyBotBalanceCommand : IRequest<Result>
                         _logger.LogWarning("Balance mismatch for bot {BotId}. Expected: {Expected}, Actual: {Actual}. Will retry.",
                             bot.Id, expectedBalance, actualBalance);
                         
-                        // Only wait if delay is not zero (skip waiting in tests)
-                        if (_delayBetweenChecks != TimeSpan.Zero)
-                        {
-                            await Task.Delay(_delayBetweenChecks, cancellationToken);
-                        }
+                        await Task.Delay(_delayBetweenChecks, cancellationToken);
                     }
                     else
                     {
@@ -101,11 +97,7 @@ public class VerifyBotBalanceCommand : IRequest<Result>
                         return $"Balance verification failed for bot {bot.Id}: {ex.Message}";
                     }
                     
-                    // Only wait if delay is not zero (skip waiting in tests)
-                    if (_delayBetweenChecks != TimeSpan.Zero)
-                    {
-                        await Task.Delay(_delayBetweenChecks, cancellationToken);
-                    }
+                    await Task.Delay(_delayBetweenChecks, cancellationToken);
                 }
             }
 
