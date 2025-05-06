@@ -33,6 +33,8 @@ public class UpdateStaleOrdersCommandHandler(
             .Where(o => o.LastUpdated < cutoffTime)
             .Include(o => o.EntryTrade)
                 .ThenInclude(t => t != null ? t.Bot : null)
+            .Include(o => o.ExitTrade)
+                .ThenInclude(t => t != null ? t.Bot : null)
             .ToListAsync(cancellationToken);
 
         if (staleOrders.Count == 0)
@@ -48,14 +50,16 @@ public class UpdateStaleOrdersCommandHandler(
         {
             try
             {
-                // Skip orders with no associated trade or bot
-                if (order.EntryTrade?.Bot == null)
+                // Get the associated bot from either EntryTrade or ExitTrade
+                var bot = order.EntryTrade?.Bot ?? order.ExitTrade?.Bot;
+
+                // Skip orders with no associated bot
+                if (bot == null)
                 {
                     _logger.LogWarning("Skipping stale order update for {OrderId}: No associated bot found", order.Id);
                     continue;
                 }
 
-                var bot = order.EntryTrade.Bot;
                 var exchangeApi = _exchangeApiRepository.GetExchangeApi(bot);
 
                 // Check if we should use the exchange order ID or internal ID

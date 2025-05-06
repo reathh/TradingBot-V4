@@ -12,4 +12,4 @@ namespace TradingBot.Data
                 .HasFilter("[ExchangeOrderId] IS NOT NULL");
         }
     }
-} 
+}
