@@ -43,11 +43,11 @@ public abstract class ScheduledBackgroundService : BackgroundService
 
                 try
                 {
-                    await ExecuteScheduledWorkAsync(scope, stoppingToken);
+                    await ExecuteScheduledWorkAsync(stoppingToken);
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogError(ex, "Error in {ServiceName}", ServiceName);
+                    Logger.LogError(ex, "Error updating stale orders", ServiceName);
                 }
 
                 await Task.Delay(Interval, stoppingToken);
@@ -59,7 +59,7 @@ public abstract class ScheduledBackgroundService : BackgroundService
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error in {ServiceName}", ServiceName);
+            Logger.LogError(ex, "Error updating stale orders", ServiceName);
         }
         finally
         {
@@ -70,9 +70,8 @@ public abstract class ScheduledBackgroundService : BackgroundService
 
     /// <summary>
     /// Override to execute work at each scheduled interval
-    /// The scope is already created and provided
     /// </summary>
-    protected abstract Task ExecuteScheduledWorkAsync(IServiceScope scope, CancellationToken cancellationToken);
+    protected internal abstract Task ExecuteScheduledWorkAsync(CancellationToken cancellationToken);
 
     /// <summary>
     /// Override to perform any setup operations when the service starts

@@ -18,6 +18,7 @@ public class BalanceVerificationServiceTests : BaseTest, IDisposable
     private Mock<IMediator> _mockMediator;
     private Mock<ILogger<BalanceVerificationService>> _mockLogger;
     private ServiceProvider _serviceProvider;
+    private IServiceScope _serviceScope;
 
     public BalanceVerificationServiceTests() : base()
     {
@@ -30,6 +31,7 @@ public class BalanceVerificationServiceTests : BaseTest, IDisposable
         services.AddSingleton(DbContext);
         services.AddSingleton(_mockMediator.Object);
         _serviceProvider = services.BuildServiceProvider();
+        _serviceScope = _serviceProvider.CreateScope();
 
         _balanceVerificationService = new BalanceVerificationService(
             _serviceProvider,
@@ -67,12 +69,8 @@ public class BalanceVerificationServiceTests : BaseTest, IDisposable
             .Setup(m => m.Send(It.IsAny<VerifyBotBalanceCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success);
 
-        // Access the private VerifyBalancesAsync method via reflection
-        var method = typeof(BalanceVerificationService).GetMethod("VerifyBalancesAsync",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
         // Act
-        await (Task)method.Invoke(_balanceVerificationService, new object[] { CancellationToken.None });
+        await _balanceVerificationService.ExecuteScheduledWorkAsync(CancellationToken.None);
 
         // Assert - verify that command was sent for each enabled bot (2), but not for disabled bot
         _mockMediator.Verify(
@@ -100,12 +98,8 @@ public class BalanceVerificationServiceTests : BaseTest, IDisposable
 
         await DbContext.SaveChangesAsync();
 
-        // Access the private VerifyBotBalanceAsync method via reflection
-        var method = typeof(BalanceVerificationService).GetMethod("VerifyBotBalanceAsync",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
         // Act
-        await (Task)method.Invoke(_balanceVerificationService, new object[] { bot, CancellationToken.None });
+        await _balanceVerificationService.VerifyBotBalanceAsync(_serviceScope, bot, CancellationToken.None);
 
         // Assert - mediator should not be called when ticker is null
         _mockMediator.Verify(
@@ -138,12 +132,8 @@ public class BalanceVerificationServiceTests : BaseTest, IDisposable
             .Setup(m => m.Send(It.IsAny<VerifyBotBalanceCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success);
 
-        // Access the private VerifyBotBalanceAsync method via reflection
-        var method = typeof(BalanceVerificationService).GetMethod("VerifyBotBalanceAsync",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
         // Act
-        await (Task)method.Invoke(_balanceVerificationService, new object[] { bot, CancellationToken.None });
+        await _balanceVerificationService.VerifyBotBalanceAsync(_serviceScope, bot, CancellationToken.None);
 
         // Assert - verify command was sent
         _mockMediator.Verify(
@@ -157,6 +147,7 @@ public class BalanceVerificationServiceTests : BaseTest, IDisposable
 
     public void Dispose()
     {
+        _serviceScope?.Dispose();
         _serviceProvider?.Dispose();
     }
 }

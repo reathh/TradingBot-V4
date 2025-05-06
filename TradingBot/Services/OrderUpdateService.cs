@@ -52,7 +52,7 @@ public class OrderUpdateService : ScheduledBackgroundService
 
     // This service just needs to stay alive after subscribing to order updates
     // The actual work happens in the callbacks
-    protected override Task ExecuteScheduledWorkAsync(IServiceScope scope, CancellationToken cancellationToken)
+    protected internal override Task ExecuteScheduledWorkAsync(CancellationToken cancellationToken)
     {
         // No periodic work needed, just keep service alive
         return Task.CompletedTask;

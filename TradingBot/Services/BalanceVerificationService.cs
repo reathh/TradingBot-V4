@@ -13,6 +13,7 @@ namespace TradingBot.Services;
 public class BalanceVerificationService : ScheduledBackgroundService
 {
     private readonly IExchangeApiRepository _exchangeApiRepository;
+    private readonly IServiceProvider _serviceProvider;
 
     public BalanceVerificationService(
         IServiceProvider serviceProvider,
@@ -21,10 +22,12 @@ public class BalanceVerificationService : ScheduledBackgroundService
         : base(serviceProvider, logger, TimeSpan.FromMinutes(1), "Balance verification service")
     {
         _exchangeApiRepository = exchangeApiRepository;
+        _serviceProvider = serviceProvider;
     }
 
-    protected override async Task ExecuteScheduledWorkAsync(IServiceScope scope, CancellationToken cancellationToken)
+    protected internal override async Task ExecuteScheduledWorkAsync(CancellationToken cancellationToken)
     {
+        using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<TradingBotDbContext>();
 
         // Get all enabled bots
@@ -43,7 +46,7 @@ public class BalanceVerificationService : ScheduledBackgroundService
         await Task.WhenAll(tasks);
     }
 
-    private async Task VerifyBotBalanceAsync(IServiceScope scope, Bot bot, CancellationToken cancellationToken)
+    internal async Task VerifyBotBalanceAsync(IServiceScope scope, Bot bot, CancellationToken cancellationToken)
     {
         // Get current price for the bot's symbol
         var ticker = await GetCurrentTickerAsync(bot, cancellationToken);

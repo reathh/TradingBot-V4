@@ -17,14 +17,15 @@ public class StaleOrderUpdateService : ScheduledBackgroundService
     {
     }
 
-    protected override async Task ExecuteScheduledWorkAsync(IServiceScope scope, CancellationToken cancellationToken)
+    protected internal override async Task ExecuteScheduledWorkAsync(CancellationToken cancellationToken)
     {
+        using var scope = ServiceProvider.CreateScope();
         Logger.LogDebug("Running stale order update check");
 
         // Create and send the command using the base class helper
         var command = new UpdateStaleOrdersCommand();
         await SendCommandAndLogResult<UpdateStaleOrdersCommand, int>(
-            scope,
+            scope.ServiceProvider,
             command,
             cancellationToken,
             "Updated {Count} stale orders",
