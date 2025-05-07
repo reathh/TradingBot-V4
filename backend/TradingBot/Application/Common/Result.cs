@@ -4,6 +4,12 @@ public class Result : IResult
 {
     private readonly List<string> _errors;
 
+    // Public default constructor for DI
+    public Result()
+        : this(true, new List<string>())
+    {
+    }
+
     internal Result(bool succeeded, List<string> errors)
     {
         Succeeded = succeeded;

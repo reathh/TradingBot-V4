@@ -23,14 +23,14 @@ builder.Services.AddSingleton(TimeProvider.System);
 // Register ExchangeApiRepository as a singleton
 builder.Services.AddSingleton<IExchangeApiRepository, BinanceExchangeApiRepository>();
 
-// Register all services with implemented interfaces as scoped, except for IHostedService
+// Register all services with implemented interfaces as transient, except for IHostedService
 builder.Services.Scan(scan => scan
     .FromAssemblyOf<Program>()
     .AddClasses(classes => classes.Where(c => c
         .GetInterfaces()
         .All(i => i != typeof(IHostedService))))
     .AsMatchingInterface()
-    .WithScopedLifetime());
+    .WithTransientLifetime());
 
 // Register hosted services as IHostedService
 builder.Services.Scan(scan => scan
