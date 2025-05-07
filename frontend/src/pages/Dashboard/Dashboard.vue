@@ -164,6 +164,7 @@ import BaseDropdown from "@/components/BaseDropdown.vue";
 import Card from "@/components/Cards/Card.vue";
 import config from "@/config";
 import { useRoute } from "vue-router";
+import dashboardService from "@/services/dashboard";
 
 const route = useRoute();
 const $rtl = inject("$rtl");
@@ -311,32 +312,32 @@ const bigLineChartGradientStops = ref([1, 0.4, 0]);
 
 const statsCards = ref([
   {
-    title: "150GB",
-    subTitle: "Number",
+    title: "0",
+    subTitle: "Active Bots",
     type: "warning",
-    icon: "tim-icons icon-chat-33",
-    footer: '<i class="tim-icons icon-refresh-01"></i> Update Now',
+    icon: "tim-icons icon-components",
+    footer: '<i class="tim-icons icon-controller"></i> Trading Automation',
   },
   {
-    title: "+45K",
-    subTitle: "Followers",
+    title: "0",
+    subTitle: "Active Orders",
     type: "primary",
-    icon: "tim-icons icon-shape-star",
-    footer: '<i class="tim-icons icon-sound-wave"></i></i> Last Research',
+    icon: "tim-icons icon-money-coins",
+    footer: '<i class="tim-icons icon-chart-bar-32"></i> Market Orders',
   },
   {
-    title: "150,000",
-    subTitle: "Users",
+    title: "0",
+    subTitle: "Completed Trades",
     type: "info",
-    icon: "tim-icons icon-single-02",
-    footer: '<i class="tim-icons icon-trophy"></i> Customer feedback',
+    icon: "tim-icons icon-spaceship",
+    footer: '<i class="tim-icons icon-time-alarm"></i> Trading History',
   },
   {
-    title: "23",
-    subTitle: "Errors",
-    type: "danger",
-    icon: "tim-icons icon-molecule-40",
-    footer: '<i class="tim-icons icon-watch-time"></i> In the last hours',
+    title: "$0",
+    subTitle: "Total Profit",
+    type: "success",
+    icon: "tim-icons icon-coins",
+    footer: '<i class="tim-icons icon-chart-pie-36"></i> Trading Performance',
   },
 ]);
 
@@ -411,12 +412,55 @@ const initBigChart = (index) => {
   bigLineChartActiveIndex.value = index;
 };
 
+// Fetch data from API
+const fetchDashboardData = async () => {
+  try {
+    // Get summary data
+    const summaryResponse = await dashboardService.getSummary();
+    const summary = summaryResponse.data;
+
+    // Update stats cards with actual data
+    statsCards.value[0].title = summary.totalBots.toString();
+    statsCards.value[1].title = summary.activeOrders.toString();
+    statsCards.value[2].title = summary.completedTrades.toString();
+    statsCards.value[3].title = `$${summary.totalProfit.toFixed(2)}`;
+
+    // Get performance data for the chart
+    const performanceResponse = await dashboardService.getPerformance();
+    const performance = performanceResponse.data;
+
+    // Update the performance chart
+    performanceChartData.value = {
+      labels: performance.labels,
+      datasets: [
+        {
+          label: "Trading Profit/Loss",
+          data: performance.data,
+          borderColor: "#41B883",
+          backgroundColor: "rgba(65, 184, 131, 0.1)",
+          borderWidth: 3,
+          pointRadius: 4,
+          pointBackgroundColor: "#41B883",
+          tension: 0.4,
+          fill: false,
+        },
+      ],
+    };
+
+    initBigChart(0);
+  } catch (error) {
+    console.error("Error fetching dashboard data:", error);
+  }
+};
+
 onMounted(() => {
   if (enableRTL.value) {
     locale.value = "ar";
     $rtl?.enableRTL();
   }
-  initBigChart(0);
+
+  // Fetch dashboard data when component mounts
+  fetchDashboardData();
 });
 
 onBeforeUnmount(() => {
