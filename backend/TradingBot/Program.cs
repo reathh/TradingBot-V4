@@ -26,17 +26,18 @@ builder.Services.AddSingleton<IExchangeApiRepository, BinanceExchangeApiReposito
 // Register all services with implemented interfaces as scoped, except for IHostedService
 builder.Services.Scan(scan => scan
     .FromAssemblyOf<Program>()
-    .AddClasses(classes => classes.Where(type =>
-        type != typeof(IHostedService) &&
-        type != typeof(IExchangeApiRepository))) // Don't auto-register IExchangeApiRepository
-    .AsImplementedInterfaces()
+    .AddClasses(classes => classes.Where(c => c
+        .GetInterfaces()
+        .All(i => i != typeof(IHostedService))))
+    .AsMatchingInterface()
     .WithScopedLifetime());
 
-// Register hosted services
-builder.Services.AddSingleton<IHostedService, BackgroundJobProcessor>();
-builder.Services.AddSingleton<IHostedService, OrderUpdateService>();
-builder.Services.AddSingleton<IHostedService, StaleOrderUpdateService>();
-builder.Services.AddSingleton<IHostedService, BalanceVerificationService>();
+// Register hosted services as IHostedService
+builder.Services.Scan(scan => scan
+    .FromAssemblyOf<Program>()
+    .AddClasses(classes => classes.AssignableTo<IHostedService>())
+    .AsImplementedInterfaces()
+    .WithSingletonLifetime());
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
