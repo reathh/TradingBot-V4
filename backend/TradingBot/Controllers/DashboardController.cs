@@ -122,25 +122,25 @@ namespace TradingBot.Controllers
 
     public class TradeDto
     {
-        public string Symbol { get; set; }
-        public string Direction { get; set; }
+        public required string Symbol { get; set; }
+        public required string Direction { get; set; }
         public decimal EntryPrice { get; set; }
         public decimal ExitPrice { get; set; }
         public decimal ProfitLoss { get; set; }
         public DateTime Timestamp { get; set; }
-        public string Status { get; set; }
+        public required string Status { get; set; }
     }
 
     public class PerformanceData
     {
-        public string[] Labels { get; set; }
-        public decimal[] Data { get; set; }
+        public required string[] Labels { get; set; }
+        public required decimal[] Data { get; set; }
     }
 
     public class TaskItem
     {
-        public string Title { get; set; }
-        public string Description { get; set; }
+        public required string Title { get; set; }
+        public required string Description { get; set; }
         public bool Done { get; set; }
     }
 }
