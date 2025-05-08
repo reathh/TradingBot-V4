@@ -1,8 +1,8 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using TradingBot.Application.Common;
 using TradingBot.Data;
 using TradingBot.Services;
-using TradingBot.Application.Common;
 
 namespace TradingBot.Application.Commands.PlaceEntryOrders;
 
@@ -66,7 +66,7 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                 .Where(x => x.Quantity > 0)
                 .ToListAsync(cancellationToken);
 
-            List<string> errors = new List<string>();
+            List<string> errors = new();
 
             await Parallel.ForEachAsync(botsWithQuantities,
                 new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },

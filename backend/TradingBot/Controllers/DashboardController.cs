@@ -95,23 +95,6 @@ namespace TradingBot.Controllers
             };
         }
 
-        [HttpGet("tasks")]
-        public async Task<ActionResult<IEnumerable<TaskItem>>> GetTasks()
-        {
-            // In a real application, these would come from a database
-            // For now, returning sample tasks
-            var tasks = new List<TaskItem>
-            {
-                new TaskItem { Title = "Update Bot Configuration", Description = "Adjust parameters for BTC/USD pair", Done = false },
-                new TaskItem { Title = "Review Trade Performance", Description = "Analyze last week's trading results", Done = true },
-                new TaskItem { Title = "Fix API Connection Issue", Description = "Troubleshoot connection drops with exchange API", Done = false },
-                new TaskItem { Title = "Deploy New Strategy", Description = "Implement the moving average crossover strategy", Done = false },
-                new TaskItem { Title = "Backup Database", Description = "Create weekly backup of trading history", Done = false }
-            };
-
-            return tasks;
-        }
-
         [HttpGet("bot-profits")]
         public async Task<ActionResult<IEnumerable<BotProfitDto>>> GetBotProfits([FromQuery] string? period = "month")
         {

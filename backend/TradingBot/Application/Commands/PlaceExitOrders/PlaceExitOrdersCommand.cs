@@ -1,8 +1,8 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using TradingBot.Application.Common;
 using TradingBot.Data;
 using TradingBot.Services;
-using TradingBot.Application.Common;
 
 namespace TradingBot.Application.Commands.PlaceExitOrders;
 
@@ -54,7 +54,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                     : t.EntryPrice - x.Bot.ExitStep >= x.CurrentPrice)) // Short: current price <= entry - exit step
                 .ToListAsync(cancellationToken);
 
-            List<string> errors = new List<string>();
+            List<string> errors = new();
 
             await Parallel.ForEachAsync(botsWithTrades,
                 new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
