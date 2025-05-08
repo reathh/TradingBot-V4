@@ -1,0 +1,21 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Development Workflow
+
+## Running the Application
+
+1. **Backend**:
+   - The .NET backend should be started first
+   - It runs on port 5025 (based on the frontend proxy configuration)
+
+2. **Frontend**:
+   - The Vue.js frontend is configured with Vite
+   - Run the frontend dev server using the commands in the frontend directory
+   - It will run on port 5001 as configured in [vite.config.js](mdc:frontend/vite.config.js)
+
+## Environment Setup
+
+The application appears to be containerized, as evidenced by the presence of `.dockerignore` at the root level, suggesting Docker can be used for deployment and possibly development.

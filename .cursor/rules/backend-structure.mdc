@@ -1,0 +1,27 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Backend Structure
+
+The backend is a .NET application organized following clean architecture principles.
+
+## Key Directories
+
+- **Application**: Contains application logic, commands and business rules
+  - `Commands`: Command handlers following CQRS pattern for different trading operations
+    - `NewTicker`: Commands to handle new ticker data
+    - `PlaceEntryOrders`: Commands to place entry orders
+    - `PlaceExitOrders`: Commands to place exit orders
+    - `UpdateBotOrder`: Commands to update bot orders
+    - `UpdateStaleOrders`: Commands for handling stale orders
+    - `VerifyBotBalance`: Commands for balance verification
+
+- **Controllers**: API endpoints that expose functionality to the frontend
+
+- **Models**: Domain models representing trading concepts
+
+- **Services**: Implementation of business logic and external service integrations
+
+- **Data**: Data access and persistence layer

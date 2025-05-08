@@ -1,0 +1,26 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# API Communication
+
+## Frontend to Backend Communication
+
+The frontend communicates with the backend through API calls. Based on the [vite.config.js](mdc:frontend/vite.config.js), the frontend proxies API requests to the backend server:
+
+```javascript
+proxy: {
+  "/api": {
+    target: "http://localhost:5025",
+    changeOrigin: true,
+    rewrite: (path) => path.replace(/^\/api/, "/api"),
+  },
+}
+```
+
+All API requests from the frontend should be prefixed with `/api` which will be proxied to the backend running on port 5025.
+
+## Backend API Endpoints
+
+The backend exposes API endpoints through controllers in the `backend/TradingBot/Controllers` directory. These controllers handle various trading operations and provide data for the dashboard frontend.

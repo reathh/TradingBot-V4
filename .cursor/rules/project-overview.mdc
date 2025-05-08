@@ -1,0 +1,15 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Project Overview
+
+This project is a Trading Bot application with a .NET backend and Vue.js frontend.
+
+## Main Components
+
+- **Backend**: .NET Core application handling trading logic, orders, and exchange interactions
+- **Frontend**: Vue.js dashboard application for monitoring and configuring the trading bot
+
+The frontend communicates with the backend via API endpoints defined in the backend controllers.

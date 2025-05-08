@@ -1,0 +1,21 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Testing
+
+## Backend Tests
+
+The backend includes a test project in `backend/TradingBot.Tests/` which contains tests for:
+
+- Application commands:
+  - `PlaceExitOrders`
+  - `PlaceOpeningOrders`
+  - `UpdateBotOrder`
+  - `UpdateStaleOrders`
+  - `VerifyBotBalance`
+
+- Services
+
+These tests validate the core trading logic and service behaviors.

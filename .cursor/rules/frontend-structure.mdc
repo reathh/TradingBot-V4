@@ -1,0 +1,35 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Frontend Structure
+
+The frontend is a Vue.js application using components, services, and stores for state management.
+
+## Key Directories
+
+- **components**: Reusable Vue components
+  - `Cards`: Dashboard card components
+  - `Charts`: Data visualization components
+  - `Sidebar`: Navigation sidebar components
+  - `Notifications`: Notification components
+  - `Inputs`: Form input components
+
+- **pages**: Main application pages
+  - `Dashboard`: Dashboard views
+  - `Forms`: Form pages
+  - `Tables`: Table views
+  - `UserProfile`: User profile pages
+
+- **services**: API client services that communicate with the backend
+
+- **stores**: State management (likely using Vuex or Pinia)
+
+- **router**: Vue router configuration
+
+- **assets**: Static assets including styles, fonts, and images
+
+## Configuration
+
+The [vite.config.js](mdc:frontend/vite.config.js) file configures the development server, build process, and proxy settings for API requests to the backend.
