@@ -241,8 +241,8 @@ namespace TradingBot.Controllers
 
     public class BotProfitDto
     {
-        public string BotId { get; set; }
-        public string Ticker { get; set; }
+        public required string BotId { get; set; }
+        public required string Ticker { get; set; }
         public decimal EntryAvgPrice { get; set; }
         public decimal ExitAvgPrice { get; set; }
         public decimal Quantity { get; set; }
@@ -255,7 +255,7 @@ namespace TradingBot.Controllers
 
     public class ProfitChartData
     {
-        public string[] Labels { get; set; }
-        public decimal[] Data { get; set; }
+        public required string[] Labels { get; set; }
+        public required decimal[] Data { get; set; }
     }
 }

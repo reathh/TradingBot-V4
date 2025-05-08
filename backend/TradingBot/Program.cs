@@ -4,6 +4,17 @@ using TradingBot.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add CORS services
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:5001")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddDbContext<TradingBotDbContext>(options =>
@@ -56,6 +67,9 @@ if (app.Environment.IsDevelopment())
         DataSeeder.SeedDatabase(dbContext);
     }
 }
+
+// Use CORS middleware
+app.UseCors("AllowFrontend");
 
 app.UseHttpsRedirection();
 
