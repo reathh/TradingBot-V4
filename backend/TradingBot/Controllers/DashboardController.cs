@@ -96,15 +96,29 @@ namespace TradingBot.Controllers
         }
 
         [HttpGet("bot-profits")]
-        public async Task<ActionResult<IEnumerable<BotProfitDto>>> GetBotProfits([FromQuery] string? period = "month")
+        public async Task<ActionResult<IEnumerable<BotProfitDto>>> GetBotProfits(
+            [FromQuery] string? period = "month",
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
         {
-            var trades = await _context.Trades
+            // Validate page parameters
+            if (page < 1) page = 1;
+            if (pageSize < 1 || pageSize > 100) pageSize = 10;
+
+            var query = _context.Trades
                 .Include(t => t.EntryOrder)
                 .Include(t => t.ExitOrder)
                 .Include(t => t.Bot)
                 .Where(t => t.ExitOrder != null && t.ExitOrder.Closed && t.ExitOrder.QuantityFilled > 0 && t.EntryOrder != null && t.ExitOrder != null)
-                .OrderByDescending(t => t.ExitOrder.CreatedAt)
-                .Take(100) // Limit to last 100 trades for performance
+                .OrderByDescending(t => t.ExitOrder.CreatedAt);
+
+            // Get total count for pagination info
+            var totalCount = await query.CountAsync();
+
+            // Apply pagination
+            var trades = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
             var botProfits = trades.Select(t => new BotProfitDto
@@ -120,6 +134,12 @@ namespace TradingBot.Controllers
                 EntryTime = t.EntryOrder.CreatedAt,
                 ExitTime = t.ExitOrder.CreatedAt
             }).ToList();
+
+            // Add pagination headers
+            Response.Headers.Append("X-Total-Count", totalCount.ToString());
+            Response.Headers.Append("X-Page", page.ToString());
+            Response.Headers.Append("X-Page-Size", pageSize.ToString());
+            Response.Headers.Append("X-Total-Pages", ((int)Math.Ceiling(totalCount / (double)pageSize)).ToString());
 
             return botProfits;
         }

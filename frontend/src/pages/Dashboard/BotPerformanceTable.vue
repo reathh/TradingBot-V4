@@ -1,51 +1,153 @@
 <template>
-  <base-table :data="botPerformanceData" thead-classes="text-primary">
-    <template #columns>
-      <th>Bot ID</th>
-      <th>Ticker</th>
-      <th>Entry Avg. Price</th>
-      <th>Exit Avg. Price</th>
-      <th>Quantity</th>
-      <th>Fees</th>
-      <th class="text-right">Profit</th>
-      <th class="text-right">Actions</th>
-    </template>
-
-    <template #default="{ row }">
-      <td v-if="row">{{ row.botId }}</td>
-      <td v-if="row">{{ row.ticker }}</td>
-      <td v-if="row">{{ formatCurrency(row.entryAvgPrice) }}</td>
-      <td v-if="row">{{ formatCurrency(row.exitAvgPrice) }}</td>
-      <td v-if="row">{{ row.quantity }}</td>
-      <td v-if="row">{{ formatCurrency(row.entryFee + row.exitFee) }}</td>
-      <td class="text-right" v-if="row" :class="getProfitClass(row.profit)">
-        {{ formatCurrency(row.profit) }}
-      </td>
-      <td class="text-right" v-if="row">
-        <el-tooltip content="Details" effect="light" :open-delay="300" placement="top">
-          <base-button type="info" icon size="sm" class="btn-link">
+  <div class="card-body">
+    <!-- Table Controls -->
+    <div class="d-flex justify-content-between mb-3">
+      <div class="d-flex align-items-center">
+        <span class="mr-2">Show</span>
+        <el-select v-model="pageSize" class="mx-2" style="width: 80px;">
+          <el-option
+            v-for="size in pageSizeOptions"
+            :key="size"
+            :label="size"
+            :value="size">
+          </el-option>
+        </el-select>
+        <span class="ml-2">entries</span>
+      </div>
+      <div>
+        <el-input
+          placeholder="Search records"
+          v-model="searchQuery"
+          style="width: 250px;"
+          clearable
+        >
+          <template #prefix>
             <i class="tim-icons icon-zoom-split"></i>
-          </base-button>
-        </el-tooltip>
-        <el-tooltip content="Refresh" effect="light" :open-delay="300" placement="top">
-          <base-button type="success" icon size="sm" class="btn-link">
-            <i class="tim-icons icon-refresh-01"></i>
-          </base-button>
-        </el-tooltip>
-      </td>
-    </template>
-  </base-table>
+          </template>
+        </el-input>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive">
+      <base-table
+        :data="displayedData"
+        :columns="tableColumns"
+        thead-classes="text-primary"
+      >
+        <template #columns>
+          <th
+            v-for="column in tableColumns"
+            :key="column.key"
+            :class="{ 'text-right': column.align === 'right' }"
+            @click="sortBy(column.key)"
+          >
+            {{ column.label }}
+            <i class="tim-icons" :class="getSortIcon(column.key)"></i>
+          </th>
+        </template>
+
+        <template #default="{ row }">
+          <td>{{ row.botId }}</td>
+          <td>{{ row.ticker }}</td>
+          <td>{{ formatCurrency(row.entryAvgPrice) }}</td>
+          <td>{{ formatCurrency(row.exitAvgPrice) }}</td>
+          <td>{{ row.quantity }}</td>
+          <td>{{ formatCurrency(row.entryFee + row.exitFee) }}</td>
+          <td class="text-right" :class="getProfitClass(row.profit)">
+            {{ formatCurrency(row.profit) }}
+          </td>
+          <td class="text-right">
+            <base-button type="info" icon size="sm" class="btn-link">
+              <i class="tim-icons icon-zoom-split"></i>
+            </base-button>
+            <base-button type="success" icon size="sm" class="btn-link">
+              <i class="tim-icons icon-refresh-01"></i>
+            </base-button>
+          </td>
+        </template>
+      </base-table>
+    </div>
+
+    <!-- Pagination Footer -->
+    <div class="d-flex justify-content-between align-items-center mt-3">
+      <div>
+        Showing {{ displayedEntryStart }} to {{ displayedEntryEnd }} of {{ totalFilteredItems }} entries
+      </div>
+
+      <base-pagination
+        v-model="currentPage"
+        :per-page="pageSize"
+        :total="totalFilteredItems"
+      ></base-pagination>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted, defineExpose, onUnmounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import BaseTable from "@/components/BaseTable.vue";
 import BaseButton from "@/components/BaseButton.vue";
+import BasePagination from "@/components/BasePagination.vue";
 import botService from "@/services/botService";
 
+// Data states
 const botPerformanceData = ref([]);
 const isLoading = ref(false);
 const error = ref(null);
+const searchQuery = ref('');
+const displayedData = ref([]);
+
+// Pagination state
+const currentPage = ref(1);
+const pageSize = ref(5);
+const pageSizeOptions = [5, 10, 25, 50];
+
+// Sorting state
+const sortKey = ref('exitTime');
+const sortDirection = ref('desc');
+
+// Table columns definition
+const tableColumns = [
+  { key: 'botId', label: 'BOT ID' },
+  { key: 'ticker', label: 'TICKER' },
+  { key: 'entryAvgPrice', label: 'ENTRY AVG. PRICE' },
+  { key: 'exitAvgPrice', label: 'EXIT AVG. PRICE' },
+  { key: 'quantity', label: 'QUANTITY' },
+  { key: 'fees', label: 'FEES' },
+  { key: 'profit', label: 'PROFIT', align: 'right' },
+  { key: 'actions', label: 'ACTIONS', align: 'right' }
+];
+
+// Computed properties for pagination display
+const displayedEntryStart = computed(() => {
+  if (totalFilteredItems.value === 0) return 0;
+  return (currentPage.value - 1) * pageSize.value + 1;
+});
+
+const displayedEntryEnd = computed(() => {
+  const end = currentPage.value * pageSize.value;
+  return end > totalFilteredItems.value ? totalFilteredItems.value : end;
+});
+
+// Filter data based on search query
+const filteredData = computed(() => {
+  if (!searchQuery.value.trim()) return botPerformanceData.value;
+
+  const query = searchQuery.value.toLowerCase();
+  return botPerformanceData.value.filter(item => {
+    return (
+      String(item.botId).toLowerCase().includes(query) ||
+      item.ticker.toLowerCase().includes(query) ||
+      String(item.entryAvgPrice).includes(query) ||
+      String(item.exitAvgPrice).includes(query) ||
+      String(item.profit).includes(query)
+    );
+  });
+});
+
+// Total count for pagination
+const totalFilteredItems = computed(() => filteredData.value.length);
 
 // Format currency with $ symbol and 2 decimal places
 const formatCurrency = (value) => {
@@ -58,25 +160,91 @@ const getProfitClass = (profit) => {
   return profit > 0 ? 'text-success' : 'text-danger';
 };
 
+// Sorting functions
+const sortBy = (column) => {
+  if (sortKey.value === column) {
+    // Toggle direction if clicking the same column
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    // Set new column and default to ascending
+    sortKey.value = column;
+    sortDirection.value = 'asc';
+  }
+
+  updateDisplayedData();
+};
+
+const getSortIcon = (column) => {
+  if (sortKey.value !== column) return 'icon-minimal-down opacity-5';
+  return sortDirection.value === 'asc' ? 'icon-minimal-up' : 'icon-minimal-down';
+};
+
+// Update displayed data with sorting and pagination
+const updateDisplayedData = () => {
+  // Apply sorting
+  const sorted = [...filteredData.value].sort((a, b) => {
+    let valueA = a[sortKey.value];
+    let valueB = b[sortKey.value];
+
+    // Special case for fees which is calculated
+    if (sortKey.value === 'fees') {
+      valueA = a.entryFee + a.exitFee;
+      valueB = b.entryFee + b.exitFee;
+    }
+
+    // Handle different data types
+    if (typeof valueA === 'string') valueA = valueA.toLowerCase();
+    if (typeof valueB === 'string') valueB = valueB.toLowerCase();
+
+    if (valueA === valueB) return 0;
+
+    const result = valueA < valueB ? -1 : 1;
+    return sortDirection.value === 'asc' ? result : -result;
+  });
+
+  // Apply pagination
+  const start = (currentPage.value - 1) * pageSize.value;
+  const end = start + pageSize.value;
+  displayedData.value = sorted.slice(start, end);
+};
+
 // Fetch bot performance data
 const fetchBotPerformance = async () => {
   isLoading.value = true;
   error.value = null;
 
   try {
-    const response = await botService.getBotProfits();
+    const response = await botService.getBotProfits({
+      page: currentPage.value,
+      pageSize: pageSize.value
+    });
+
     botPerformanceData.value = response.data;
+    updateDisplayedData();
+
   } catch (err) {
     console.error('Error fetching bot performance:', err);
     error.value = 'Failed to load bot performance data';
     botPerformanceData.value = [];
+    displayedData.value = [];
   } finally {
     isLoading.value = false;
   }
 };
 
+// Watch for changes that require refetching or updating data
+watch([currentPage, pageSize], () => {
+  fetchBotPerformance();
+});
+
+watch([searchQuery, sortKey, sortDirection, () => filteredData.value], () => {
+  currentPage.value = 1; // Reset to first page when filter changes
+  updateDisplayedData();
+});
+
 // Auto-refresh data every 60 seconds
 let autoRefreshInterval;
+
 onMounted(() => {
   fetchBotPerformance();
 
@@ -106,5 +274,9 @@ defineExpose({
 
 .text-danger {
   color: #fd5d93 !important;
+}
+
+.opacity-5 {
+  opacity: 0.5;
 }
 </style>

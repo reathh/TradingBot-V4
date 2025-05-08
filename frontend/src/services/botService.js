@@ -17,10 +17,16 @@ export default {
 
     /**
      * Get detailed bot trading history with profit calculations
+     * @param {Object} options - Options for the request
+     * @param {number} options.page - Page number to fetch (starting from 1)
+     * @param {number} options.pageSize - Number of items per page
+     * @param {string} options.period - Time period to filter results
      * @returns {Promise} Promise with bot trading history
      */
-    getBotProfits() {
-        return apiClient.get('/dashboard/bot-profits');
+    getBotProfits({ page = 1, pageSize = 10, period = 'month' } = {}) {
+        return apiClient.get('/dashboard/bot-profits', {
+            params: { page, pageSize, period }
+        });
     },
 
     /**
