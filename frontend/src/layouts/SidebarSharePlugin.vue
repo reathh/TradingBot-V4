@@ -28,7 +28,7 @@
           <div class="togglebutton switch-sidebar-mini">
             <span class="label-switch">OFF</span>
             <BaseSwitch
-              v-model="sidebarMini"
+              v-model="sidebarMiniLocal"
               @update:modelValue="minimizeSidebar"
             />
             <span class="label-switch label-right">ON</span>
@@ -75,6 +75,7 @@
 <script setup>
 import { ref, watch } from "vue";
 import BaseSwitch from "@/components/BaseSwitch.vue";
+import { useSidebar } from "@/components/SidebarPlugin/index.js";
 
 const props = defineProps({
   backgroundColor: String,
@@ -83,7 +84,7 @@ const props = defineProps({
 const emit = defineEmits(["update:backgroundColor"]);
 
 const isOpen = ref(false);
-const sidebarMini = ref(true);
+const sidebarMiniLocal = ref(false); // Use a local ref for the switch
 const darkMode = ref(true);
 
 const sidebarColors = ref([
@@ -94,6 +95,8 @@ const sidebarColors = ref([
   { color: "warning", active: false, value: "orange" },
   { color: "danger", active: false, value: "red" },
 ]);
+
+const sidebar = useSidebar();
 
 function toggleDropDown() {
   isOpen.value = !isOpen.value;
@@ -124,9 +127,10 @@ function toggleMode(isDark) {
   }
 }
 
-function minimizeSidebar() {
-  if (typeof window.$sidebar?.toggleMinimize === "function") {
-    window.$sidebar.toggleMinimize();
+function minimizeSidebar(value) {
+  sidebarMiniLocal.value = value;
+  if (sidebar && typeof sidebar.toggleMinimize === "function") {
+    sidebar.toggleMinimize();
   }
 }
 </script>

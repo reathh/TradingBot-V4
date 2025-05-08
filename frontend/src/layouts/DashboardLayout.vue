@@ -27,10 +27,10 @@
 <script setup>
 import { ref } from "vue";
 import { useSidebarStore } from "@/stores/sidebar";
-import DashboardNavbar from "@/components/Navbar/DashboardNavbar.vue";
+import DashboardNavbar from "./DashboardNavbar.vue";
 import SideBar from "@/components/SidebarPlugin/SideBar.vue";
-import SidebarItem from "@/components/SidebarPlugin/SidebarItem.vue";
 import Notifications from "@/components/Notifications/Notifications.vue";
+import SidebarFixedToggleButton from "./SidebarFixedToggleButton.vue";
 import SidebarShare from "./SidebarSharePlugin.vue";
 import { FadeInOut } from "vue3-transitions";
 

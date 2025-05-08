@@ -22,7 +22,9 @@
           <div class="action-item">
             <a href="#" class="nav-link">
               <i class="tim-icons icon-bell-55"></i>
-              <span class="badge" v-if="notificationCount > 0">{{ notificationCount }}</span>
+              <span class="badge" v-if="notificationCount > 0">{{
+                notificationCount
+              }}</span>
             </a>
           </div>
           <div class="action-item">
@@ -56,10 +58,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
-import { useSidebarStore } from '@/stores/sidebar';
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useAuthStore } from "@/stores/auth";
+import { useSidebarStore } from "@/stores/sidebar";
 
 const route = useRoute();
 const router = useRouter();
@@ -70,11 +72,11 @@ const showUserMenu = ref(false);
 const notificationCount = ref(3);
 
 const userAvatar = computed(() => {
-  return 'https://ui-avatars.com/api/?name=John+Doe&background=0D8ABC&color=fff';
+  return "https://ui-avatars.com/api/?name=John+Doe&background=0D8ABC&color=fff";
 });
 
 const currentRouteName = computed(() => {
-  return route.name || 'Dashboard';
+  return route.name || "Dashboard";
 });
 
 const toggleUserMenu = () => {
@@ -91,31 +93,35 @@ const toggleSidebar = () => {
 
 // Click outside to close user menu
 const closeUserMenuOnClickOutside = (event) => {
-  const dropdown = document.querySelector('.user-dropdown');
+  const dropdown = document.querySelector(".user-dropdown");
   if (dropdown && !dropdown.contains(event.target)) {
     showUserMenu.value = false;
   }
 };
 
 onMounted(() => {
-  document.addEventListener('click', closeUserMenuOnClickOutside);
+  document.addEventListener("click", closeUserMenuOnClickOutside);
 });
 
 onUnmounted(() => {
-  document.removeEventListener('click', closeUserMenuOnClickOutside);
+  document.removeEventListener("click", closeUserMenuOnClickOutside);
 });
 </script>
 
 <style scoped>
 .navbar {
-  height: 70px;
+  height: 0px;
   position: relative;
   display: flex;
   align-items: center;
   padding: 0 30px;
   z-index: 2;
   box-shadow: 0 10px 25px 0 rgba(0, 0, 0, 0.3);
-  background: linear-gradient(to bottom, #1a1e34, #1f2437) !important; /* Match original template gradient */
+  background: linear-gradient(
+    to bottom,
+    #1a1e34,
+    #1f2437
+  ) !important; /* Match original template gradient */
 }
 
 .navbar-wrapper {
@@ -160,7 +166,7 @@ onUnmounted(() => {
   transition: all 0.2s;
 }
 
-.navbar-toggler-bar+.navbar-toggler-bar {
+.navbar-toggler-bar + .navbar-toggler-bar {
   margin-top: 7px;
 }
 
@@ -239,7 +245,7 @@ onUnmounted(() => {
   right: 2px;
   padding: 3px 5px;
   border-radius: 50%;
-  background: #FF5252;
+  background: #ff5252;
   color: white;
   font-size: 10px;
   min-width: 15px;

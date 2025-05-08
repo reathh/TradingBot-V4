@@ -1,104 +1,115 @@
 <template>
-  <div>
-    <base-table
-      :data="recentTrades"
-      :columns="columns"
-      thead-classes="text-primary"
-    >
-      <template #columns>
-        <th>Symbol</th>
-        <th>Direction</th>
-        <th>Entry Price</th>
-        <th>Exit Price</th>
-        <th>P/L</th>
-        <th>Date</th>
-        <th>Status</th>
-      </template>
-      <template #default="{ row }">
-        <td>{{ row.symbol }}</td>
-        <td>
-          <span :class="row.direction === 'Buy' ? 'text-success' : 'text-danger'">
-            {{ row.direction }}
-          </span>
-        </td>
-        <td>{{ formatPrice(row.entryPrice) }}</td>
-        <td>{{ formatPrice(row.exitPrice) }}</td>
-        <td :class="row.profitLoss >= 0 ? 'text-success' : 'text-danger'">
-          {{ formatPrice(row.profitLoss) }}
-        </td>
-        <td>{{ formatDate(row.timestamp) }}</td>
-        <td>
-          <span
-            :class="{
-              'badge': true,
-              'badge-success': row.status === 'Completed',
-              'badge-warning': row.status !== 'Completed'
-            }"
+  <base-table :data="tableData" thead-classes="text-primary">
+    <template #columns>
+      <th>#</th>
+      <th>Name</th>
+      <th>Job Position</th>
+      <th>Salary</th>
+      <th class="text-right">Milestone</th>
+      <th class="text-right">Actions</th>
+    </template>
+
+    <template #default="{ row, index }">
+      <td class="text-center" v-if="row">
+        <div class="photo"><img :src="row.img" alt="photo" /></div>
+      </td>
+      <td v-if="row">{{ row.name }}</td>
+      <td v-if="row">{{ row.job }}</td>
+      <td class="text-center" v-if="row">
+        <base-progress :value="row.progress" />
+      </td>
+      <td class="text-right" v-if="row">€ 99,225</td>
+      <td class="text-right" v-if="row">
+        <el-tooltip
+          content="Refresh"
+          effect="light"
+          :open-delay="300"
+          placement="top"
+        >
+          <base-button
+            :type="index > 2 ? 'success' : 'neutral'"
+            icon
+            size="sm"
+            class="btn-link"
           >
-            {{ row.status }}
-          </span>
-        </td>
-      </template>
-    </base-table>
-  </div>
+            <i class="tim-icons icon-refresh-01"></i>
+          </base-button>
+        </el-tooltip>
+        <el-tooltip
+          content="Delete"
+          effect="light"
+          :open-delay="300"
+          placement="top"
+        >
+          <base-button
+            :type="index > 2 ? 'danger' : 'neutral'"
+            icon
+            size="sm"
+            class="btn-link"
+          >
+            <i class="tim-icons icon-simple-remove"></i>
+          </base-button>
+        </el-tooltip>
+      </td>
+    </template>
+  </base-table>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import BaseTable from '@/components/BaseTable.vue';
-import dashboardService from '@/services/dashboard';
+import { ref } from "vue";
+import BaseTable from "@/components/BaseTable.vue";
+import BaseProgress from "@/components/BaseProgress.vue";
 
-// Table columns
-const columns = ['Symbol', 'Direction', 'Entry Price', 'Exit Price', 'P/L', 'Date', 'Status'];
-
-// Recent trades data
-const recentTrades = ref([]);
-
-// Format price with 2 decimal places and $ sign
-const formatPrice = (price) => {
-  return `$${parseFloat(price).toFixed(2)}`;
-};
-
-// Format date
-const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-};
-
-// Fetch recent trades
-const fetchRecentTrades = async () => {
-  try {
-    const response = await dashboardService.getRecentTrades();
-    recentTrades.value = response.data;
-  } catch (error) {
-    console.error('Error fetching recent trades:', error);
-  }
-};
-
-onMounted(() => {
-  fetchRecentTrades();
-});
+const tableData = ref([
+  {
+    id: 1,
+    img: "img/tania.jpg",
+    name: "Tania Mike",
+    job: "Develop",
+    progress: 25,
+    salary: "€ 99,225",
+  },
+  {
+    id: 2,
+    img: "img/robi.jpg",
+    name: "John Doe",
+    job: "CEO",
+    progress: 77,
+    salary: "€ 89,241",
+  },
+  {
+    id: 3,
+    img: "img/lora.jpg",
+    name: "Alexa Mike",
+    job: "Design",
+    progress: 41,
+    salary: "€ 92,144",
+  },
+  {
+    id: 4,
+    img: "img/jana.jpg",
+    name: "Jana Monday",
+    job: "Marketing",
+    progress: 50,
+    salary: "€ 49,990",
+  },
+  {
+    id: 5,
+    img: "img/mike.jpg",
+    name: "Paul Dickens",
+    job: "Develop",
+    progress: 100,
+    salary: "€ 69,201",
+  },
+  {
+    id: 6,
+    img: "img/emilyz.jpg",
+    name: "Manuela Rico",
+    job: "Manager",
+    progress: 15,
+    salary: "€ 99,201",
+  },
+]);
 </script>
 
-<style>
-.badge {
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-.badge-success {
-  background-color: rgba(66, 134, 121, 0.3);
-  color: #42b883;
-}
-.badge-warning {
-  background-color: rgba(251, 175, 0, 0.3);
-  color: #fbaf00;
-}
-</style>
+<style></style>

@@ -23,41 +23,47 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
 import { ElTooltip } from "element-plus";
 import BaseTable from "@/components/BaseTable.vue";
 import BaseCheckbox from "@/components/Inputs/BaseCheckbox.vue";
 import BaseButton from "@/components/BaseButton.vue";
-import dashboardService from "@/services/dashboard";
 
 const tableData = ref([
   {
-    title: "Loading tasks...",
-    description: "Please wait while tasks are being loaded",
+    title: "Update the Documentation",
+    description: "Dwuamish Head, Seattle, WA 8:47 AM",
     done: false,
-  }
+  },
+  {
+    title: "GDPR Compliance",
+    description:
+      "The GDPR is a regulation that requires businesses to protect the personal data and privacy of Europe citizens for transactions that occur within EU member states.",
+    done: true,
+  },
+  {
+    title: "Solve the issues",
+    description:
+      "Fifty percent of all respondents said they would be more likely to shop at a company",
+    done: false,
+  },
+  {
+    title: "Release v2.0.0",
+    description: "Ra Ave SW, Seattle, WA 98116, SUA 11:19 AM",
+    done: false,
+  },
+  {
+    title: "Export the processed files",
+    description:
+      "The report also shows that consumers will not easily forgive a company once a breach exposing their personal data occurs.",
+    done: false,
+  },
+  {
+    title: "Arival at export process",
+    description: "Capitol Hill, Seattle, WA 12:34 AM",
+    done: false,
+  },
 ]);
-
-// Fetch tasks from API
-const fetchTasks = async () => {
-  try {
-    const response = await dashboardService.getTasks();
-    tableData.value = response.data;
-  } catch (error) {
-    console.error("Error fetching tasks:", error);
-    tableData.value = [
-      {
-        title: "Error loading tasks",
-        description: "Could not load tasks from the server",
-        done: false,
-      }
-    ];
-  }
-};
-
-onMounted(() => {
-  fetchTasks();
-});
 </script>
 
 <style></style>

@@ -50,7 +50,7 @@
       </template>
     </div>
     <CollapseTransition :show="isMenu && !collapsed">
-      <ul v-if="isMenu" class="sidebar-menu-item">
+      <ul v-if="isMenu" class="sidebar-menu-item" style="list-style-type: none">
         <sidebar-item
           v-for="(subLink, subIndex) in link.children"
           :key="subLink.name + subIndex"

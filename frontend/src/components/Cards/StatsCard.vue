@@ -10,16 +10,15 @@
       </div>
       <div class="col-7" v-if="$slots.content || title || subTitle">
         <div class="numbers">
-          <slot>
-            <p v-if="subTitle" class="card-category">{{ subTitle }}</p>
-            <h3 v-if="title" class="card-title">{{ title }}</h3>
-          </slot>
+          <p v-if="subTitle" class="card-category">{{ subTitle }}</p>
+          <h3 v-if="title" class="card-title">{{ title }}</h3>
         </div>
       </div>
     </div>
     <template #footer>
-      <div class="stats" v-if="$slots.footer">
-        <slot name="footer" />
+      <div class="stats d-flex align-items-center">
+        <i v-if="footerIcon" :class="footerIcon" class="mr-2" />
+        <p v-if="footer" class="mb-0">{{ footer }}</p>
       </div>
     </template>
   </Card>
@@ -36,5 +35,7 @@ defineProps({
   icon: String,
   title: String,
   subTitle: String,
+  footer: String,
+  footerIcon: String,
 });
 </script>

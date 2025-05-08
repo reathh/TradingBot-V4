@@ -30,7 +30,7 @@
 <script setup>
 import { ref, provide, onBeforeUnmount } from "vue";
 import SidebarItem from "./SidebarItem.vue";
-import { useSidebarStore } from "@/stores/sidebar.js"; // Assuming you'll use a Pinia store
+import { useSidebarStore } from "@/stores/sidebar.js";
 
 const props = defineProps({
   title: {

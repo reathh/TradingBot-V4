@@ -8,7 +8,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
-import { FadeTransition } from "vue3-transitions";
+import { FadeTransition } from "@/components/SidebarPlugin/transitions.js";
 import SidebarToggleButton from "./SidebarToggleButton.vue";
 
 const showScrollThreshold = 50;

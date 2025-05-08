@@ -49,8 +49,9 @@ export default defineConfig({
     // allowedHosts: ['6a6d5910-c2d8-416e-bb4e-18f42ca1f2bb-00-54svusmb02zb.worf.replit.dev'],
     proxy: {
       "/api": {
-        target: "http://localhost:5000",
+        target: "http://localhost:5001",
         changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, "/api"),
       },
     },
   },

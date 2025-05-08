@@ -55,8 +55,9 @@
         :sub-title="card.subTitle"
         :type="card.type"
         :icon="card.icon"
+        :footer-icon="card.footerIcon"
+        :footer="card.footer"
       >
-        <div slot="footer" v-html="card.footer"></div>
       </stats-card>
     </div>
 
@@ -164,7 +165,6 @@ import BaseDropdown from "@/components/BaseDropdown.vue";
 import Card from "@/components/Cards/Card.vue";
 import config from "@/config";
 import { useRoute } from "vue-router";
-import dashboardService from "@/services/dashboard";
 
 const route = useRoute();
 const $rtl = inject("$rtl");
@@ -312,32 +312,36 @@ const bigLineChartGradientStops = ref([1, 0.4, 0]);
 
 const statsCards = ref([
   {
-    title: "0",
-    subTitle: "Active Bots",
+    title: "150GB",
+    subTitle: "Number",
     type: "warning",
-    icon: "tim-icons icon-components",
-    footer: '<i class="tim-icons icon-controller"></i> Trading Automation',
+    icon: "tim-icons icon-chat-33",
+    footerIcon: "tim-icons icon-refresh-01",
+    footer: "Update Now",
   },
   {
-    title: "0",
-    subTitle: "Active Orders",
+    title: "+45K",
+    subTitle: "Followers",
     type: "primary",
-    icon: "tim-icons icon-money-coins",
-    footer: '<i class="tim-icons icon-chart-bar-32"></i> Market Orders',
+    icon: "tim-icons icon-shape-star",
+    footerIcon: "tim-icons icon-sound-wave",
+    footer: "Last Research",
   },
   {
-    title: "0",
-    subTitle: "Completed Trades",
+    title: "150,000",
+    subTitle: "Users",
     type: "info",
-    icon: "tim-icons icon-spaceship",
-    footer: '<i class="tim-icons icon-time-alarm"></i> Trading History',
+    icon: "tim-icons icon-single-02",
+    footerIcon: "tim-icons icon-trophy",
+    footer: "Customer feedback",
   },
   {
-    title: "$0",
-    subTitle: "Total Profit",
-    type: "success",
-    icon: "tim-icons icon-coins",
-    footer: '<i class="tim-icons icon-chart-pie-36"></i> Trading Performance',
+    title: "23",
+    subTitle: "Errors",
+    type: "danger",
+    icon: "tim-icons icon-molecule-40",
+    footerIcon: "tim-icons icon-watch-time",
+    footer: "In the last hours",
   },
 ]);
 
@@ -412,55 +416,12 @@ const initBigChart = (index) => {
   bigLineChartActiveIndex.value = index;
 };
 
-// Fetch data from API
-const fetchDashboardData = async () => {
-  try {
-    // Get summary data
-    const summaryResponse = await dashboardService.getSummary();
-    const summary = summaryResponse.data;
-
-    // Update stats cards with actual data
-    statsCards.value[0].title = summary.totalBots.toString();
-    statsCards.value[1].title = summary.activeOrders.toString();
-    statsCards.value[2].title = summary.completedTrades.toString();
-    statsCards.value[3].title = `$${summary.totalProfit.toFixed(2)}`;
-
-    // Get performance data for the chart
-    const performanceResponse = await dashboardService.getPerformance();
-    const performance = performanceResponse.data;
-
-    // Update the performance chart
-    performanceChartData.value = {
-      labels: performance.labels,
-      datasets: [
-        {
-          label: "Trading Profit/Loss",
-          data: performance.data,
-          borderColor: "#41B883",
-          backgroundColor: "rgba(65, 184, 131, 0.1)",
-          borderWidth: 3,
-          pointRadius: 4,
-          pointBackgroundColor: "#41B883",
-          tension: 0.4,
-          fill: false,
-        },
-      ],
-    };
-
-    initBigChart(0);
-  } catch (error) {
-    console.error("Error fetching dashboard data:", error);
-  }
-};
-
 onMounted(() => {
   if (enableRTL.value) {
     locale.value = "ar";
     $rtl?.enableRTL();
   }
-
-  // Fetch dashboard data when component mounts
-  fetchDashboardData();
+  initBigChart(0);
 });
 
 onBeforeUnmount(() => {
