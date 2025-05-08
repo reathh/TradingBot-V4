@@ -26,7 +26,7 @@
             "runtimeExecutable": "npm",
             "runtimeArgs": [
                 "run",
-                "serve"
+                "dev"
             ],
             "outputCapture": "std"
         }
