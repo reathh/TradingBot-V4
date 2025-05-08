@@ -4,9 +4,7 @@ import router from "./router";
 import App from "./App.vue";
 import NotificationPlugin from "./components/Notifications/NotificationPlugin";
 import SidebarItem from "./components/SidebarPlugin/SidebarItem.vue";
-import i18n from "./i18n";
 import Vue3Transitions from "vue3-transitions";
-import RTLPlugin from "./plugins/RTLPlugin";
 import SidebarPlugin from "@/components/SidebarPlugin/index.js";
 import ClickOutsideDirective from "./directives/click-outside";
 // Styles
@@ -29,7 +27,6 @@ app.use(createPinia());
 app.use(router);
 app.use(ElementPlus);
 app.use(Vue3Transitions);
-app.use(RTLPlugin);
 app.use(ClickOutsideDirective);
 app.use(SidebarPlugin);
 app.use(NotificationPlugin);

@@ -1,14 +1,15 @@
 <template>
   <div class="navbar-minimize-fixed" style="opacity: 1">
-    <FadeTransition>
-      <SidebarToggleButton v-if="showButton" class="text-muted" />
-    </FadeTransition>
+    <Transition name="fade">
+      <div v-if="showButton">
+        <SidebarToggleButton class="text-muted" />
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
-import { FadeTransition } from "@/components/SidebarPlugin/transitions.js";
 import SidebarToggleButton from "./SidebarToggleButton.vue";
 
 const showScrollThreshold = 50;
@@ -38,5 +39,10 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Add styles if needed */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
 </style>

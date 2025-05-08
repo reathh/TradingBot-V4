@@ -1,11 +1,11 @@
 <template>
-  <div id="worldMap" style="height: 300px"></div>
+  <div ref="mapContainer" id="worldMap" style="height: 300px"></div>
 </template>
 
 <script setup>
-import * as d3 from "d3";
-import { onMounted, ref } from "vue";
+import { onMounted, ref, nextTick } from "vue";
 import { throttle } from "@/util/throttle";
+import * as topojson from "topojson-client";
 
 const props = defineProps({
   data: {
@@ -31,76 +31,80 @@ const defaultMapData = {
   USA: 2920,
 };
 
-const color1 = "#AAAAAA";
-const color2 = "#444444";
-const highlightFillColor = "#66615B";
-const borderColor = "#3c3c3c";
-const highlightBorderColor = "#3c3c3c";
-
-function generateColors(length) {
-  return d3.scaleLinear().domain([0, length]).range([color1, color2]);
-}
-
-function generateMapColors(mapData) {
-  const values = Object.values(mapData);
-  const maxVal = Math.max(...values);
-  const colorScale = generateColors(maxVal);
-
-  const fills = { defaultFill: "#e4e4e4" };
-  const formattedData = {};
-
-  for (const key in mapData) {
-    const val = mapData[key];
-    fills[key] = colorScale(val);
-    formattedData[key] = {
-      fillKey: key,
-      value: val,
-    };
-  }
-
-  return { fills, mapData: formattedData };
-}
-
 onMounted(async () => {
   try {
-    // Check if we're in a browser environment
-    if (typeof window === 'undefined' || !document) {
-      console.warn('WorldMap component requires browser environment');
+    // Wait for the DOM to be ready
+    await nextTick();
+
+    // Make sure we're in browser environment
+    if (typeof window === 'undefined') {
+      console.warn('WorldMap requires browser environment');
       return;
     }
 
-    // Use dynamic import for Datamaps
-    const DatamapsModule = await import("datamaps");
-    const DataMap = DatamapsModule.default;
+    // Dynamically import d3 modules
+    const d3 = await import("d3");
+    const d3Selection = await import("d3-selection");
+
+    // Generate color scale
+    function generateColors(length) {
+      return d3.scaleLinear().domain([0, length]).range(["#AAAAAA", "#444444"]);
+    }
+
+    function generateMapColors(mapData) {
+      const values = Object.values(mapData);
+      const maxVal = values.length ? Math.max(...values) : 1;
+      const colorScale = generateColors(maxVal);
+
+      const fills = { defaultFill: "#e4e4e4" };
+      const formattedData = {};
+
+      for (const key in mapData) {
+        const val = mapData[key];
+        fills[key] = colorScale(val);
+        formattedData[key] = {
+          fillKey: key,
+          value: val,
+        };
+      }
+
+      return { fills, mapData: formattedData };
+    }
 
     // Use provided data or default
     const mapData = Object.keys(props.data).length > 0 ? props.data : defaultMapData;
+
+    // Get datamaps
+    const DatamapsModule = await import("datamaps");
+    const DataMap = DatamapsModule.default;
+
     const { fills, mapData: formattedData } = generateMapColors(mapData);
 
-    const mapElement = document.getElementById("worldMap");
-    if (!mapElement) {
-      console.error("Could not find worldMap element");
+    // Ensure the map container exists
+    if (!mapContainer.value) {
+      console.error("Map container ref not available");
       return;
     }
 
+    // Create the map
     const worldMap = new DataMap({
       scope: "world",
-      element: mapElement,
+      element: mapContainer.value,
       fills,
       data: formattedData,
       responsive: true,
       geographyConfig: {
-        borderColor,
+        borderColor: "#3c3c3c",
         borderWidth: 0.5,
         borderOpacity: 0.8,
-        highlightFillColor,
-        highlightBorderColor,
+        highlightFillColor: "#66615B",
+        highlightBorderColor: "#3c3c3c",
         highlightBorderWidth: 0.5,
         highlightBorderOpacity: 0.8,
       },
     });
 
-    // Ensure proper cleanup
+    // Handle resize
     const handleResize = throttle(() => {
       if (worldMap && typeof worldMap.resize === 'function') {
         worldMap.resize();
@@ -109,7 +113,7 @@ onMounted(async () => {
 
     window.addEventListener("resize", handleResize);
 
-    // Return cleanup function
+    // Clean up function
     return () => {
       window.removeEventListener("resize", handleResize);
     };

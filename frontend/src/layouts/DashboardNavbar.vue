@@ -24,7 +24,7 @@
       </div>
     </template>
 
-    <ul class="navbar-nav" :class="isRTL ? 'mr-auto' : 'ml-auto'">
+    <ul class="navbar-nav ml-auto">
       <div class="search-bar input-group" @click="searchModalVisible = true">
         <button class="btn btn-link" id="search-button">
           <i class="tim-icons icon-zoom-split"></i>
@@ -51,7 +51,7 @@
 
       <BaseDropdown
         tag="li"
-        :menu-on-right="!isRTL"
+        menu-on-right
         title-tag="a"
         title-classes="nav-link"
         class="nav-item"
@@ -84,7 +84,7 @@
 
       <BaseDropdown
         tag="li"
-        :menu-on-right="!isRTL"
+        menu-on-right
         title-tag="a"
         title-classes="nav-link"
         class="nav-item"
@@ -120,7 +120,6 @@ import BaseDropdown from "@/components/BaseDropdown.vue";
 import SidebarToggleButton from "./SidebarToggleButton.vue";
 
 const route = useRoute();
-const $rtl = inject("$rtl", { isRTL: false });
 const $sidebar = inject("$sidebar", {
   showSidebar: false,
   displaySidebar: () => {},
@@ -129,8 +128,6 @@ const $sidebar = inject("$sidebar", {
 const showMenu = ref(false);
 const searchModalVisible = ref(false);
 const searchQuery = ref("");
-
-const isRTL = computed(() => $rtl.isRTL);
 
 const routeName = computed(() => {
   const name = route.name || "";

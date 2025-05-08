@@ -3,23 +3,13 @@
 </template>
 
 <script setup>
-import { onMounted, inject, computed } from "vue";
+import { onMounted } from "vue";
 import { useAuthStore } from "@/stores/auth";
-import { useRoute } from "vue-router";
 
 const authStore = useAuthStore();
-const route = useRoute();
-// const $rtl = inject("$rtl");
-// const isRTL = computed(() => $rtl?.isRTL.value); // Access the reactive isRTL
 
 onMounted(() => {
   authStore.checkAuth();
-
-  // if (route.query.rtl === "true" && $rtl) {
-  //   $rtl.enableRTL();
-  // } else if ($rtl) {
-  //   $rtl.disableRTL();
-  // }
 });
 </script>
 
@@ -37,9 +27,4 @@ body {
   -moz-osx-font-smoothing: grayscale;
   font-weight: 400;
 }
-body[dir="rtl"] {
-  direction: rtl;
-  /* ... RTL specific body styles ... */
-}
-/* ... RTL specific component styles ... */
 </style>

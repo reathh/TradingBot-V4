@@ -4,17 +4,13 @@
       <Card type="chart">
         <template #header>
           <div class="row">
-            <div
-              class="col-sm-6"
-              :class="{ 'text-right': isRTL, 'text-left': !isRTL }"
-            >
+            <div class="col-sm-6">
               <h5 class="card-category">Trading Analytics</h5>
               <h2 class="card-title">Bot Profit Performance</h2>
             </div>
             <div class="col-sm-6 d-flex d-sm-block">
               <div
-                class="btn-group btn-group-toggle"
-                :class="{ 'float-left': isRTL, 'float-right': !isRTL }"
+                class="btn-group btn-group-toggle float-right"
                 data-toggle="buttons"
               >
                 <label
@@ -61,7 +57,7 @@
       </stats-card>
     </div>
 
-    <div class="col-lg-4" :class="{ 'text-right': isRTL }">
+    <div class="col-lg-4">
       <Card type="chart">
         <template #header>
           <h5 class="card-category">Total Shipments</h5>
@@ -78,7 +74,7 @@
         </div>
       </Card>
     </div>
-    <div class="col-lg-4" :class="{ 'text-right': isRTL }">
+    <div class="col-lg-4">
       <Card type="chart">
         <template #header>
           <h5 class="card-category">Daily Sales</h5>
@@ -97,7 +93,7 @@
         </div>
       </Card>
     </div>
-    <div class="col-lg-4" :class="{ 'text-right': isRTL }">
+    <div class="col-lg-4">
       <Card type="chart">
         <template #header>
           <h5 class="card-category">Completed tasks</h5>
@@ -115,7 +111,7 @@
       </Card>
     </div>
     <div class="col-lg-5">
-      <Card type="tasks" :header-classes="{ 'text-right': isRTL }">
+      <Card type="tasks">
         <template #header>
           <h6 class="title d-inline">Tasks (5)</h6>
           <p class="card-category d-inline">Today</p>
@@ -123,7 +119,6 @@
             menu-on-right=""
             tag="div"
             title-classes="btn btn-link btn-icon"
-            :class="{ 'float-left': isRTL }"
           >
             <i slot="title" class="tim-icons icon-settings-gear-63"></i>
             <a class="dropdown-item" href="#pablo"> Action </a>
@@ -137,7 +132,7 @@
       </Card>
     </div>
     <div class="col-lg-7">
-      <Card class="card" :header-classes="{ 'text-right': isRTL }">
+      <Card class="card">
         <template #header>
           <h5 class="card-title mb-0">Bot Performance</h5>
         </template>
@@ -171,7 +166,6 @@ import { useRoute } from "vue-router";
 import botService from "@/services/botService";
 
 const route = useRoute();
-const $rtl = inject("$rtl");
 
 const bigChartRef = ref(null);
 const bigLineChartActiveIndex = ref(0);
@@ -405,8 +399,6 @@ const blueBarChartData = ref({
 const blueBarChartExtraOptions = ref(chartConfigs.barChartOptions);
 const blueBarChartGradientStops = ref([1, 0.4, 0]);
 
-const enableRTL = computed(() => route.query.enableRTL);
-const isRTL = computed(() => $rtl?.isRTL.value);
 const bigLineChartCategories = ref([
   { name: "Accounts", icon: "tim-icons icon-single-02" },
   { name: "Purchases", icon: "tim-icons icon-gift-2" },
@@ -475,20 +467,8 @@ const fetchBotProfitData = async (period) => {
 };
 
 onMounted(() => {
-  if (enableRTL.value) {
-    locale.value = "ar";
-    $rtl?.enableRTL();
-  }
-
   // Initialize bot profit data
   fetchBotProfitData(timePeriods[selectedPeriodIndex.value].value);
-});
-
-onBeforeUnmount(() => {
-  if (isRTL.value) {
-    locale.value = "en";
-    $rtl?.disableRTL();
-  }
 });
 </script>
 <style lang="scss" scoped>
