@@ -1,9 +1,9 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using TradingBot.Data;
 
 namespace TradingBot.Controllers
@@ -110,6 +110,117 @@ namespace TradingBot.Controllers
 
             return tasks;
         }
+
+        [HttpGet("bot-profits")]
+        public async Task<ActionResult<IEnumerable<BotProfitDto>>> GetBotProfits([FromQuery] string? period = "month")
+        {
+            var trades = await _context.Trades
+                .Include(t => t.EntryOrder)
+                .Include(t => t.ExitOrder)
+                .Include(t => t.Bot)
+                .Where(t => t.IsCompleted && t.EntryOrder != null && t.ExitOrder != null)
+                .OrderByDescending(t => t.ExitOrder.CreatedAt)
+                .Take(100) // Limit to last 100 trades for performance
+                .ToListAsync();
+
+            var botProfits = trades.Select(t => new BotProfitDto
+            {
+                BotId = t.Bot?.Id.ToString() ?? "Unknown",
+                Ticker = t.EntryOrder.Symbol,
+                EntryAvgPrice = t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price,
+                ExitAvgPrice = t.ExitOrder.AverageFillPrice ?? t.ExitOrder.Price,
+                Quantity = t.EntryOrder.Quantity,
+                EntryFee = t.EntryOrder.Fees,
+                ExitFee = t.ExitOrder.Fees,
+                Profit = CalculateProfit(t),
+                EntryTime = t.EntryOrder.CreatedAt,
+                ExitTime = t.ExitOrder.CreatedAt
+            }).ToList();
+
+            return botProfits;
+        }
+
+        [HttpGet("bot-profits-chart")]
+        public async Task<ActionResult<ProfitChartData>> GetBotProfitsChart([FromQuery] string period = "month")
+        {
+            DateTime startDate;
+            string[] labels;
+            Func<DateTime, string> getGroupKey;
+
+            // Set time range and grouping based on period
+            switch (period.ToLower())
+            {
+                case "day":
+                    startDate = DateTime.UtcNow.Date.AddDays(-1);
+                    labels = Enumerable.Range(0, 24).Select(h => $"{h:D2}:00").ToArray();
+                    getGroupKey = (date) => date.Hour.ToString("D2") + ":00";
+                    break;
+                case "week":
+                    startDate = DateTime.UtcNow.Date.AddDays(-7);
+                    labels = new[] { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
+                    getGroupKey = (date) => labels[((int)date.DayOfWeek + 6) % 7]; // Adjusting for Mon=0, Sun=6
+                    break;
+                case "year":
+                    startDate = DateTime.UtcNow.Date.AddYears(-1);
+                    labels = new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+                    getGroupKey = (date) => labels[date.Month - 1];
+                    break;
+                case "month":
+                default:
+                    startDate = DateTime.UtcNow.Date.AddMonths(-1);
+                    // Create labels for 4 weeks
+                    labels = new[] { "Week 1", "Week 2", "Week 3", "Week 4", "Week 5" };
+                    getGroupKey = (date) =>
+                    {
+                        int weekNum = (int)Math.Ceiling((double)date.Day / 7);
+                        return $"Week {weekNum}";
+                    };
+                    break;
+            }
+
+            // Get completed trades within the time period
+            var trades = await _context.Trades
+                .Include(t => t.EntryOrder)
+                .Include(t => t.ExitOrder)
+                .Where(t => t.IsCompleted && t.ExitOrder != null && t.ExitOrder.CreatedAt >= startDate)
+                .ToListAsync();
+
+            // Group by the period and sum the profits
+            var groupedProfits = trades
+                .GroupBy(t => getGroupKey(t.ExitOrder.CreatedAt))
+                .ToDictionary(g => g.Key, g => g.Sum(t => t.Profit ?? CalculateProfit(t)));
+
+            // Prepare data array to match the labels
+            var data = new decimal[labels.Length];
+            for (int i = 0; i < labels.Length; i++)
+            {
+                if (groupedProfits.TryGetValue(labels[i], out decimal profit))
+                {
+                    data[i] = profit;
+                }
+            }
+
+            return new ProfitChartData
+            {
+                Labels = labels,
+                Data = data
+            };
+        }
+
+        private decimal CalculateProfit(Trade trade)
+        {
+            if (trade.EntryOrder == null || trade.ExitOrder == null)
+                return 0;
+
+            decimal entryPrice = trade.EntryOrder.AverageFillPrice ?? trade.EntryOrder.Price;
+            decimal exitPrice = trade.ExitOrder.AverageFillPrice ?? trade.ExitOrder.Price;
+            decimal quantity = trade.EntryOrder.Quantity;
+            decimal entryFee = trade.EntryOrder.Fees;
+            decimal exitFee = trade.ExitOrder.Fees;
+
+            // Calculate profit as (exit price - entry price) * quantity - fees
+            return (exitPrice - entryPrice) * quantity - (entryFee + exitFee);
+        }
     }
 
     public class DashboardSummary
@@ -142,5 +253,25 @@ namespace TradingBot.Controllers
         public required string Title { get; set; }
         public required string Description { get; set; }
         public bool Done { get; set; }
+    }
+
+    public class BotProfitDto
+    {
+        public string BotId { get; set; }
+        public string Ticker { get; set; }
+        public decimal EntryAvgPrice { get; set; }
+        public decimal ExitAvgPrice { get; set; }
+        public decimal Quantity { get; set; }
+        public decimal EntryFee { get; set; }
+        public decimal ExitFee { get; set; }
+        public decimal Profit { get; set; }
+        public DateTime EntryTime { get; set; }
+        public DateTime ExitTime { get; set; }
+    }
+
+    public class ProfitChartData
+    {
+        public string[] Labels { get; set; }
+        public decimal[] Data { get; set; }
     }
 }

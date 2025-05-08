@@ -8,8 +8,8 @@
               class="col-sm-6"
               :class="{ 'text-right': isRTL, 'text-left': !isRTL }"
             >
-              <h5 class="card-category">Total shipments</h5>
-              <h2 class="card-title">Performance</h2>
+              <h5 class="card-category">Trading Analytics</h5>
+              <h2 class="card-title">Bot Profit Performance</h2>
             </div>
             <div class="col-sm-6 d-flex d-sm-block">
               <div
@@ -18,22 +18,22 @@
                 data-toggle="buttons"
               >
                 <label
-                  v-for="(option, index) in bigLineChartCategories"
-                  :key="option.name"
+                  v-for="(period, index) in timePeriods"
+                  :key="period.value"
                   class="btn btn-sm btn-primary btn-simple"
-                  :class="{ active: bigLineChartActiveIndex === index }"
+                  :class="{ active: selectedPeriodIndex === index }"
                   :id="index"
                 >
                   <input
                     type="radio"
-                    @click="initBigChart(index)"
-                    name="options"
+                    @click="changePeriod(index)"
+                    name="periods"
                     autocomplete="off"
-                    :checked="bigLineChartActiveIndex === index"
+                    :checked="selectedPeriodIndex === index"
                   />
-                  <span class="d-none d-sm-block">{{ option.name }}</span>
+                  <span class="d-none d-sm-block">{{ period.label }}</span>
                   <span class="d-block d-sm-none">
-                    <i :class="option.icon"></i>
+                    <i :class="period.icon"></i>
                   </span>
                 </label>
               </div>
@@ -138,8 +138,10 @@
     </div>
     <div class="col-lg-7">
       <Card class="card" :header-classes="{ 'text-right': isRTL }">
-        <h5 slot="header" class="card-title">Management table</h5>
-        <div class="table-responsive"><UserTable></UserTable></div>
+        <template #header>
+          <h5 class="card-title mb-0">Bot Performance</h5>
+        </template>
+        <div class="table-responsive"><BotPerformanceTable></BotPerformanceTable></div>
       </Card>
     </div>
     <div class="col-lg-12"><CountryMapCard></CountryMapCard></div>
@@ -159,12 +161,14 @@ import BarChart from "@/components/Charts/BarChart.vue";
 import * as chartConfigs from "@/components/Charts/config";
 import TaskList from "@/pages/Dashboard/TaskList.vue";
 import UserTable from "@/pages/Dashboard/UserTable.vue";
+import BotPerformanceTable from "@/pages/Dashboard/BotPerformanceTable.vue";
 import CountryMapCard from "@/pages/Dashboard/CountryMapCard.vue";
 import StatsCard from "@/components/Cards/StatsCard.vue";
 import BaseDropdown from "@/components/BaseDropdown.vue";
 import Card from "@/components/Cards/Card.vue";
 import config from "@/config";
 import { useRoute } from "vue-router";
+import botService from "@/services/botService";
 
 const route = useRoute();
 const $rtl = inject("$rtl");
@@ -259,12 +263,15 @@ const lineChartOptions = ref({
   maintainAspectRatio: false,
   scales: {
     y: {
-      beginAtZero: false,
+      beginAtZero: true,
       grid: {
         color: "rgba(255, 255, 255, 0.1)",
       },
       ticks: {
         color: "rgba(255, 255, 255, 0.7)",
+        callback: function(value) {
+          return '$' + value;
+        }
       },
     },
     x: {
@@ -280,6 +287,13 @@ const lineChartOptions = ref({
     legend: {
       display: false,
     },
+    tooltip: {
+      callbacks: {
+        label: function(context) {
+          return `Profit: $${context.raw}`;
+        }
+      }
+    }
   },
 });
 const bigChartDatasetOptions = {
@@ -416,12 +430,58 @@ const initBigChart = (index) => {
   bigLineChartActiveIndex.value = index;
 };
 
+// Time period selectors for bot profit chart
+const timePeriods = [
+  { label: 'Day', value: 'day', icon: 'tim-icons icon-calendar-60' },
+  { label: 'Week', value: 'week', icon: 'tim-icons icon-chart-pie-36' },
+  { label: 'Month', value: 'month', icon: 'tim-icons icon-chart-bar-32' },
+  { label: 'Year', value: 'year', icon: 'tim-icons icon-money-coins' },
+];
+const selectedPeriodIndex = ref(2); // Month selected by default
+
+// Change time period for profit chart
+const changePeriod = (index) => {
+  selectedPeriodIndex.value = index;
+  fetchBotProfitData(timePeriods[index].value);
+};
+
+// Fetch bot profit data based on time period
+const fetchBotProfitData = async (period) => {
+  try {
+    const response = await botService.getBotPerformance(period);
+
+    if (response && response.data) {
+      // Use the data directly from the backend
+      performanceChartData.value = {
+        labels: response.data.labels,
+        datasets: [
+          {
+            label: "Bot Profit",
+            data: response.data.data,
+            borderColor: "#41B883",
+            backgroundColor: "rgba(65, 184, 131, 0.1)",
+            borderWidth: 3,
+            pointRadius: 4,
+            pointBackgroundColor: "#41B883",
+            tension: 0.4,
+            fill: false,
+          },
+        ],
+      };
+    }
+  } catch (err) {
+    console.error('Error fetching bot profit data:', err);
+  }
+};
+
 onMounted(() => {
   if (enableRTL.value) {
     locale.value = "ar";
     $rtl?.enableRTL();
   }
-  initBigChart(0);
+
+  // Initialize bot profit data
+  fetchBotProfitData(timePeriods[selectedPeriodIndex.value].value);
 });
 
 onBeforeUnmount(() => {
