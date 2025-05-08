@@ -4,12 +4,12 @@ import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig( {
   plugins: [
     vue(),
-    VitePWA({
+    VitePWA( {
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "apple-touch-icon.png", "mask-icon.svg"],
+      includeAssets: [ "favicon.ico", "apple-touch-icon.png", "mask-icon.svg" ],
       manifest: {
         name: "Dashboard App",
         short_name: "Dashboard",
@@ -28,12 +28,12 @@ export default defineConfig({
           },
         ],
       },
-    }),
+    } ),
   ],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
-      "~bootstrap": path.resolve(__dirname, "node_modules/bootstrap"),
+      "@": path.resolve( __dirname, "./src" ),
+      "~bootstrap": path.resolve( __dirname, "node_modules/bootstrap" ),
     },
   },
   css: {
@@ -45,14 +45,13 @@ export default defineConfig({
   },
   server: {
     host: "0.0.0.0",
-    port: 5000,
-    // allowedHosts: ['6a6d5910-c2d8-416e-bb4e-18f42ca1f2bb-00-54svusmb02zb.worf.replit.dev'],
+    port: 5001,
     proxy: {
       "/api": {
-        target: "http://localhost:5001",
+        target: "http://localhost:5025",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, "/api"),
+        rewrite: ( path ) => path.replace( /^\/api/, "/api" ),
       },
     },
   },
-});
+} );
