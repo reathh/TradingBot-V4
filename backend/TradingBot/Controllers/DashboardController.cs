@@ -24,9 +24,10 @@ namespace TradingBot.Controllers
         {
             var bots = await _context.Bots.CountAsync();
             var activeOrders = await _context.Orders.CountAsync(o => !o.Closed && !o.Canceled);
-            var completedTrades = await _context.Trades.CountAsync(t => t.IsCompleted);
+
+            var completedTrades = await _context.Trades.CountAsync(t => t.ExitOrder != null && t.ExitOrder.Closed && t.ExitOrder.QuantityFilled > 0);
             var totalProfit = await _context.Trades
-                .Where(t => t.IsCompleted)
+                .Where(t => t.ExitOrder != null && t.ExitOrder.Closed && t.ExitOrder.QuantityFilled > 0)
                 .SumAsync(t => t.Profit ?? 0);
 
             return new DashboardSummary
@@ -55,7 +56,7 @@ namespace TradingBot.Controllers
                     ExitPrice = t.ExitOrder != null ? (t.ExitOrder.AverageFillPrice ?? t.ExitOrder.Price) : 0,
                     ProfitLoss = t.Profit ?? 0,
                     Timestamp = t.EntryOrder.CreatedAt,
-                    Status = t.IsCompleted ? "Completed" : "Open"
+                    Status = (t.ExitOrder != null && t.ExitOrder.Closed && t.ExitOrder.QuantityFilled > 0) ? "Completed" : "Open"
                 })
                 .ToListAsync();
         }
@@ -68,7 +69,7 @@ namespace TradingBot.Controllers
 
             var monthlyPerformance = await _context.Trades
                 .Include(t => t.EntryOrder)
-                .Where(t => t.EntryOrder.CreatedAt >= lastYear && t.IsCompleted)
+                .Where(t => t.EntryOrder.CreatedAt >= lastYear && t.ExitOrder != null && t.ExitOrder.Closed && t.ExitOrder.QuantityFilled > 0)
                 .GroupBy(t => new { t.EntryOrder.CreatedAt.Year, t.EntryOrder.CreatedAt.Month })
                 .OrderBy(g => g.Key.Year)
                 .ThenBy(g => g.Key.Month)
@@ -118,7 +119,7 @@ namespace TradingBot.Controllers
                 .Include(t => t.EntryOrder)
                 .Include(t => t.ExitOrder)
                 .Include(t => t.Bot)
-                .Where(t => t.IsCompleted && t.EntryOrder != null && t.ExitOrder != null)
+                .Where(t => t.ExitOrder != null && t.ExitOrder.Closed && t.ExitOrder.QuantityFilled > 0 && t.EntryOrder != null && t.ExitOrder != null)
                 .OrderByDescending(t => t.ExitOrder.CreatedAt)
                 .Take(100) // Limit to last 100 trades for performance
                 .ToListAsync();
@@ -182,7 +183,7 @@ namespace TradingBot.Controllers
             var trades = await _context.Trades
                 .Include(t => t.EntryOrder)
                 .Include(t => t.ExitOrder)
-                .Where(t => t.IsCompleted && t.ExitOrder != null && t.ExitOrder.CreatedAt >= startDate)
+                .Where(t => t.ExitOrder != null && t.ExitOrder.Closed && t.ExitOrder.QuantityFilled > 0 && t.ExitOrder.CreatedAt >= startDate)
                 .ToListAsync();
 
             // Group by the period and sum the profits

@@ -18,7 +18,6 @@ namespace TradingBot.Data
         public int BotId { get; set; }
         public Bot Bot { get; set; } = null!;
 
-        public bool IsCompleted => ExitOrder != null && ExitOrder.Closed && ExitOrder.QuantityFilled > 0;
 
         // Calculate profit based on filled quantities and average prices
         public void CalculateProfit()

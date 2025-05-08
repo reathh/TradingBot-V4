@@ -48,6 +48,13 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    // Seed database with test data
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<TradingBotDbContext>();
+        DataSeeder.SeedDatabase(dbContext);
+    }
 }
 
 app.UseHttpsRedirection();
