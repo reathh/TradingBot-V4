@@ -290,40 +290,6 @@ defineExpose({
   width: 80px !important;
 }
 
-.search-input {
-  width: 250px !important;
-}
-
-/* Dark theme overrides for Element UI inputs */
-.input-primary.el-input .el-input__wrapper {
-  background-color: #27293d !important;
-  box-shadow: 0 0 0 1px #2b3553 inset !important;
-  border-radius: 0.4285rem !important;
-}
-
-.input-primary.el-input .el-input__inner {
-  background-color: transparent !important;
-  color: white !important;
-}
-
-.input-primary.el-input .el-input__suffix,
-.input-primary.el-input .el-input__prefix {
-  color: rgba(255, 255, 255, 0.7) !important;
-}
-
-/* Remove extra outline/border */
-.form-group.has-search {
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-.form-group.has-search .el-input {
-  border: none !important;
-  outline: none !important;
-}
-
-.form-group.has-search .el-input__wrapper {
-  border: none !important;
-}
+/* Component-specific styles */
+/* Add any component-specific styles here if needed */
 </style>
