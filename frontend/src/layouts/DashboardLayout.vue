@@ -51,6 +51,11 @@ const menuItems = ref([
     path: "/dashboard",
   },
   {
+    name: "Bots",
+    icon: "tim-icons icon-settings",
+    path: "/bots",
+  },
+  {
     name: "Pages",
     icon: "tim-icons icon-image-02",
     children: [

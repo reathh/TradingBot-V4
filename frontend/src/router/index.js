@@ -12,6 +12,7 @@ import Register from "@/pages/Register.vue";
 import ChartsPage from "@/pages/Charts.vue";
 import UserProfile from "@/pages/UserProfile.vue";
 import Pricing from "@/pages/Pricing.vue";
+import Bots from "@/pages/Bots.vue";
 
 // Tables
 import RegularTables from "@/pages/Tables/RegularTables.vue";
@@ -33,6 +34,12 @@ const routes = [
         path: "dashboard",
         name: "Dashboard",
         component: Dashboard,
+        meta: { requiresAuth: true },
+      },
+      {
+        path: "bots",
+        name: "Bots",
+        component: Bots,
         meta: { requiresAuth: true },
       },
       {
