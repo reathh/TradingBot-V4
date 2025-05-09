@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using TradingBot.Data;
 using TradingBot.Services;
+using TradingBot.Application.Commands.VerifyBotBalance;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +36,9 @@ builder.Services.AddSingleton(TimeProvider.System);
 // Register ExchangeApiRepository as a singleton
 builder.Services.AddSingleton<IExchangeApiRepository, BinanceExchangeApiRepository>();
 
+// Register MediatR
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<VerifyBotBalanceCommand>());
+
 // Register all services with implemented interfaces as transient, except for IHostedService
 builder.Services.Scan(scan => scan
     .FromAssemblyOf<Program>()
@@ -50,7 +55,13 @@ builder.Services.Scan(scan => scan
     .AsImplementedInterfaces()
     .WithSingletonLifetime());
 
-builder.Services.AddControllers();
+// Configure JSON serialization to handle circular references
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    });
+
 builder.Services.AddOpenApi();
 
 var app = builder.Build();

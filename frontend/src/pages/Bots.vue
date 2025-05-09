@@ -215,15 +215,20 @@
       width="800px"
     >
       <el-table :data="botTrades" :empty-text="isLoadingTrades ? 'Loading trades...' : 'No trades found'">
-        <el-table-column label="Symbol" prop="entryOrder.symbol" min-width="80"></el-table-column>
+        <el-table-column label="Symbol" prop="ticker" min-width="80"></el-table-column>
         <el-table-column label="Entry Price" min-width="120">
           <template v-slot="scope">
-            {{ scope.row.entryOrder && scope.row.entryOrder.averageFillPrice ? scope.row.entryOrder.averageFillPrice.toFixed(2) : 'N/A' }}
+            {{ scope.row.entryAvgPrice ? scope.row.entryAvgPrice.toFixed(2) : 'N/A' }}
           </template>
         </el-table-column>
         <el-table-column label="Exit Price" min-width="120">
           <template v-slot="scope">
-            {{ scope.row.exitOrder && scope.row.exitOrder.averageFillPrice ? scope.row.exitOrder.averageFillPrice.toFixed(2) : 'N/A' }}
+            {{ scope.row.exitAvgPrice ? scope.row.exitAvgPrice.toFixed(2) : 'N/A' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="Quantity" min-width="100">
+          <template v-slot="scope">
+            {{ scope.row.quantity ? scope.row.quantity.toFixed(4) : 'N/A' }}
           </template>
         </el-table-column>
         <el-table-column label="Profit" min-width="100">
@@ -235,15 +240,29 @@
         </el-table-column>
         <el-table-column label="Entry Date" min-width="160">
           <template v-slot="scope">
-            {{ scope.row.entryOrder ? formatDate(scope.row.entryOrder.createdAt) : 'N/A' }}
+            {{ formatDate(scope.row.entryTime) }}
           </template>
         </el-table-column>
         <el-table-column label="Exit Date" min-width="160">
           <template v-slot="scope">
-            {{ scope.row.exitOrder ? formatDate(scope.row.exitOrder.createdAt) : 'N/A' }}
+            {{ formatDate(scope.row.exitTime) }}
           </template>
         </el-table-column>
       </el-table>
+      
+      <div v-if="tradesPagination" class="mt-4 d-flex justify-content-between align-items-center">
+        <div>
+          <span class="text-sm">
+            Showing {{ botTrades.length }} of {{ tradesPagination.totalCount }} trades
+          </span>
+        </div>
+        <base-pagination 
+          :per-page="tradesPagination.pageSize" 
+          :total="tradesPagination.totalCount"
+          :current-page="tradesPagination.page"
+          @page-change="onTradePageChange"
+        />
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -269,6 +288,7 @@ import BaseInput from "@/components/Inputs/BaseInput.vue";
 import Swal from "sweetalert2";
 import axios from "axios";
 import PagedTable from '@/components/PagedTable.vue';
+import botService from '@/services/botService';
 
 // State variables
 const isLoadingTrades = ref(false);
@@ -285,6 +305,7 @@ const botTrades = ref([]);
 const showCreateEditModal = ref(false);
 const showTradesModal = ref(false);
 const isEditing = ref(false);
+const tradesPagination = ref(null);
 
 // Default bot model
 const defaultBot = {
@@ -453,14 +474,27 @@ async function toggleBotStatus(bot) {
   }
 }
 
-async function viewBotTrades(bot) {
+async function viewBotTrades(bot, page = 1, pageSize = 10) {
   isLoadingTrades.value = true;
   botTrades.value = [];
   showTradesModal.value = true;
+  currentBot.value = bot; // Store current bot so we can use it for pagination
   
   try {
-    const response = await axios.get(`/api/bots/${bot.id}/trades`);
-    botTrades.value = response.data;
+    // Use the botService instead of direct axios call
+    const response = await botService.getBotProfits({ 
+      botId: bot.id,
+      page: page,
+      pageSize: pageSize
+    });
+    
+    botTrades.value = response.data.items;
+    tradesPagination.value = {
+      page: response.data.page,
+      pageSize: response.data.pageSize,
+      totalCount: response.data.totalCount,
+      totalPages: response.data.totalPages
+    };
   } catch (error) {
     console.error('Error fetching bot trades:', error);
     Swal.fire({
@@ -470,6 +504,13 @@ async function viewBotTrades(bot) {
     });
   } finally {
     isLoadingTrades.value = false;
+  }
+}
+
+// Handle pagination for bot trades
+async function onTradePageChange(page) {
+  if (currentBot.value) {
+    await viewBotTrades(currentBot.value, page, tradesPagination.value.pageSize);
   }
 }
 

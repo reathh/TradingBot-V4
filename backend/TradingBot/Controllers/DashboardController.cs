@@ -99,6 +99,7 @@ namespace TradingBot.Controllers
         [HttpGet("bot-profits")]
         public async Task<ActionResult<PagedResult<BotProfitDto>>> GetBotProfits(
             [FromQuery] string? period = "month",
+            [FromQuery] int? botId = null,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10)
         {
@@ -110,8 +111,15 @@ namespace TradingBot.Controllers
                 .Include(t => t.EntryOrder)
                 .Include(t => t.ExitOrder)
                 .Include(t => t.Bot)
-                .Where(t => t.ExitOrder != null && t.ExitOrder.Closed && t.ExitOrder.QuantityFilled > 0 && t.EntryOrder != null && t.ExitOrder != null)
-                .OrderByDescending(t => t.ExitOrder.CreatedAt);
+                .Where(t => t.ExitOrder != null && t.ExitOrder.Closed && t.ExitOrder.QuantityFilled > 0 && t.EntryOrder != null && t.ExitOrder != null);
+                
+            // Filter by bot ID if provided
+            if (botId.HasValue)
+            {
+                query = query.Where(t => t.Bot != null && t.Bot.Id == botId.Value);
+            }
+                
+            query = query.OrderByDescending(t => t.ExitOrder!.CreatedAt);
 
             // Get total count for pagination info
             var totalCount = await query.CountAsync();

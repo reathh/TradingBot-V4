@@ -21,11 +21,12 @@ export default {
      * @param {number} options.page - Page number to fetch (starting from 1)
      * @param {number} options.pageSize - Number of items per page
      * @param {string} options.period - Time period to filter results
+     * @param {number} options.botId - Optional bot ID to filter results by bot
      * @returns {Promise} Promise with bot trading history
      */
-    getBotProfits({ page = 1, pageSize = 10, period = 'month' } = {}) {
+    getBotProfits({ page = 1, pageSize = 10, period = 'month', botId = null } = {}) {
         return apiClient.get('/dashboard/bot-profits', {
-            params: { page, pageSize, period }
+            params: { page, pageSize, period, botId }
         });
     },
 

@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+- When fixing stuff never do workarounds or patchings. always fix stuff the correct way with clean code and DRY principles.

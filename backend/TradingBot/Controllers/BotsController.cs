@@ -127,23 +127,16 @@ namespace TradingBot.Controllers
             return NoContent();
         }
 
+        // This endpoint has been deprecated in favor of the /api/dashboard/bot-profits endpoint
+        // which supports pagination and filtering by bot ID.
+        //
         // GET: api/Bots/5/trades
         [HttpGet("{id}/trades")]
-        public async Task<ActionResult<IEnumerable<Trade>>> GetBotTrades(int id)
+        [Obsolete("This endpoint is deprecated. Use '/api/dashboard/bot-profits?botId=X' instead")]
+        public ActionResult<IEnumerable<BotTradeDto>> GetBotTrades(int id)
         {
-            if (!BotExists(id))
-            {
-                return NotFound();
-            }
-
-            var trades = await _context.Trades
-                .Include(t => t.EntryOrder)
-                .Include(t => t.ExitOrder)
-                .Where(t => t.Bot != null && t.Bot.Id == id)
-                .OrderByDescending(t => t.EntryOrder != null ? t.EntryOrder.CreatedAt : DateTime.MinValue)
-                .ToListAsync();
-
-            return trades;
+            // Return a message indicating this endpoint is deprecated
+            return BadRequest(new { message = "This endpoint is deprecated. Use '/api/dashboard/bot-profits?botId=" + id + "' instead" });
         }
 
         // POST: api/Bots/5/toggle
@@ -166,5 +159,24 @@ namespace TradingBot.Controllers
         {
             return _context.Bots.Any(e => e.Id == id);
         }
+    }
+
+    public class BotTradeDto
+    {
+        public int TradeId { get; set; }
+        public string EntryOrderId { get; set; } = null!;
+        public string? ExitOrderId { get; set; }
+        public string Symbol { get; set; } = null!;
+        public decimal EntryPrice { get; set; }
+        public decimal ExitPrice { get; set; }
+        public decimal? EntryAvgFillPrice { get; set; }
+        public decimal? ExitAvgFillPrice { get; set; }
+        public decimal Quantity { get; set; }
+        public decimal QuantityFilled { get; set; }
+        public bool IsLong { get; set; }
+        public decimal? Profit { get; set; }
+        public DateTime EntryTime { get; set; }
+        public DateTime? ExitTime { get; set; }
+        public bool IsCompleted { get; set; }
     }
 } 
