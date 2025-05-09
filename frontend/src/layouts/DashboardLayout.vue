@@ -103,7 +103,8 @@ const menuItems = ref([
   {
     name: computed(() => isDarkMode.value ? "Dark Mode" : "Light Mode"),
     icon: darkModeIcon,
-    click: toggleDarkMode
+    click: toggleDarkMode,
+    position: 'bottom'
   },
 ]);
 </script>

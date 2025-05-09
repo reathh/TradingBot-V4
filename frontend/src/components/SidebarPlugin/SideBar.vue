@@ -12,7 +12,7 @@
       <slot> </slot>
       <ul class="nav">
         <SidebarItem
-          v-for="(link, index) in sidebarLinks"
+          v-for="(link, index) in regularLinks"
           :key="link.name + index"
           :link="link"
         >
@@ -23,12 +23,21 @@
           />
         </SidebarItem>
       </ul>
+      
+      <!-- Bottom positioned items -->
+      <ul class="nav bottom-nav">
+        <SidebarItem
+          v-for="(link, index) in bottomLinks"
+          :key="link.name + index"
+          :link="link"
+        />
+      </ul>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, provide, onBeforeUnmount } from "vue";
+import { ref, provide, onBeforeUnmount, computed } from "vue";
 import SidebarItem from "./SidebarItem.vue";
 import { useSidebarStore } from "@/stores/sidebar.js";
 
@@ -82,6 +91,10 @@ const props = defineProps({
 const sidebarScrollArea = ref(null);
 const sidebarStore = useSidebarStore();
 
+// Separate links into regular and bottom-positioned
+const regularLinks = computed(() => props.sidebarLinks.filter(link => !link.position || link.position !== 'bottom'));
+const bottomLinks = computed(() => props.sidebarLinks.filter(link => link.position === 'bottom'));
+
 provide("autoClose", props.autoClose);
 
 const minimizeSidebar = () => {
@@ -101,5 +114,10 @@ onBeforeUnmount(() => {
   .nav-mobile-menu {
     display: none;
   }
+}
+.bottom-nav {
+  position: absolute;
+  bottom: 20px;
+  width: 100%;
 }
 </style>
