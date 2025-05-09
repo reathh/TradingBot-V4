@@ -73,9 +73,10 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+import { ref, watch, onMounted } from "vue";
 import BaseSwitch from "@/components/BaseSwitch.vue";
 import { useSidebar } from "@/components/SidebarPlugin/index.js";
+import { useThemeStore } from "@/stores/theme";
 
 const props = defineProps({
   backgroundColor: String,
@@ -85,7 +86,18 @@ const emit = defineEmits(["update:backgroundColor"]);
 
 const isOpen = ref(false);
 const sidebarMiniLocal = ref(false); // Use a local ref for the switch
-const darkMode = ref(true);
+const themeStore = useThemeStore();
+const darkMode = ref(themeStore.isDarkMode);
+
+// Watch for changes to the theme store
+watch(() => themeStore.isDarkMode, (newValue) => {
+  darkMode.value = newValue;
+});
+
+// Watch for changes to the darkMode ref and update the theme store
+watch(darkMode, (newValue) => {
+  themeStore.setDarkMode(newValue);
+});
 
 const sidebarColors = ref([
   { color: "primary", active: false, value: "primary" },
@@ -119,12 +131,7 @@ function changeSidebarBackground(item) {
 }
 
 function toggleMode(isDark) {
-  const docClasses = document.body.classList;
-  if (isDark) {
-    docClasses.remove("white-content");
-  } else {
-    docClasses.add("white-content");
-  }
+  themeStore.setDarkMode(isDark);
 }
 
 function minimizeSidebar(value) {

@@ -8,7 +8,7 @@
       :sidebar-links="menuItems"
     >
     </side-bar>
-    <sidebar-share v-model:backgroundColor="sidebarBackground"> </sidebar-share>
+    <!-- <sidebar-share v-model:backgroundColor="sidebarBackground"> </sidebar-share> -->
     <div class="main-panel" :data="sidebarBackground">
       <dashboard-navbar></dashboard-navbar>
       <div class="content" @click="toggleSidebar">
@@ -25,19 +25,31 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { useSidebarStore } from "@/stores/sidebar";
+import { useThemeStore } from "@/stores/theme";
 import DashboardNavbar from "./DashboardNavbar.vue";
 import SideBar from "@/components/SidebarPlugin/SideBar.vue";
 import Notifications from "@/components/Notifications/Notifications.vue";
 import SidebarFixedToggleButton from "./SidebarFixedToggleButton.vue";
-import SidebarShare from "./SidebarSharePlugin.vue";
+// import SidebarShare from "./SidebarSharePlugin.vue";
 import { FadeInOut } from "vue3-transitions";
 
 const sidebarStore = useSidebarStore();
+const themeStore = useThemeStore();
 const sidebarBackground = ref("vue");
 const title = ref("DASHBOARD");
 const shortTitle = ref("DB");
+
+// Dark mode related computed properties
+const isDarkMode = computed(() => themeStore.isDarkMode);
+const darkModeIcon = computed(() => 
+  isDarkMode.value ? "tim-icons icon-button-power" : "tim-icons icon-bulb-63"
+);
+
+const toggleDarkMode = () => {
+  themeStore.toggleDarkMode();
+};
 
 const toggleSidebar = () => {
   if (sidebarStore.showSidebar) {
@@ -87,6 +99,12 @@ const menuItems = ref([
     name: "Charts",
     icon: "tim-icons icon-chart-bar-32",
     path: "/charts",
+  },
+  {
+    name: computed(() => isDarkMode.value ? "Dark Mode" : "Light Mode"),
+    icon: darkModeIcon,
+    path: "#",
+    click: toggleDarkMode
   },
 ]);
 </script>

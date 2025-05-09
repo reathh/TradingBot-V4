@@ -95,7 +95,7 @@ onBeforeUnmount(() => {
 });
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 @media (min-width: 992px) {
   .navbar-search-form-mobile,
   .nav-mobile-menu {

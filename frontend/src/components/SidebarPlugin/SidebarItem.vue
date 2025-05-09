@@ -39,6 +39,16 @@
         <p>{{ link.name }}</p>
       </template>
     </router-link>
+    <a v-else-if="link.click" href="javascript:void(0)" @click.prevent="handleClick">
+      <template v-if="addLink">
+        <span class="sidebar-mini-icon">{{ linkPrefix }}</span>
+        <span class="sidebar-normal">{{ link.name }}</span>
+      </template>
+      <template v-else>
+        <i :class="link.icon"></i>
+        <p>{{ link.name }}</p>
+      </template>
+    </a>
     <div v-else>
       <template v-if="addLink">
         <span class="sidebar-mini-icon">{{ linkPrefix }}</span>
@@ -142,6 +152,13 @@ function linkClick() {
   if (autoClose && sidebarStore.showSidebar) {
     sidebarStore.setShowSidebar(false);
   }
+}
+
+function handleClick() {
+  if (props.link.click && typeof props.link.click === 'function') {
+    props.link.click();
+  }
+  linkClick();
 }
 
 function collapseMenu() {
