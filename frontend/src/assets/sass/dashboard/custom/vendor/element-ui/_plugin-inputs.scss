@@ -53,80 +53,116 @@
 }
 
 // Dark theme (default) search input styling
-.el-input.search-input,
-.el-input.input-primary,
-.form-group.has-search .el-input {
-  border: none;
-  outline: none;
+.form-group.has-search {
+  position: relative;
+  margin-bottom: 0;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
   
-  .el-input__wrapper {
-    background-color: #27293d;
-    box-shadow: 0 0 0 1px #2b3553 inset;
-    border-radius: 0.4285rem;
-    outline: none;
-    padding: 0 12px;
-    transition: box-shadow 0.15s ease;
-    
-    &:focus,
-    &:focus-within,
-    &:focus-visible,
-    &:hover,
-    &.is-focus {
-      outline: none;
-      box-shadow: 0 0 0 1px #2b3553 inset;
-    }
+  // Remove any default styling that might cause the double box
+  &::before, &::after {
+    display: none !important;
   }
   
-  .el-input__inner {
-    background-color: transparent;
-    color: white;
-    outline: none;
-    height: 36px;
-    line-height: 36px;
-  }
-  
-  .el-input__prefix {
-    color: rgba(255, 255, 255, 0.7);
-    display: flex;
-    align-items: center;
-    
-    .el-icon {
-      font-size: 16px;
-    }
-  }
-  
-  .el-input__suffix {
-    color: rgba(255, 255, 255, 0.7);
-    display: flex;
-    align-items: center;
-  }
-}
-
-// Light theme overrides
-.white-content {
   .el-input.search-input,
   .el-input.input-primary,
-  .form-group.has-search .el-input {
+  .el-input {
+    border: none;
+    outline: none;
+    width: 250px;
+    
+    // Remove any default boxes
+    &::before, &::after {
+      display: none;
+    }
+    
+    // Style the inner wrapper to match the original theme
     .el-input__wrapper {
-      background-color: white;
-      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2) inset;
+      background-color: #27293d;
+      box-shadow: 0 0 0 1px #2b3553 inset;
+      border-radius: 0.4285rem;
+      outline: none;
+      padding: 0 12px;
+      transition: box-shadow 0.15s ease;
+      margin: 0;
+      border: none;
       
       &:focus,
       &:focus-within,
       &:focus-visible,
       &:hover,
       &.is-focus {
-        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3) inset;
+        outline: none;
+        box-shadow: 0 0 0 1px #2b3553 inset;
       }
     }
     
     .el-input__inner {
-      color: #1e1e2f;
+      background-color: transparent;
+      color: white;
+      outline: none;
+      height: 36px;
+      line-height: 36px;
+      padding: 0;
+      margin: 0;
+      border: none;
     }
     
-    .el-input__suffix,
     .el-input__prefix {
-      color: rgba(0, 0, 0, 0.6);
+      color: rgba(255, 255, 255, 0.7);
+      display: flex;
+      align-items: center;
+      
+      .el-icon {
+        font-size: 16px;
+      }
+    }
+    
+    .el-input__suffix {
+      color: rgba(255, 255, 255, 0.7);
+      display: flex;
+      align-items: center;
+    }
+  }
+}
+
+// Light theme overrides
+.white-content {
+  .form-group.has-search {
+    .el-input.search-input,
+    .el-input.input-primary,
+    .el-input {
+      .el-input__wrapper {
+        background-color: white;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2) inset;
+        
+        &:focus,
+        &:focus-within,
+        &:focus-visible,
+        &:hover,
+        &.is-focus {
+          box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3) inset;
+        }
+      }
+      
+      .el-input__inner {
+        color: #1e1e2f;
+        background-color: transparent;
+      }
+      
+      .el-input__prefix {
+        color: rgba(0, 0, 0, 0.6);
+        
+        .el-icon {
+          color: rgba(0, 0, 0, 0.6);
+        }
+      }
+      
+      .el-input__suffix {
+        color: rgba(0, 0, 0, 0.6);
+      }
     }
   }
 }

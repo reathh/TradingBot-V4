@@ -19,17 +19,15 @@
         </el-select>
         <span class="ml-2">entries</span>
       </div>
-      <div>
-        <div class="form-group has-search mb-0">
-          <el-input
-            type="search"
-            class="search-input input-primary"
-            clearable
-            :prefix-icon="Search"
-            placeholder="Search records"
-            v-model="searchQuery"
-          />
-        </div>
+      <div class="form-group has-search mb-0">
+        <el-input
+          type="search"
+          class="search-input input-primary"
+          clearable
+          :prefix-icon="Search"
+          placeholder="Search records"
+          v-model="searchQuery"
+        />
       </div>
     </div>
 
