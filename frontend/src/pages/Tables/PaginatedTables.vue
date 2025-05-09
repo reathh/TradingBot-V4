@@ -246,12 +246,3 @@ function deleteRow(row) {
 }
 </script>
 
-<style scoped>
-.pagination-select,
-.search-input {
-  width: 200px;
-}
-.swal2-icon-content {
-  font-size: inherit !important;
-}
-</style>

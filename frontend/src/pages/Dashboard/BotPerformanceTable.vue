@@ -1,30 +1,35 @@
 <template>
   <div class="card-body">
-    <!-- Table Controls -->
+    <!-- Simple Table Controls -->
     <div class="d-flex justify-content-between mb-3">
       <div class="d-flex align-items-center">
         <span class="mr-2">Show</span>
-        <el-select v-model="pageSize" class="mx-2" style="width: 80px;">
+        <el-select
+          class="select-primary pagination-select"
+          v-model="pageSize"
+          placeholder="Per page"
+        >
           <el-option
+            class="select-primary"
             v-for="size in pageSizeOptions"
             :key="size"
             :label="size"
-            :value="size">
-          </el-option>
+            :value="size"
+          />
         </el-select>
         <span class="ml-2">entries</span>
       </div>
       <div>
-        <el-input
-          placeholder="Search records"
-          v-model="searchQuery"
-          style="width: 250px;"
-          clearable
-        >
-          <template #prefix>
-            <i class="tim-icons icon-zoom-split"></i>
-          </template>
-        </el-input>
+        <div class="form-group has-search mb-0">
+          <el-input
+            type="search"
+            class="search-input input-primary"
+            clearable
+            prefix-icon="el-icon-search"
+            placeholder="Search records"
+            v-model="searchQuery"
+          />
+        </div>
       </div>
     </div>
 
@@ -89,6 +94,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import BaseTable from "@/components/BaseTable.vue";
 import BaseButton from "@/components/BaseButton.vue";
 import BasePagination from "@/components/BasePagination.vue";
+import { ElSelect, ElOption, ElInput } from "element-plus";
 import botService from "@/services/botService";
 
 // Data states
@@ -278,5 +284,46 @@ defineExpose({
 
 .opacity-5 {
   opacity: 0.5;
+}
+
+.pagination-select {
+  width: 80px !important;
+}
+
+.search-input {
+  width: 250px !important;
+}
+
+/* Dark theme overrides for Element UI inputs */
+.input-primary.el-input .el-input__wrapper {
+  background-color: #27293d !important;
+  box-shadow: 0 0 0 1px #2b3553 inset !important;
+  border-radius: 0.4285rem !important;
+}
+
+.input-primary.el-input .el-input__inner {
+  background-color: transparent !important;
+  color: white !important;
+}
+
+.input-primary.el-input .el-input__suffix,
+.input-primary.el-input .el-input__prefix {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Remove extra outline/border */
+.form-group.has-search {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.form-group.has-search .el-input {
+  border: none !important;
+  outline: none !important;
+}
+
+.form-group.has-search .el-input__wrapper {
+  border: none !important;
 }
 </style>
