@@ -5,8 +5,8 @@
         <card card-body-classes="table-full-width">
           <div slot="header" class="d-flex justify-content-between align-items-center">
             <h4 class="card-title">Trading Bots</h4>
-            <base-button @click="showCreateEditModal = true" type="primary" size="sm" icon>
-              <i class="tim-icons icon-simple-add"></i> New Bot
+            <base-button @click="createNewBot" type="primary" size="sm" icon>
+              <i class="tim-icons icon-simple-add"></i>
             </base-button>
           </div>
           
@@ -89,7 +89,7 @@
     <!-- Create/Edit Bot Modal -->
     <el-dialog
       :title="isEditing ? 'Edit Bot' : 'Create New Bot'"
-      :visible.sync="showCreateEditModal"
+      v-model="showCreateEditModal"
       width="600px"
     >
       <el-form ref="botForm" :model="currentBot" label-position="top">
@@ -174,7 +174,7 @@
     <!-- Bot Trades Modal -->
     <el-dialog
       title="Bot Trades"
-      :visible.sync="showTradesModal"
+      v-model="showTradesModal"
       width="800px"
     >
       <el-table :data="botTrades" :empty-text="isLoadingTrades ? 'Loading trades...' : 'No trades found'">
