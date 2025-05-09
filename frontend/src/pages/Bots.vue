@@ -15,17 +15,13 @@
               :columns="botTableColumns"
               :data="pagedResult.items"
               :page="currentPage"
-              :page-size="pageSize"
               :total-pages="pagedResult.totalPages"
               :total-count="pagedResult.totalCount"
               :searchable="true"
               :sortable="true"
               :server-side="true"
-              :page-size-options="pageSizeOptions"
+              :fetch-data="fetchBots"
               thead-classes="text-primary"
-              @update:page="onPageChange"
-              @update:pageSize="onPageSizeChange"
-              @search="onSearch"
             >
               <template #row="{ row }">
                 <td>{{ row.id }}</td>
@@ -238,7 +234,6 @@ import axios from "axios";
 import PagedTable from '@/components/PagedTable.vue';
 
 // State variables
-const isLoading = ref(false);
 const isLoadingTrades = ref(false);
 const pagedResult = ref({
   page: 1,
@@ -248,9 +243,7 @@ const pagedResult = ref({
   items: []
 });
 const currentPage = ref(1);
-const pageSize = ref(10);
 const searchTerm = ref('');
-const pageSizeOptions = [5, 10, 25, 50];
 const botTrades = ref([]);
 const showCreateEditModal = ref(false);
 const showTradesModal = ref(false);
@@ -291,17 +284,27 @@ const botTableColumns = [
 ];
 
 // Fetch bots with pagination and search
-async function fetchBots() {
-  isLoading.value = true;
+async function fetchBots(params) {
   try {
     const response = await axios.get('/api/bots', {
       params: {
-        page: currentPage.value,
-        pageSize: pageSize.value,
-        search: searchTerm.value || undefined
+        page: params?.page || currentPage.value,
+        pageSize: params?.pageSize || 10,
+        search: params?.searchQuery || searchTerm.value || undefined,
+        sortKey: params?.sortKey,
+        sortDirection: params?.sortDirection
       }
     });
+    
     pagedResult.value = response.data;
+    
+    // Sync the current page and page size
+    if (params) {
+      currentPage.value = params.page || currentPage.value;
+      if (params.searchQuery !== undefined) {
+        searchTerm.value = params.searchQuery;
+      }
+    }
   } catch (error) {
     console.error('Error fetching bots:', error);
     Swal.fire({
@@ -309,27 +312,7 @@ async function fetchBots() {
       text: 'Failed to load bots',
       icon: 'error'
     });
-  } finally {
-    isLoading.value = false;
   }
-}
-
-// Pagination handlers
-function onPageChange(page) {
-  currentPage.value = page;
-  fetchBots();
-}
-
-function onPageSizeChange(size) {
-  pageSize.value = size;
-  currentPage.value = 1; // Reset to first page when changing page size
-  fetchBots();
-}
-
-function onSearch(query) {
-  searchTerm.value = query;
-  currentPage.value = 1; // Reset to first page when searching
-  fetchBots();
 }
 
 function editBot(bot) {

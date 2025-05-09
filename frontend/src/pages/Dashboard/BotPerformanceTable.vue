@@ -4,17 +4,13 @@
       :columns="tableColumns"
       :data="pagedResult.items"
       :page="currentPage"
-      :page-size="pageSize"
       :total-pages="pagedResult.totalPages"
       :total-count="pagedResult.totalCount"
       :searchable="true"
       :sortable="true"
       :server-side="true"
-      :page-size-options="pageSizeOptions"
-      :is-loading="isLoading"
+      :fetch-data="fetchBotProfits"
       thead-classes="text-primary"
-      @update:page="onPageChange"
-      @update:pageSize="onPageSizeChange"
     >
       <template #row="{ row }">
         <td>{{ row.botId }}</td>
@@ -55,9 +51,6 @@ const pagedResult = ref({
 });
 
 const currentPage = ref(1);
-const pageSize = ref(10);
-const pageSizeOptions = [5, 10, 25, 50];
-const isLoading = ref(false);
 const error = ref(null);
 
 // Table columns definition
@@ -84,36 +77,30 @@ const getProfitClass = (profit) => {
 };
 
 // Fetch bot profits with pagination
-const fetchBotProfits = async () => {
-  isLoading.value = true;
+const fetchBotProfits = async (params) => {
   try {
     const response = await botService.getBotProfits({ 
-      page: currentPage.value, 
-      pageSize: pageSize.value 
+      page: params?.page || currentPage.value, 
+      pageSize: params?.pageSize || 10,
+      sortKey: params?.sortKey,
+      sortDirection: params?.sortDirection
     });
+    
+    // Update local state with response data
     pagedResult.value = response.data;
+    
+    // Sync the current page and page size
+    if (params) {
+      currentPage.value = params.page || currentPage.value;
+    }
   } catch (e) {
     error.value = e;
     console.error('Error fetching bot profits:', e);
-  } finally {
-    isLoading.value = false;
   }
 };
 
-// Handle pagination events
-const onPageChange = (page) => {
-  currentPage.value = page;
-  fetchBotProfits();
-};
-
-const onPageSizeChange = (size) => {
-  pageSize.value = size;
-  currentPage.value = 1; // Reset to first page
-  fetchBotProfits();
-};
-
 // Fetch data on mount
-onMounted(fetchBotProfits);
+onMounted(() => fetchBotProfits());
 </script>
 
 <style>

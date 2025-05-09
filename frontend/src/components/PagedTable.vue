@@ -33,7 +33,7 @@
 
     <!-- Table -->
     <div class="table-responsive">
-      <div v-if="isLoading" class="text-center py-4">
+      <div v-if="effectiveLoading" class="text-center py-4">
         <div class="spinner-border text-primary" role="status">
           <span class="sr-only">Loading...</span>
         </div>
@@ -96,7 +96,7 @@ const props = defineProps({
   
   // Pagination from backend (for server-side pagination)
   page: { type: Number, default: 1 },
-  pageSize: { type: Number, default: 10 },
+  pageSize: { type: Number, default: 5 },
   totalPages: { type: Number, default: 0 },
   totalCount: { type: Number, default: 0 },
   
@@ -111,6 +111,7 @@ const props = defineProps({
   
   // Server-side options
   serverSide: { type: Boolean, default: false },
+  fetchData: { type: Function, default: null },
   
   // Loading state
   isLoading: { type: Boolean, default: false }
@@ -129,6 +130,7 @@ const localCurrentPage = ref(props.page);
 const localPageSize = ref(props.pageSize || props.defaultPageSize);
 const localSortKey = ref('');
 const localSortDirection = ref('asc');
+const internalLoading = ref(false);
 
 // Sync with props
 watch(() => props.page, (newVal) => {
@@ -139,19 +141,54 @@ watch(() => props.pageSize, (newVal) => {
   if (newVal) localPageSize.value = newVal;
 });
 
+// Computed effective loading state
+const effectiveLoading = computed(() => {
+  return props.fetchData ? internalLoading.value : props.isLoading;
+});
+
 // Handle pagination events
-function handlePageChange(page) {
+async function handlePageChange(page) {
   localCurrentPage.value = page;
+  
   if (props.serverSide) {
-    emit('update:page', page);
+    if (props.fetchData) {
+      internalLoading.value = true;
+      try {
+        await props.fetchData({
+          page,
+          pageSize: localPageSize.value,
+          sortKey: localSortKey.value,
+          sortDirection: localSortDirection.value
+        });
+      } finally {
+        internalLoading.value = false;
+      }
+    } else {
+      emit('update:page', page);
+    }
   }
 }
 
-function handlePageSizeChange(pageSize) {
+async function handlePageSizeChange(pageSize) {
   localPageSize.value = pageSize;
   localCurrentPage.value = 1; // Reset to first page
+  
   if (props.serverSide) {
-    emit('update:pageSize', pageSize);
+    if (props.fetchData) {
+      internalLoading.value = true;
+      try {
+        await props.fetchData({
+          page: 1,
+          pageSize,
+          sortKey: localSortKey.value,
+          sortDirection: localSortDirection.value
+        });
+      } finally {
+        internalLoading.value = false;
+      }
+    } else {
+      emit('update:pageSize', pageSize);
+    }
   }
 }
 
@@ -214,7 +251,26 @@ const displayedEntryEnd = computed(() => {
 // Sorting functions
 function sortBy(key) {
   if (props.serverSide) {
-    emit('sort', { key, direction: localSortDirection.value === 'asc' ? 'desc' : 'asc' });
+    if (props.fetchData) {
+      if (localSortKey.value === key) {
+        localSortDirection.value = localSortDirection.value === 'asc' ? 'desc' : 'asc';
+      } else {
+        localSortKey.value = key;
+        localSortDirection.value = 'asc';
+      }
+      
+      internalLoading.value = true;
+      props.fetchData({
+        page: localCurrentPage.value,
+        pageSize: localPageSize.value,
+        sortKey: localSortKey.value,
+        sortDirection: localSortDirection.value
+      }).finally(() => {
+        internalLoading.value = false;
+      });
+    } else {
+      emit('sort', { key, direction: localSortDirection.value === 'asc' ? 'desc' : 'asc' });
+    }
     return;
   }
   
