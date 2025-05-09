@@ -125,7 +125,13 @@
           </div>
           <div class="col-md-6">
             <el-form-item label="Trade Quantity" required>
-              <el-input v-model.number="currentBot.quantity" type="number" step="0.0001" placeholder="Enter quantity"></el-input>
+              <el-input 
+                v-model.number="currentBot.quantity" 
+                type="number" 
+                step="0.0001" 
+                placeholder="Enter quantity"
+                @input="formatNumberInput($event, 'quantity')"
+              ></el-input>
             </el-form-item>
           </div>
         </div>
@@ -133,12 +139,24 @@
         <div class="row">
           <div class="col-md-6">
             <el-form-item label="Min Price">
-              <el-input v-model.number="currentBot.minPrice" type="number" step="0.01" placeholder="Min price"></el-input>
+              <el-input 
+                v-model.number="currentBot.minPrice" 
+                type="number" 
+                step="0.01" 
+                placeholder="Min price"
+                @input="formatNumberInput($event, 'minPrice')"
+              ></el-input>
             </el-form-item>
           </div>
           <div class="col-md-6">
             <el-form-item label="Max Price">
-              <el-input v-model.number="currentBot.maxPrice" type="number" step="0.01" placeholder="Max price"></el-input>
+              <el-input 
+                v-model.number="currentBot.maxPrice" 
+                type="number" 
+                step="0.01" 
+                placeholder="Max price"
+                @input="formatNumberInput($event, 'maxPrice')"
+              ></el-input>
             </el-form-item>
           </div>
         </div>
@@ -146,12 +164,24 @@
         <div class="row">
           <div class="col-md-6">
             <el-form-item label="Entry Step" required>
-              <el-input v-model.number="currentBot.entryStep" type="number" step="0.01" placeholder="Entry step"></el-input>
+              <el-input 
+                v-model.number="currentBot.entryStep" 
+                type="number" 
+                step="0.01" 
+                placeholder="Entry step"
+                @input="formatNumberInput($event, 'entryStep')"
+              ></el-input>
             </el-form-item>
           </div>
           <div class="col-md-6">
             <el-form-item label="Exit Step" required>
-              <el-input v-model.number="currentBot.exitStep" type="number" step="0.01" placeholder="Exit step"></el-input>
+              <el-input 
+                v-model.number="currentBot.exitStep" 
+                type="number" 
+                step="0.01" 
+                placeholder="Exit step"
+                @input="formatNumberInput($event, 'exitStep')"
+              ></el-input>
             </el-form-item>
           </div>
         </div>
@@ -161,7 +191,14 @@
         </el-form-item>
         
         <el-form-item v-if="currentBot.placeOrdersInAdvance" label="Orders in Advance">
-          <el-input v-model.number="currentBot.ordersInAdvance" type="number" min="1" max="1000" placeholder="Number of orders"></el-input>
+          <el-input 
+            v-model.number="currentBot.ordersInAdvance" 
+            type="number" 
+            min="1" 
+            max="1000" 
+            placeholder="Number of orders"
+            @input="formatNumberInput($event, 'ordersInAdvance')"
+          ></el-input>
         </el-form-item>
       </el-form>
       
@@ -440,6 +477,21 @@ function formatDate(dateString) {
   if (!dateString) return 'N/A';
   const date = new Date(dateString);
   return date.toLocaleString();
+}
+
+// Helper function to ensure decimal separator is a dot
+function formatNumberInput(event, field) {
+  // Get the input value
+  const value = event.target.value;
+  
+  // Replace comma with dot if present
+  if (value && value.includes(',')) {
+    const correctedValue = value.replace(',', '.');
+    // Update the input field directly
+    event.target.value = correctedValue;
+    // Update the model
+    currentBot.value[field] = parseFloat(correctedValue);
+  }
 }
 
 // Fetch bots on mount
