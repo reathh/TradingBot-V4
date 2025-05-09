@@ -11,77 +11,45 @@
           </div>
           
           <div>
-            <div class="col-12 d-flex justify-content-center justify-content-sm-between flex-wrap">
-              <el-select
-                class="select-primary mb-3 pagination-select"
-                v-model="pagination.perPage"
-                placeholder="Per page"
-              >
-                <el-option
-                  class="select-primary"
-                  v-for="item in pagination.perPageOptions"
-                  :key="item"
-                  :label="item"
-                  :value="item"
-                >
-                </el-option>
-              </el-select>
-
-              <base-input>
-                <el-input
-                  type="search"
-                  class="mb-3 search-input"
-                  clearable
-                  prefix-icon="el-icon-search"
-                  placeholder="Search bots"
-                  v-model="searchQuery"
-                  aria-controls="datatables"
-                >
-                </el-input>
-              </base-input>
-            </div>
-            
-            <el-table :data="paginatedBots" :empty-text="isLoading ? 'Loading...' : 'No bots found'">
-              <el-table-column label="ID" prop="id" min-width="70"></el-table-column>
-              <el-table-column label="Name" prop="name" min-width="200"></el-table-column>
-              <el-table-column label="Symbol" prop="symbol" min-width="120"></el-table-column>
-              <el-table-column label="Quantity" min-width="100">
-                <template v-slot="scope">
-                  {{ scope.row.quantity ? scope.row.quantity.toFixed(4) : '0.0000' }}
-                </template>
-              </el-table-column>
-              <el-table-column label="Status" min-width="100">
-                <template v-slot="scope">
-                  <el-tag :type="scope.row.enabled ? 'success' : 'danger'">
-                    {{ scope.row.enabled ? 'Active' : 'Inactive' }}
+            <PagedTable
+              :columns="botTableColumns"
+              :data="bots"
+              :searchable="true"
+              :sortable="true"
+              :page-size-options="pagination.perPageOptions"
+              :default-page-size="pagination.perPage"
+              thead-classes="text-primary"
+            >
+              <template #row="{ row }">
+                <td>{{ row.id }}</td>
+                <td>{{ row.name }}</td>
+                <td>{{ row.symbol }}</td>
+                <td>{{ row.quantity ? row.quantity.toFixed(4) : '0.0000' }}</td>
+                <td>
+                  <el-tag :type="row.enabled ? 'success' : 'danger'">
+                    {{ row.enabled ? 'Active' : 'Inactive' }}
                   </el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column label="Min/Max Price" min-width="150">
-                <template v-slot="scope">
-                  {{ scope.row.minPrice ? scope.row.minPrice.toFixed(2) : 'N/A' }} - {{ scope.row.maxPrice ? scope.row.maxPrice.toFixed(2) : 'N/A' }}
-                </template>
-              </el-table-column>
-              <el-table-column label="Direction" min-width="100">
-                <template v-slot="scope">
-                  <span :class="scope.row.isLong ? 'text-success' : 'text-danger'">
-                    {{ scope.row.isLong ? 'Long' : 'Short' }}
+                </td>
+                <td>
+                  {{ row.minPrice ? row.minPrice.toFixed(2) : 'N/A' }} - {{ row.maxPrice ? row.maxPrice.toFixed(2) : 'N/A' }}
+                </td>
+                <td>
+                  <span :class="row.isLong ? 'text-success' : 'text-danger'">
+                    {{ row.isLong ? 'Long' : 'Short' }}
                   </span>
-                </template>
-              </el-table-column>
-              <el-table-column align="right" label="Actions" min-width="200">
-                <template v-slot="scope">
+                </td>
+                <td class="text-right">
                   <base-button
-                    @click.native="toggleBotStatus(scope.row)"
+                    @click.native="toggleBotStatus(row)"
                     class="btn-link"
-                    :type="scope.row.enabled ? 'warning' : 'success'" 
+                    :type="row.enabled ? 'warning' : 'success'"
                     size="sm"
                     icon
                   >
-                    <i :class="scope.row.enabled ? 'tim-icons icon-button-pause' : 'tim-icons icon-button-power'"></i>
+                    <i :class="row.enabled ? 'tim-icons icon-button-pause' : 'tim-icons icon-button-power'"></i>
                   </base-button>
                   <base-button
-                    @click.native="viewBotTrades(scope.row)"
+                    @click.native="viewBotTrades(row)"
                     class="btn-link"
                     type="info"
                     size="sm"
@@ -90,7 +58,7 @@
                     <i class="tim-icons icon-chart-bar-32"></i>
                   </base-button>
                   <base-button
-                    @click.native="editBot(scope.row)"
+                    @click.native="editBot(row)"
                     class="edit btn-link"
                     type="warning"
                     size="sm"
@@ -99,7 +67,7 @@
                     <i class="tim-icons icon-pencil"></i>
                   </base-button>
                   <base-button
-                    @click.native="deleteBot(scope.row)"
+                    @click.native="deleteBot(row)"
                     class="remove btn-link"
                     type="danger"
                     size="sm"
@@ -107,27 +75,9 @@
                   >
                     <i class="tim-icons icon-simple-remove"></i>
                   </base-button>
-                </template>
-              </el-table-column>
-            </el-table>
-          </div>
-          
-          <div
-            slot="footer"
-            class="col-12 d-flex justify-content-center justify-content-sm-between flex-wrap"
-          >
-            <div class="">
-              <p class="card-category">
-                Showing {{ from + 1 }} to {{ to }} of {{ total }} bots
-              </p>
-            </div>
-            <base-pagination
-              class="pagination-no-border"
-              v-model="pagination.currentPage"
-              :per-page="pagination.perPage"
-              :total="total"
-            >
-            </base-pagination>
+                </td>
+              </template>
+            </PagedTable>
           </div>
         </card>
       </div>
@@ -278,6 +228,7 @@ import BaseButton from "@/components/BaseButton.vue";
 import BaseInput from "@/components/Inputs/BaseInput.vue";
 import Swal from "sweetalert2";
 import axios from "axios";
+import PagedTable from '@/components/PagedTable.vue';
 
 // State variables
 const isLoading = ref(false);
@@ -345,6 +296,17 @@ const filteredBots = computed(() => {
 const paginatedBots = computed(() => {
   return filteredBots.value.slice(from.value, to.value);
 });
+
+const botTableColumns = [
+  { key: 'id', label: 'ID', minWidth: 70 },
+  { key: 'name', label: 'Name', minWidth: 200 },
+  { key: 'symbol', label: 'Symbol', minWidth: 120 },
+  { key: 'quantity', label: 'Quantity', minWidth: 100 },
+  { key: 'status', label: 'Status', minWidth: 100 },
+  { key: 'minMaxPrice', label: 'Min/Max Price', minWidth: 150 },
+  { key: 'direction', label: 'Direction', minWidth: 100 },
+  { key: 'actions', label: 'Actions', minWidth: 200, align: 'right' },
+];
 
 // Methods
 async function fetchBots() {
