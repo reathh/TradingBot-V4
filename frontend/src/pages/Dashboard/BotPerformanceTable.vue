@@ -25,7 +25,7 @@
             type="search"
             class="search-input input-primary"
             clearable
-            prefix-icon="el-icon-search"
+            :prefix-icon="Search"
             placeholder="Search records"
             v-model="searchQuery"
           />
@@ -95,6 +95,7 @@ import BaseTable from "@/components/BaseTable.vue";
 import BaseButton from "@/components/BaseButton.vue";
 import BasePagination from "@/components/BasePagination.vue";
 import { ElSelect, ElOption, ElInput } from "element-plus";
+import { Search } from "@element-plus/icons-vue";
 import botService from "@/services/botService";
 
 // Data states

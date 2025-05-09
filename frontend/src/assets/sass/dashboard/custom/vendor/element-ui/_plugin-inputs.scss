@@ -64,6 +64,8 @@
     box-shadow: 0 0 0 1px #2b3553 inset;
     border-radius: 0.4285rem;
     outline: none;
+    padding: 0 12px;
+    transition: box-shadow 0.15s ease;
     
     &:focus,
     &:focus-within,
@@ -79,11 +81,24 @@
     background-color: transparent;
     color: white;
     outline: none;
+    height: 36px;
+    line-height: 36px;
   }
   
-  .el-input__suffix,
   .el-input__prefix {
     color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    
+    .el-icon {
+      font-size: 16px;
+    }
+  }
+  
+  .el-input__suffix {
+    color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
   }
 }
 
