@@ -167,3 +167,36 @@
   }
 }
 
+.el-input__inner,
+.el-input__inner:focus,
+.el-input__inner:active,
+.el-input__inner:focus-visible,
+.el-input__inner:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-color: transparent !important;
+  background-color: transparent !important;
+}
+
+.el-input__wrapper,
+.el-input__wrapper:focus,
+.el-input__wrapper:active,
+.el-input__wrapper:focus-visible,
+.el-input__wrapper:focus-within {
+  box-shadow: none !important;
+  border: none !important;
+  border-color: transparent !important;
+  outline: none !important;
+}
+
+.white-content .el-input__inner,
+.white-content .el-input__inner:focus,
+.white-content .el-input__wrapper,
+.white-content .el-input__wrapper:focus {
+  border: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
