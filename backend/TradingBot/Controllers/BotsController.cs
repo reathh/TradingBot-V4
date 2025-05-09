@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TradingBot.Data;
+using TradingBot.Models;
 
 namespace TradingBot.Controllers
 {
@@ -21,7 +22,7 @@ namespace TradingBot.Controllers
 
         // GET: api/Bots
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Bot>>> GetBots(
+        public async Task<ActionResult<PagedResult<Bot>>> GetBots(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
             [FromQuery] string? search = null)
@@ -41,6 +42,7 @@ namespace TradingBot.Controllers
 
             // Get total count for pagination
             var totalCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
             
             // Apply pagination
             var bots = await query
@@ -49,13 +51,17 @@ namespace TradingBot.Controllers
                 .Take(pageSize)
                 .ToListAsync();
 
-            // Add pagination headers
-            Response.Headers.Append("X-Total-Count", totalCount.ToString());
-            Response.Headers.Append("X-Page", page.ToString());
-            Response.Headers.Append("X-Page-Size", pageSize.ToString());
-            Response.Headers.Append("X-Total-Pages", ((int)Math.Ceiling(totalCount / (double)pageSize)).ToString());
+            // Create PagedResult
+            var result = new PagedResult<Bot>
+            {
+                Page = page,
+                PageSize = pageSize,
+                TotalPages = totalPages,
+                TotalCount = totalCount,
+                Items = bots
+            };
 
-            return bots;
+            return result;
         }
 
         // GET: api/Bots/5

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TradingBot.Data;
+using TradingBot.Models;
 
 namespace TradingBot.Controllers
 {
@@ -96,7 +97,7 @@ namespace TradingBot.Controllers
         }
 
         [HttpGet("bot-profits")]
-        public async Task<ActionResult<IEnumerable<BotProfitDto>>> GetBotProfits(
+        public async Task<ActionResult<PagedResult<BotProfitDto>>> GetBotProfits(
             [FromQuery] string? period = "month",
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10)
@@ -114,6 +115,7 @@ namespace TradingBot.Controllers
 
             // Get total count for pagination info
             var totalCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
             // Apply pagination
             var trades = await query
@@ -135,13 +137,16 @@ namespace TradingBot.Controllers
                 ExitTime = t.ExitOrder.CreatedAt
             }).ToList();
 
-            // Add pagination headers
-            Response.Headers.Append("X-Total-Count", totalCount.ToString());
-            Response.Headers.Append("X-Page", page.ToString());
-            Response.Headers.Append("X-Page-Size", pageSize.ToString());
-            Response.Headers.Append("X-Total-Pages", ((int)Math.Ceiling(totalCount / (double)pageSize)).ToString());
+            var result = new PagedResult<BotProfitDto>
+            {
+                Page = page,
+                PageSize = pageSize,
+                TotalPages = totalPages,
+                TotalCount = totalCount,
+                Items = botProfits
+            };
 
-            return botProfits;
+            return result;
         }
 
         [HttpGet("bot-profits-chart")]

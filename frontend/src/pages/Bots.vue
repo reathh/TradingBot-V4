@@ -13,12 +13,19 @@
           <div>
             <PagedTable
               :columns="botTableColumns"
-              :data="bots"
+              :data="pagedResult.items"
+              :page="currentPage"
+              :page-size="pageSize"
+              :total-pages="pagedResult.totalPages"
+              :total-count="pagedResult.totalCount"
               :searchable="true"
               :sortable="true"
-              :page-size-options="pagination.perPageOptions"
-              :default-page-size="pagination.perPage"
+              :server-side="true"
+              :page-size-options="pageSizeOptions"
               thead-classes="text-primary"
+              @update:page="onPageChange"
+              @update:pageSize="onPageSizeChange"
+              @search="onSearch"
             >
               <template #row="{ row }">
                 <td>{{ row.id }}</td>
@@ -233,19 +240,21 @@ import PagedTable from '@/components/PagedTable.vue';
 // State variables
 const isLoading = ref(false);
 const isLoadingTrades = ref(false);
-const bots = ref([]);
+const pagedResult = ref({
+  page: 1,
+  pageSize: 10,
+  totalPages: 0,
+  totalCount: 0,
+  items: []
+});
+const currentPage = ref(1);
+const pageSize = ref(10);
+const searchTerm = ref('');
+const pageSizeOptions = [5, 10, 25, 50];
 const botTrades = ref([]);
 const showCreateEditModal = ref(false);
 const showTradesModal = ref(false);
 const isEditing = ref(false);
-const searchQuery = ref('');
-
-// Pagination
-const pagination = reactive({
-  perPage: 10,
-  currentPage: 1,
-  perPageOptions: [5, 10, 25, 50],
-});
 
 // Default bot model
 const defaultBot = {
@@ -270,33 +279,6 @@ const defaultBot = {
 
 const currentBot = ref({...defaultBot});
 
-// Computed properties
-const from = computed(() => pagination.perPage * (pagination.currentPage - 1));
-
-const to = computed(() => {
-  const high = from.value + pagination.perPage;
-  return Math.min(high, total.value);
-});
-
-const total = computed(() => {
-  return filteredBots.value.length;
-});
-
-const filteredBots = computed(() => {
-  if (!searchQuery.value) return bots.value;
-  
-  const query = searchQuery.value.toLowerCase();
-  return bots.value.filter(
-    bot => 
-      bot.name.toLowerCase().includes(query) || 
-      bot.symbol.toLowerCase().includes(query)
-  );
-});
-
-const paginatedBots = computed(() => {
-  return filteredBots.value.slice(from.value, to.value);
-});
-
 const botTableColumns = [
   { key: 'id', label: 'ID', minWidth: 70 },
   { key: 'name', label: 'Name', minWidth: 200 },
@@ -308,12 +290,18 @@ const botTableColumns = [
   { key: 'actions', label: 'Actions', minWidth: 200, align: 'right' },
 ];
 
-// Methods
+// Fetch bots with pagination and search
 async function fetchBots() {
   isLoading.value = true;
   try {
-    const response = await axios.get('/api/bots');
-    bots.value = response.data;
+    const response = await axios.get('/api/bots', {
+      params: {
+        page: currentPage.value,
+        pageSize: pageSize.value,
+        search: searchTerm.value || undefined
+      }
+    });
+    pagedResult.value = response.data;
   } catch (error) {
     console.error('Error fetching bots:', error);
     Swal.fire({
@@ -324,6 +312,24 @@ async function fetchBots() {
   } finally {
     isLoading.value = false;
   }
+}
+
+// Pagination handlers
+function onPageChange(page) {
+  currentPage.value = page;
+  fetchBots();
+}
+
+function onPageSizeChange(size) {
+  pageSize.value = size;
+  currentPage.value = 1; // Reset to first page when changing page size
+  fetchBots();
+}
+
+function onSearch(query) {
+  searchTerm.value = query;
+  currentPage.value = 1; // Reset to first page when searching
+  fetchBots();
 }
 
 function editBot(bot) {
@@ -342,10 +348,6 @@ async function saveBot() {
   try {
     if (isEditing.value) {
       await axios.put(`/api/bots/${currentBot.value.id}`, currentBot.value);
-      const index = bots.value.findIndex(b => b.id === currentBot.value.id);
-      if (index !== -1) {
-        bots.value[index] = {...currentBot.value};
-      }
       Swal.fire({
         title: 'Success',
         text: 'Bot updated successfully',
@@ -354,8 +356,7 @@ async function saveBot() {
         showConfirmButton: false
       });
     } else {
-      const response = await axios.post('/api/bots', currentBot.value);
-      bots.value.push(response.data);
+      await axios.post('/api/bots', currentBot.value);
       Swal.fire({
         title: 'Success',
         text: 'Bot created successfully',
@@ -365,6 +366,8 @@ async function saveBot() {
       });
     }
     showCreateEditModal.value = false;
+    // Refresh the bots list
+    fetchBots();
   } catch (error) {
     console.error('Error saving bot:', error);
     Swal.fire({
@@ -389,12 +392,13 @@ async function deleteBot(bot) {
     if (result.isConfirmed) {
       try {
         await axios.delete(`/api/bots/${bot.id}`);
-        bots.value = bots.value.filter(b => b.id !== bot.id);
         Swal.fire(
           'Deleted!',
           'The bot has been deleted.',
           'success'
         );
+        // Refresh the bots list
+        fetchBots();
       } catch (error) {
         console.error('Error deleting bot:', error);
         Swal.fire({
@@ -410,14 +414,15 @@ async function deleteBot(bot) {
 async function toggleBotStatus(bot) {
   try {
     await axios.post(`/api/bots/${bot.id}/toggle`);
-    bot.enabled = !bot.enabled;
     Swal.fire({
       title: 'Success',
-      text: `Bot ${bot.enabled ? 'activated' : 'deactivated'} successfully`,
+      text: `Bot ${!bot.enabled ? 'activated' : 'deactivated'} successfully`,
       icon: 'success',
       timer: 2000,
       showConfirmButton: false
     });
+    // Refresh the bots list to get updated status
+    fetchBots();
   } catch (error) {
     console.error('Error toggling bot status:', error);
     Swal.fire({

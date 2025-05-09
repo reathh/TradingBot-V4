@@ -2,12 +2,19 @@
   <div class="card-body">
     <PagedTable
       :columns="tableColumns"
-      :data="botPerformanceData"
+      :data="pagedResult.items"
+      :page="currentPage"
+      :page-size="pageSize"
+      :total-pages="pagedResult.totalPages"
+      :total-count="pagedResult.totalCount"
       :searchable="true"
       :sortable="true"
+      :server-side="true"
       :page-size-options="pageSizeOptions"
-      :default-page-size="pageSize"
+      :is-loading="isLoading"
       thead-classes="text-primary"
+      @update:page="onPageChange"
+      @update:pageSize="onPageSizeChange"
     >
       <template #row="{ row }">
         <td>{{ row.botId }}</td>
@@ -20,12 +27,12 @@
           {{ formatCurrency(row.profit) }}
         </td>
         <td class="text-right">
-          <base-button type="info" icon size="sm" class="btn-link">
+          <BaseButton type="info" icon size="sm" class="btn-link">
             <i class="tim-icons icon-zoom-split"></i>
-          </base-button>
-          <base-button type="success" icon size="sm" class="btn-link">
+          </BaseButton>
+          <BaseButton type="success" icon size="sm" class="btn-link">
             <i class="tim-icons icon-refresh-01"></i>
-          </base-button>
+          </BaseButton>
         </td>
       </template>
     </PagedTable>
@@ -33,17 +40,25 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { ref, onMounted } from "vue";
 import BaseButton from "@/components/BaseButton.vue";
 import PagedTable from "@/components/PagedTable.vue";
 import botService from "@/services/botService";
 
 // Data states
-const botPerformanceData = ref([]);
+const pagedResult = ref({
+  page: 1,
+  pageSize: 10,
+  totalPages: 0,
+  totalCount: 0,
+  items: []
+});
+
+const currentPage = ref(1);
+const pageSize = ref(10);
+const pageSizeOptions = [5, 10, 25, 50];
 const isLoading = ref(false);
 const error = ref(null);
-const pageSize = ref(5);
-const pageSizeOptions = [5, 10, 25, 50];
 
 // Table columns definition
 const tableColumns = [
@@ -68,18 +83,37 @@ const getProfitClass = (profit) => {
   return profit > 0 ? 'text-success' : 'text-danger';
 };
 
-// Fetch bot performance data (dummy for now, replace with real fetch)
-onMounted(async () => {
+// Fetch bot profits with pagination
+const fetchBotProfits = async () => {
   isLoading.value = true;
   try {
-    // Replace with real API call
-    botPerformanceData.value = await botService.getPerformance();
+    const response = await botService.getBotProfits({ 
+      page: currentPage.value, 
+      pageSize: pageSize.value 
+    });
+    pagedResult.value = response.data;
   } catch (e) {
     error.value = e;
+    console.error('Error fetching bot profits:', e);
   } finally {
     isLoading.value = false;
   }
-});
+};
+
+// Handle pagination events
+const onPageChange = (page) => {
+  currentPage.value = page;
+  fetchBotProfits();
+};
+
+const onPageSizeChange = (size) => {
+  pageSize.value = size;
+  currentPage.value = 1; // Reset to first page
+  fetchBotProfits();
+};
+
+// Fetch data on mount
+onMounted(fetchBotProfits);
 </script>
 
 <style>
