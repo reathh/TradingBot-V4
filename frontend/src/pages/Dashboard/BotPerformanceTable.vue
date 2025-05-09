@@ -8,6 +8,7 @@
           class="select-primary pagination-select"
           v-model="pageSize"
           placeholder="Per page"
+          popper-class="el-select__popper select-primary"
         >
           <el-option
             class="select-primary"
@@ -92,7 +93,6 @@ import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import BaseTable from "@/components/BaseTable.vue";
 import BaseButton from "@/components/BaseButton.vue";
 import BasePagination from "@/components/BasePagination.vue";
-import { ElSelect, ElOption, ElInput } from "element-plus";
 import { Search } from "@element-plus/icons-vue";
 import botService from "@/services/botService";
 
@@ -111,6 +111,8 @@ const pageSizeOptions = [5, 10, 25, 50];
 // Sorting state
 const sortKey = ref('exitTime');
 const sortDirection = ref('desc');
+
+// Data states
 
 // Table columns definition
 const tableColumns = [
@@ -242,6 +244,8 @@ watch([currentPage, pageSize], () => {
   fetchBotPerformance();
 });
 
+
+
 watch([searchQuery, sortKey, sortDirection, () => filteredData.value], () => {
   currentPage.value = 1; // Reset to first page when filter changes
   updateDisplayedData();
@@ -289,6 +293,21 @@ defineExpose({
   width: 80px !important;
 }
 
-/* Component-specific styles */
-/* Add any component-specific styles here if needed */
+/* Direct style override for the select background */
+.el-select .el-select__wrapper {
+  background-color: #27293d !important;
+}
+
+.white-content .el-select .el-select__wrapper {
+  background-color: #ffffff !important;
+}
+
+/* Force override for the fill-color-blank variable */
+:deep(.el-select) {
+  --el-fill-color-blank: #27293d !important;
+}
+
+.white-content :deep(.el-select) {
+  --el-fill-color-blank: #ffffff !important;
+}
 </style>
