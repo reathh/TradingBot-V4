@@ -12,59 +12,55 @@ namespace TradingBot.Services;
 /// <summary>
 /// Background service that subscribes to Binance ticker updates and dispatches NewTickerCommand
 /// </summary>
-public class TickerUpdateService : BackgroundService
+public class TickerUpdateService : ScheduledBackgroundService
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<TickerUpdateService> _logger;
     private readonly BinanceSocketClient _socketClient;
     private readonly Dictionary<string, CancellationTokenSource> _subscriptions = [];
     private readonly object _lock = new();
 
     public TickerUpdateService(
         IServiceProvider serviceProvider,
+        IConfiguration configuration,
         ILogger<TickerUpdateService> logger)
+        : base(serviceProvider, logger, TimeSpan.FromMinutes(5), "Ticker update service")
     {
-        _serviceProvider = serviceProvider;
-        _logger = logger;
+        // Get API credentials from configuration
+        var publicKey = configuration["Binance:ApiKey"] ?? "";
+        var privateKey = configuration["Binance:ApiSecret"] ?? "";
         
         // Create a socket client for subscribing to ticker updates
-        _socketClient = new BinanceSocketClient();
+        _socketClient = new BinanceSocketClient(options =>
+        {
+            if (!string.IsNullOrEmpty(publicKey) && !string.IsNullOrEmpty(privateKey))
+            {
+                options.ApiCredentials = new ApiCredentials(publicKey, privateKey);
+            }
+        });
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task OnStartAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Ticker update service starting...");
+        Logger.LogInformation("Initializing ticker subscriptions...");
+        
+        // Initial subscription to active symbols when service starts
+        await SubscribeToActiveSymbolsAsync(cancellationToken);
+    }
 
-        try
-        {
-            // Subscribe to ticker updates for all active symbols
-            await SubscribeToActiveSymbolsAsync(stoppingToken);
-            
-            // Check for new symbols periodically
-            while (!stoppingToken.IsCancellationRequested)
-            {
-                await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
-                await SubscribeToActiveSymbolsAsync(stoppingToken);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            // Normal shutdown, no need to log
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error in ticker update service");
-        }
-        finally
-        {
-            await UnsubscribeAllAsync();
-            _logger.LogInformation("Ticker update service stopped");
-        }
+    protected internal override async Task ExecuteScheduledWorkAsync(CancellationToken cancellationToken)
+    {
+        // Periodically check for new symbols to subscribe to
+        await SubscribeToActiveSymbolsAsync(cancellationToken);
+    }
+
+    protected override async Task OnStopAsync(CancellationToken cancellationToken)
+    {
+        Logger.LogInformation("Stopping ticker subscriptions...");
+        await UnsubscribeAllAsync();
     }
 
     private async Task SubscribeToActiveSymbolsAsync(CancellationToken cancellationToken)
     {
-        using var scope = _serviceProvider.CreateScope();
+        using var scope = ServiceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<TradingBotDbContext>();
 
         // Get all unique symbols from enabled bots
@@ -74,7 +70,7 @@ public class TickerUpdateService : BackgroundService
             .Distinct()
             .ToListAsync(cancellationToken);
 
-        _logger.LogInformation("Found {SymbolCount} active symbols to monitor", activeSymbols.Count);
+        Logger.LogInformation("Found {SymbolCount} active symbols to monitor", activeSymbols.Count);
 
         foreach (var symbol in activeSymbols)
         {
@@ -90,7 +86,7 @@ public class TickerUpdateService : BackgroundService
 
     private async Task SubscribeToSymbolAsync(string symbol, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Subscribing to ticker updates for {Symbol}", symbol);
+        Logger.LogInformation("Subscribing to ticker updates for {Symbol}", symbol);
 
         try
         {
@@ -105,7 +101,7 @@ public class TickerUpdateService : BackgroundService
 
             if (!subscriptionResult.Success)
             {
-                _logger.LogError("Failed to subscribe to ticker updates for {Symbol}: {Error}", 
+                Logger.LogError("Failed to subscribe to ticker updates for {Symbol}: {Error}", 
                     symbol, subscriptionResult.Error?.Message);
                 return;
             }
@@ -116,11 +112,11 @@ public class TickerUpdateService : BackgroundService
                 _subscriptions[symbol] = tokenSource;
             }
 
-            _logger.LogInformation("Successfully subscribed to ticker updates for {Symbol}", symbol);
+            Logger.LogInformation("Successfully subscribed to ticker updates for {Symbol}", symbol);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error subscribing to ticker updates for {Symbol}", symbol);
+            Logger.LogError(ex, "Error subscribing to ticker updates for {Symbol}", symbol);
         }
     }
 
@@ -136,12 +132,12 @@ public class TickerUpdateService : BackgroundService
                 ask: tickData.BestAskPrice,
                 lastPrice: tickData.LastPrice);
 
-            // Enqueue command to process the ticker
-            _logger.LogDebug("Received ticker update for {Symbol}: Bid={Bid}, Ask={Ask}, Last={Last}", 
+            // Log ticker update
+            Logger.LogDebug("Received ticker update for {Symbol}: Bid={Bid}, Ask={Ask}, Last={Last}", 
                 symbol, ticker.Bid, ticker.Ask, ticker.LastPrice);
 
             // Process the ticker with a new command
-            using var scope = _serviceProvider.CreateScope();
+            using var scope = ServiceProvider.CreateScope();
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
             
             // Send the command asynchronously
@@ -154,19 +150,19 @@ public class TickerUpdateService : BackgroundService
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error processing ticker update for {Symbol}", symbol);
+                    Logger.LogError(ex, "Error processing ticker update for {Symbol}", symbol);
                 }
             });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error handling ticker update for {Symbol}", symbol);
+            Logger.LogError(ex, "Error handling ticker update for {Symbol}", symbol);
         }
     }
 
     private async Task UnsubscribeAllAsync()
     {
-        _logger.LogInformation("Unsubscribing from all ticker updates");
+        Logger.LogInformation("Unsubscribing from all ticker updates");
 
         try
         {
@@ -188,13 +184,13 @@ public class TickerUpdateService : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error unsubscribing from ticker updates");
+            Logger.LogError(ex, "Error unsubscribing from ticker updates");
         }
     }
 
     private async Task UnsubscribeFromSymbolAsync(string symbol)
     {
-        _logger.LogInformation("Unsubscribing from ticker updates for {Symbol}", symbol);
+        Logger.LogInformation("Unsubscribing from ticker updates for {Symbol}", symbol);
 
         try
         {
@@ -222,14 +218,7 @@ public class TickerUpdateService : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error unsubscribing from ticker updates for {Symbol}", symbol);
+            Logger.LogError(ex, "Error unsubscribing from ticker updates for {Symbol}", symbol);
         }
-    }
-
-    public override async Task StopAsync(CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("Stopping ticker update service");
-        await UnsubscribeAllAsync();
-        await base.StopAsync(cancellationToken);
     }
 } 
