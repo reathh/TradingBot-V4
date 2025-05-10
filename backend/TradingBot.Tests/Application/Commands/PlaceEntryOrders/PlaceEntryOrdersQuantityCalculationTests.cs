@@ -199,7 +199,7 @@ public class PlaceEntryOrdersQuantityCalculationTests : BaseTest
         var secondCommand = new PlaceEntryOrdersCommand { Ticker = secondTicker };
 
         // We now have steps of 0.5, so we need orders at:
-        // 99.5, 99, 98.5, 98, 97.5, 97, 96.5, 96, 95.5, 95, 94.5, 94 = 13 steps
+        // 100, 99.5, 99, 98.5, 98, 97.5, 97, 96.5, 96, 95.5, 95, 94.5, 94 = 13 steps
         // The first order was for 1 unit (old EntryQuantity), but now EntryQuantity is 2,
         // so the total needed is 13 * 2 = 26, minus the 1 unit already placed = 25 units.
         var secondOrder = CreateOrder(bot, 94, 25, bot.IsLong);
