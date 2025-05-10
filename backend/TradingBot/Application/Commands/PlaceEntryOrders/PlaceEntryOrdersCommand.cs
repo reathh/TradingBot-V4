@@ -9,7 +9,7 @@ namespace TradingBot.Application.Commands.PlaceEntryOrders;
 // Note: File name is PlaceOpeningOrdersCommand.cs but class is PlaceEntryOrdersCommand
 public class PlaceEntryOrdersCommand : IRequest<Result>
 {
-    public required Ticker Ticker { get; set; }
+    public required TickerDto Ticker { get; set; }
 
     public class PlaceEntryOrdersCommandHandler(
         TradingBotDbContext dbContext,
@@ -93,7 +93,7 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                 : Result.Success;
         }
 
-        private async Task PlaceOrders(Bot bot, Ticker ticker, decimal quantity, int openTradesCount, CancellationToken cancellationToken)
+        private async Task PlaceOrders(Bot bot, TickerDto ticker, decimal quantity, int openTradesCount, CancellationToken cancellationToken)
         {
             // Get the appropriate exchange API for this bot
             var exchangeApi = _exchangeApiRepository.GetExchangeApi(bot);

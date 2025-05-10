@@ -20,7 +20,7 @@ public class BackgroundJobProcessor(IServiceProvider serviceProvider, ILogger<Ba
     private readonly ILogger<BackgroundJobProcessor> _logger = logger;
     private readonly AutoResetEvent _newJobEvent = new(false);
 
-    public void Enqueue<TRequest>(TRequest request) where TRequest : IRequest
+    public void Enqueue<TRequest>(TRequest request) where TRequest : IRequest<Result>
     {
         var requestType = typeof(TRequest);
         
@@ -81,7 +81,7 @@ public class BackgroundJobProcessor(IServiceProvider serviceProvider, ILogger<Ba
             ));
     }
 
-    private async Task HandleResultCommand<TRequest>(IMediator mediator, TRequest request) where TRequest : IRequest
+    private async Task HandleResultCommand<TRequest>(IMediator mediator, TRequest request) where TRequest : IRequest<Result>
     {
         if (request == null) return;
 

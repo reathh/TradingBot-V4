@@ -10,7 +10,7 @@ namespace TradingBot.Application;
 
 public class NewTickerCommand : IRequest<Result>
 {
-    public required Ticker Ticker { get; set; }
+    public required TickerDto TickerDto { get; set; }
 
     public class NewTickerCommandHandler(
         IBackgroundJobProcessor backgroundJobProcessor,
@@ -21,15 +21,15 @@ public class NewTickerCommand : IRequest<Result>
 
         protected override Task<Result> HandleCore(NewTickerCommand request, CancellationToken cancellationToken)
         {
-            var ticker = request.Ticker;
-            _logger.LogDebug("Processing ticker update for {Symbol}", ticker.Symbol);
+            var tickerDto = request.TickerDto;
+            _logger.LogDebug("Processing ticker update for {Symbol}", tickerDto.Symbol);
         
             // Save ticker data for historical records
-            _backgroundJobProcessor.Enqueue(new SaveTickerCommand { Ticker = ticker });
+            _backgroundJobProcessor.Enqueue(new SaveTickerCommand { TickerDto = tickerDto });
             
             // Process trading logic
-            _backgroundJobProcessor.Enqueue(new PlaceEntryOrdersCommand { Ticker = ticker });
-            _backgroundJobProcessor.Enqueue(new PlaceExitOrdersCommand { Ticker = ticker });
+            _backgroundJobProcessor.Enqueue(new PlaceEntryOrdersCommand { Ticker = tickerDto });
+            _backgroundJobProcessor.Enqueue(new PlaceExitOrdersCommand { Ticker = tickerDto });
 
             return Task.FromResult(Result.Success);
         }

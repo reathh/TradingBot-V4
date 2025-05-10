@@ -75,7 +75,7 @@ public abstract class PlaceEntryOrdersTestBase
         return bot;
     }
 
-    protected Ticker CreateTestTicker(decimal bid, decimal ask) => 
+    protected TickerDto CreateTestTicker(decimal bid, decimal ask) => 
         new("BTCUSDT", DateTime.UtcNow, bid, ask, lastPrice: _random.Next(2) == 0 ? bid : ask);
 
     protected Order CreateOrder(Bot bot, decimal price, decimal quantity, bool isBuy)

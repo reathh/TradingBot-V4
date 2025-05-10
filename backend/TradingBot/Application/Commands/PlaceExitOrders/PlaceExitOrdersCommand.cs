@@ -9,7 +9,7 @@ namespace TradingBot.Application.Commands.PlaceExitOrders;
 
 public class PlaceExitOrdersCommand : IRequest<Result>
 {
-    public required Ticker Ticker { get; set; }
+    public required TickerDto Ticker { get; set; }
 
     public class PlaceExitOrdersCommandHandler(
         TradingBotDbContext dbContext,
@@ -125,7 +125,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                 : Result.Failure(errors);
         }
 
-        private async Task PlaceExitOrders(Bot bot, Ticker ticker, IList<Trade> consolidatedTrades, IList<Trade> advanceTrades, CancellationToken cancellationToken)
+        private async Task PlaceExitOrders(Bot bot, TickerDto ticker, IList<Trade> consolidatedTrades, IList<Trade> advanceTrades, CancellationToken cancellationToken)
         {
             var currentPrice = bot.IsLong ? ticker.Ask : ticker.Bid;
             var exchangeApi = _exchangeApiRepository.GetExchangeApi(bot);

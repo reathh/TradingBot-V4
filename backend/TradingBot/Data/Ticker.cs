@@ -2,7 +2,7 @@ using System;
 
 namespace TradingBot.Data
 {
-    public class TickerEntity
+    public class Ticker
     {
         public int Id { get; set; }
         public string Symbol { get; set; } = string.Empty;
@@ -12,16 +12,16 @@ namespace TradingBot.Data
         public decimal LastPrice { get; set; }
 
         // Default constructor for EF Core
-        public TickerEntity() { }
+        public Ticker() { }
 
-        // Create from a Ticker model
-        public TickerEntity(Ticker ticker)
+        // Create from a TickerDto model
+        public Ticker(TickerDto tickerDto)
         {
-            Symbol = ticker.Symbol;
-            Timestamp = ticker.Timestamp;
-            Bid = ticker.Bid;
-            Ask = ticker.Ask;
-            LastPrice = ticker.LastPrice;
+            Symbol = tickerDto.Symbol;
+            Timestamp = tickerDto.Timestamp;
+            Bid = tickerDto.Bid;
+            Ask = tickerDto.Ask;
+            LastPrice = tickerDto.LastPrice;
         }
     }
 } 

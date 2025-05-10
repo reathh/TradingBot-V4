@@ -286,7 +286,7 @@ public class PlaceEntryOrdersQuantityCalculationTests
         return bot;
     }
 
-    private Ticker CreateTicker(decimal bid, decimal ask) => 
+    private TickerDto CreateTicker(decimal bid, decimal ask) => 
         new("BTCUSDT", DateTime.UtcNow, bid, ask, lastPrice: _random.Next(2) == 0 ? bid : ask);
 
     private Order CreateOrder(Bot bot, decimal price, decimal quantity, bool isBuy)

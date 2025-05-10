@@ -61,7 +61,7 @@ public class BalanceVerificationService(
             failureMessage: "❌ {Errors}");
     }
 
-    private Task<Ticker?> GetCurrentTickerAsync(Bot bot, CancellationToken cancellationToken)
+    private Task<TickerDto?> GetCurrentTickerAsync(Bot bot, CancellationToken cancellationToken)
     {
         // Try to get the most recent ticker from the database
         // This assumes we have a Tickers table or other mechanism to store ticker data
@@ -95,11 +95,11 @@ public class BalanceVerificationService(
             else
             {
                 // No reference price available
-                return Task.FromResult<Ticker?>(null);
+                return Task.FromResult<TickerDto?>(null);
             }
         }
 
         // Create a ticker with the mid-price
-        return Task.FromResult<Ticker?>(new Ticker(bot.Symbol, DateTime.UtcNow, lastPrice, lastPrice, lastPrice));
+        return Task.FromResult<TickerDto?>(new TickerDto(bot.Symbol, DateTime.UtcNow, lastPrice, lastPrice, lastPrice));
     }
 }

@@ -105,7 +105,7 @@ public class TickerUpdateService(
         try
         {
             // Create ticker from Binance data
-            var ticker = new Ticker(
+            var tickerDto = new TickerDto(
                 symbol: symbol,
                 timestamp: DateTime.UtcNow,
                 bid: tickData.BestBidPrice,
@@ -114,7 +114,7 @@ public class TickerUpdateService(
 
             // Log ticker update
             Logger.LogDebug("Received ticker update for {Symbol}: Bid={Bid}, Ask={Ask}, Last={Last}", 
-                symbol, ticker.Bid, ticker.Ask, ticker.LastPrice);
+                symbol, tickerDto.Bid, tickerDto.Ask, tickerDto.LastPrice);
 
             // Process the ticker with a new command
             using var scope = ServiceProvider.CreateScope();
@@ -125,7 +125,7 @@ public class TickerUpdateService(
             {
                 try
                 {
-                    var command = new NewTickerCommand { Ticker = ticker };
+                    var command = new NewTickerCommand { TickerDto = tickerDto };
                     await mediator.Send(command);
                 }
                 catch (Exception ex)
@@ -185,7 +185,7 @@ public class TickerUpdateService(
                 }
             }
 
-            // Cancel the token and unsubscribe
+            // Cancel the token and dispose
             if (tokenSource != null)
             {
                 tokenSource.Cancel();

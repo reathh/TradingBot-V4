@@ -6,7 +6,7 @@ namespace TradingBot.Application.Commands.SaveTicker;
 
 public class SaveTickerCommand : IRequest<Result>
 {
-    public required Ticker Ticker { get; set; }
+    public required TickerDto TickerDto { get; set; }
 
     public class SaveTickerCommandHandler(
         TradingBotDbContext dbContext,
@@ -19,23 +19,23 @@ public class SaveTickerCommand : IRequest<Result>
         {
             try
             {
-                var ticker = request.Ticker;
+                var tickerDto = request.TickerDto;
                 _logger.LogDebug("Saving ticker data for {Symbol}: Bid={Bid}, Ask={Ask}, Last={Last}", 
-                    ticker.Symbol, ticker.Bid, ticker.Ask, ticker.LastPrice);
+                    tickerDto.Symbol, tickerDto.Bid, tickerDto.Ask, tickerDto.LastPrice);
 
-                var tickerEntity = new TickerEntity(ticker);
+                var ticker = new Ticker(tickerDto);
                 
-                await _dbContext.Tickers.AddAsync(tickerEntity, cancellationToken);
+                await _dbContext.Tickers.AddAsync(ticker, cancellationToken);
                 await _dbContext.SaveChangesAsync(cancellationToken);
                 
-                _logger.LogDebug("Successfully saved ticker data for {Symbol} at {Timestamp}", ticker.Symbol, ticker.Timestamp);
+                _logger.LogDebug("Successfully saved ticker data for {Symbol} at {Timestamp}", tickerDto.Symbol, tickerDto.Timestamp);
                 
                 return Result.Success;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error saving ticker data");
-                return "Failed to save ticker data: " + ex.Message;
+                return Result.Failure(new[] { "Failed to save ticker data: " + ex.Message });
             }
         }
     }

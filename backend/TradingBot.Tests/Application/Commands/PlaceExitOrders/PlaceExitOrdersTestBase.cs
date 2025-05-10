@@ -33,9 +33,9 @@ public abstract class PlaceExitOrdersTestBase : BaseTest
     /// <summary>
     /// Creates a ticker with the specified bid and ask prices
     /// </summary>
-    protected Ticker CreateTestTicker(decimal bid, decimal ask)
+    protected TickerDto CreateTestTicker(decimal bid, decimal ask)
     {
-        return new Ticker("BTC/USDT", DateTime.Now, bid, ask, (bid + ask) / 2);
+        return new TickerDto("BTC/USDT", DateTime.Now, bid, ask, (bid + ask) / 2);
     }
 
     /// <summary>
