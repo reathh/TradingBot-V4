@@ -134,17 +134,13 @@
     <div class="col-lg-7">
       <Card class="card">
         <template #header>
-          <h5 class="card-title mb-0">Bot Performance</h5>
+          <h5 class="card-title mb-0">Trading History</h5>
         </template>
         <div class="table-responsive">
-          <BotTable 
+          <TradeTable 
             :showViewButton="true"
             :showRefreshButton="true"
-            :showToggleStatusButton="false"
-            :showTradesButton="false"
-            :showEditButton="false"
-            :showDeleteButton="false"
-          ></BotTable>
+          ></TradeTable>
         </div>
       </Card>
     </div>
@@ -165,7 +161,7 @@ import BarChart from "@/components/Charts/BarChart.vue";
 import * as chartConfigs from "@/components/Charts/config";
 import TaskList from "@/pages/Dashboard/TaskList.vue";
 import UserTable from "@/pages/Dashboard/UserTable.vue";
-import BotTable from "@/components/BotTable.vue";
+import TradeTable from "@/components/TradeTable.vue";
 import CountryMapCard from "@/pages/Dashboard/CountryMapCard.vue";
 import StatsCard from "@/components/Cards/StatsCard.vue";
 import BaseDropdown from "@/components/BaseDropdown.vue";
