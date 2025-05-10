@@ -24,7 +24,8 @@ public abstract class BaseCommandHandler<TRequest>(ILogger logger) : IRequestHan
         {
             _logger.LogError(ex, "Error handling command {CommandType}: {Message}",
                 typeof(TRequest).Name, ex.Message);
-            return $"Error handling {typeof(TRequest).Name}: {ex.Message}";
+
+            throw;
         }
     }
 
