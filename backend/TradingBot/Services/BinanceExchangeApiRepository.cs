@@ -9,7 +9,7 @@ public class BinanceExchangeApiRepository(
     TimeProvider timeProvider,
     ILoggerFactory loggerFactory) : IExchangeApiRepository
 {
-    private readonly Dictionary<string, IExchangeApi> _apiInstances = new();
+    private readonly Dictionary<string, IExchangeApi> _apiInstances = [];
     private readonly TimeProvider _timeProvider = timeProvider;
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private readonly object _lock = new();

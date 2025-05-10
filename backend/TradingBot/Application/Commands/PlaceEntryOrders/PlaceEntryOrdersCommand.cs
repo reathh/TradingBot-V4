@@ -66,7 +66,7 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                 .Where(x => x.Quantity > 0)
                 .ToListAsync(cancellationToken);
 
-            List<string> errors = new();
+            List<string> errors = [];
 
             await Parallel.ForEachAsync(botsWithQuantities,
                 new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },

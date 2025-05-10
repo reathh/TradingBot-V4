@@ -64,7 +64,7 @@ public abstract class BaseTest
             EntryQuantity = entryQuantity,
             EntryStep = entryStep,
             ExitStep = exitStep,
-            Trades = new HashSet<Trade>()
+            Trades = []
         };
 
         DbContext.Bots.Add(bot);

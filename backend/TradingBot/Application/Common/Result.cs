@@ -6,7 +6,7 @@ public class Result : IResult
 
     // Public default constructor for DI
     public Result()
-        : this(true, new List<string>())
+        : this(true, [])
     {
     }
 
@@ -18,9 +18,9 @@ public class Result : IResult
 
     public bool Succeeded { get; }
 
-    public List<string> Errors => Succeeded ? new List<string>() : _errors;
+    public List<string> Errors => Succeeded ? [] : _errors;
 
-    public static Result Success => new(true, new List<string>());
+    public static Result Success => new(true, []);
 
     public void ThrowExceptionIfNecessary()
     {
@@ -62,7 +62,7 @@ public class Result<TData> : Result
                 $"{nameof(Data)} is not available with a failed result. Use {Errors} instead.");
 
     public static Result<TData> SuccessWith(TData data)
-        => new(true, data, new List<string>());
+        => new(true, data, []);
 
     public new static Result<TData> Failure(IEnumerable<string> errors)
         => new(false, default!, errors.ToList());

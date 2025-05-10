@@ -29,5 +29,5 @@ public class PagedResult<T>
     /// <summary>
     /// Collection of items for the current page
     /// </summary>
-    public List<T> Items { get; set; } = new();
+    public List<T> Items { get; set; } = [];
 } 

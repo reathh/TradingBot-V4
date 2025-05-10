@@ -68,7 +68,7 @@ public class UpdateStaleOrdersCommandHandler(
                     try
                     {
                         // Fetch the current order status from the exchange
-                        var updatedOrder = await exchangeApi.GetOrderStatus(order.Id, bot, cancellationToken);
+                        var updatedOrder = await exchangeApi.GetOrderStatus(order!.Id, bot, cancellationToken);
 
                         // Update order properties with the latest information
                         order.QuantityFilled = updatedOrder.QuantityFilled;
