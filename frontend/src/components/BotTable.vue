@@ -15,8 +15,8 @@
       <template #row="{ row }">
         <td>{{ row.botId || row.id }}</td>
         <td>{{ row.ticker || row.symbol }}</td>
-        <td>{{ formatCurrency(row.entryAvgPrice) }}</td>
-        <td>{{ formatCurrency(row.exitAvgPrice) }}</td>
+        <td>{{ formatCurrency(row.entryPrice) }}</td>
+        <td>{{ formatCurrency(row.exitPrice) }}</td>
         <td>{{ row.quantity ? row.quantity.toFixed(4) : '0.0000' }}</td>
         <td>{{ formatCurrency(row.entryFee + row.exitFee) }}</td>
         <td class="text-right" :class="getProfitClass(row.profit)">
@@ -124,8 +124,8 @@ const error = ref(null);
 const tableColumns = [
   { key: 'botId', label: 'BOT ID' },
   { key: 'ticker', label: 'TICKER' },
-  { key: 'entryAvgPrice', label: 'ENTRY PRICE' },
-  { key: 'exitAvgPrice', label: 'EXIT PRICE' },
+  { key: 'entryPrice', label: 'ENTRY PRICE' },
+  { key: 'exitPrice', label: 'EXIT PRICE' },
   { key: 'quantity', label: 'QUANTITY' },
   { key: 'fees', label: 'FEES' },
   { key: 'profit', label: 'PROFIT', align: 'right' },

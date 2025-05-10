@@ -13,10 +13,10 @@
       thead-classes="text-primary"
     >
       <template #row="{ row }">
-        <td>{{ row.tradeId || row.id }}</td>
+        <td>{{ row.id }}</td>
         <td>{{ row.symbol }}</td>
-        <td>{{ formatCurrency(row.entryAvgPrice) }}</td>
-        <td>{{ formatCurrency(row.exitAvgPrice) }}</td>
+        <td>{{ formatCurrency(row.entryPrice) }}</td>
+        <td>{{ formatCurrency(row.exitPrice) }}</td>
         <td>{{ row.quantity ? row.quantity.toFixed(4) : '0.0000' }}</td>
         <td>{{ formatCurrency(row.entryFee + row.exitFee) }}</td>
         <td class="text-right" :class="getProfitClass(row.profit)">
@@ -45,7 +45,7 @@
       <div v-if="selectedTrade" class="trade-detail-container">
         <div class="row mb-3">
           <div class="col-md-6">
-            <strong>Trade ID:</strong> {{ selectedTrade.tradeId }}
+            <strong>Trade ID:</strong> {{ selectedTrade.id }}
           </div>
           <div class="col-md-6">
             <strong>Symbol:</strong> {{ selectedTrade.symbol }}
@@ -73,7 +73,7 @@
             <strong>Price:</strong> {{ formatCurrency(selectedTrade.entryPrice) }}
           </div>
           <div class="col-md-6">
-            <strong>Average Fill:</strong> {{ formatCurrency(selectedTrade.entryAvgPrice) }}
+            <strong>Average Fill:</strong> {{ formatCurrency(selectedTrade.entryAvgFill || selectedTrade.entryPrice) }}
           </div>
         </div>
 
@@ -98,7 +98,7 @@
             <strong>Price:</strong> {{ formatCurrency(selectedTrade.exitPrice) }}
           </div>
           <div class="col-md-6">
-            <strong>Average Fill:</strong> {{ formatCurrency(selectedTrade.exitAvgPrice) }}
+            <strong>Average Fill:</strong> {{ formatCurrency(selectedTrade.exitAvgFill || selectedTrade.exitPrice) }}
           </div>
         </div>
 
@@ -162,10 +162,10 @@ const showDetailsModal = ref(false);
 
 // Table columns - matching structure with BotTable
 const tableColumns = [
-  { key: 'tradeId', label: 'ID' },
+  { key: 'id', label: 'ID' },
   { key: 'symbol', label: 'TICKER' },
-  { key: 'entryAvgPrice', label: 'ENTRY AVG. PRICE' },
-  { key: 'exitAvgPrice', label: 'EXIT AVG. PRICE' },
+  { key: 'entryPrice', label: 'ENTRY PRICE' },
+  { key: 'exitPrice', label: 'EXIT PRICE' },
   { key: 'quantity', label: 'QUANTITY' },
   { key: 'fees', label: 'FEES' },
   { key: 'profit', label: 'PROFIT', align: 'right' },

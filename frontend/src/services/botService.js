@@ -48,14 +48,14 @@ export default {
      */
     calculateProfit ( order )
     {
-        if ( !order || !order.entryAvgPrice || !order.exitAvgPrice )
+        if ( !order || !order.entryPrice || order.exitPrice == null )
         {
             return 0;
         }
 
         // Calculate profit: (exit price - entry price) * quantity - fees
         const profit =
-            ( order.exitAvgPrice - order.entryAvgPrice ) * order.quantity -
+            ( order.exitPrice - order.entryPrice ) * order.quantity -
             ( order.entryFee + order.exitFee );
 
         return parseFloat( profit.toFixed( 2 ) );

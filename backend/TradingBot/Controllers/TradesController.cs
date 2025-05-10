@@ -58,13 +58,11 @@ namespace TradingBot.Controllers
 
             var tradeDtos = trades.Select(t => new TradeDto
             {
-                TradeId = t.Id,
+                Id = t.Id,
                 BotId = t.Bot?.Id.ToString() ?? "Unknown",
                 Symbol = t.EntryOrder.Symbol,
-                EntryPrice = t.EntryOrder.Price,
-                ExitPrice = t.ExitOrder.Price,
-                EntryAvgPrice = t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price,
-                ExitAvgPrice = t.ExitOrder.AverageFillPrice ?? t.ExitOrder.Price,
+                EntryPrice = t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price,
+                ExitPrice = t.ExitOrder?.AverageFillPrice ?? t.ExitOrder?.Price,
                 Quantity = t.EntryOrder.Quantity,
                 QuantityFilled = t.EntryOrder.QuantityFilled,
                 EntryFee = t.EntryOrder.Fees,
@@ -105,13 +103,11 @@ namespace TradingBot.Controllers
 
             var tradeDto = new TradeDto
             {
-                TradeId = trade.Id,
+                Id = trade.Id,
                 BotId = trade.Bot?.Id.ToString() ?? "Unknown",
                 Symbol = trade.EntryOrder.Symbol,
-                EntryPrice = trade.EntryOrder.Price,
-                ExitPrice = trade.ExitOrder?.Price ?? 0,
-                EntryAvgPrice = trade.EntryOrder.AverageFillPrice ?? trade.EntryOrder.Price,
-                ExitAvgPrice = trade.ExitOrder?.AverageFillPrice ?? trade.ExitOrder?.Price ?? 0,
+                EntryPrice = trade.EntryOrder.AverageFillPrice ?? trade.EntryOrder.Price,
+                ExitPrice = trade.ExitOrder?.AverageFillPrice ?? trade.ExitOrder?.Price,
                 Quantity = trade.EntryOrder.Quantity,
                 QuantityFilled = trade.EntryOrder.QuantityFilled,
                 EntryFee = trade.EntryOrder.Fees,
@@ -152,13 +148,11 @@ namespace TradingBot.Controllers
 
     public class TradeDto
     {
-        public int TradeId { get; set; }
+        public int Id { get; set; }
         public string BotId { get; set; } = null!;
         public string Symbol { get; set; } = null!;
         public decimal EntryPrice { get; set; }
-        public decimal ExitPrice { get; set; }
-        public decimal EntryAvgPrice { get; set; }
-        public decimal ExitAvgPrice { get; set; }
+        public decimal? ExitPrice { get; set; }
         public decimal Quantity { get; set; }
         public decimal QuantityFilled { get; set; }
         public decimal EntryFee { get; set; }
@@ -168,5 +162,6 @@ namespace TradingBot.Controllers
         public DateTime EntryTime { get; set; }
         public DateTime? ExitTime { get; set; }
         public bool IsCompleted { get; set; }
+        public string Direction => IsLong ? "Buy" : "Sell";
     }
 }
