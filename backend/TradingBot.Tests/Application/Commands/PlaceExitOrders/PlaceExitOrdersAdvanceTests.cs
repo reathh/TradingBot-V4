@@ -220,9 +220,8 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
         var ticker = CreateTestTicker(98.8m, 98.8m); // Below exit threshold for all trades (98 + 1 = 99 > 98.8)
         var command = new PlaceExitOrdersCommand { Ticker = ticker };
         
-        // Setup advance exit order (only one due to ExitOrdersInAdvance=1)
-        // The order should be for the highest entry price trade (100m)
-        var advanceOrder = (101m, 1m); // Advance exit for first trade
+        // Setup advance exit order - with new logic, the lowest entry price (98m) gets prioritized
+        var advanceOrder = (99m, 1m); // Exit price for 98m entry (98 + 1 = 99)
         SetupExitOrderSequence(bot, advanceOrder);
         
         // Act
@@ -231,12 +230,12 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
         // Assert - verify exactly one order was placed due to ExitOrdersInAdvance=1
         ExchangeApiMock.Verify(x => x.PlaceOrder(
             It.Is<Bot>(b => b.Id == bot.Id),
-            It.Is<decimal>(p => p == 101m),
+            It.Is<decimal>(p => p == 99m), // Exit price for trade with entry 98m
             It.Is<decimal>(q => q == 1m),
             It.Is<bool>(b => b != bot.IsLong),
             It.IsAny<CancellationToken>()), Times.Exactly(1));
         
-        // Verify only first trade has exit order (highest priority for advance orders)
+        // Verify only one trade has exit order (the one with lowest entry price)
         var updatedTrades = await DbContext.Trades
             .Include(t => t.ExitOrder)
             .Where(t => trades.Select(tr => tr.Id).Contains(t.Id))
@@ -244,9 +243,9 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             .ToListAsync();
             
         Assert.Equal(3, updatedTrades.Count);
-        Assert.NotNull(updatedTrades[0].ExitOrder); // First trade (entry 100) has exit order
-        Assert.Null(updatedTrades[1].ExitOrder);    // Second trade has no exit
-        Assert.Null(updatedTrades[2].ExitOrder);    // Third trade has no exit
+        Assert.Null(updatedTrades[0].ExitOrder);    // First trade (entry 100) has no exit order
+        Assert.Null(updatedTrades[1].ExitOrder);    // Second trade (entry 99) has no exit order
+        Assert.NotNull(updatedTrades[2].ExitOrder); // Third trade (entry 98) has exit order
     }
     
     [Fact]
@@ -310,12 +309,12 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
         var ticker = CreateTestTicker(100.5m, 100.8m); // Above exit threshold for all (101 - 1 = 100)
         var command = new PlaceExitOrdersCommand { Ticker = ticker };
         
-        // Setup for advance exit orders for each trade
+        // Setup for advance exit orders for each trade - with new logic, highest entry price first for short bots
         var advanceOrders = new[]
         {
-            (100m, 1m), // Exit for 101 entry
-            (101m, 1m), // Exit for 102 entry
-            (102m, 1m)  // Exit for 103 entry
+            (102m, 1m),  // Exit for 103 entry (highest priority)
+            (101m, 1m),  // Exit for 102 entry (second priority)
+            (100m, 1m)   // Exit for 101 entry (lowest priority)
         };
         
         SetupExitOrderSequence(bot, advanceOrders);
@@ -326,21 +325,21 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
         // Assert - verify each advance order was placed with exact parameters
         ExchangeApiMock.Verify(x => x.PlaceOrder(
             It.Is<Bot>(b => b.Id == bot.Id),
-            It.Is<decimal>(p => p == 100m),
+            It.Is<decimal>(p => p == 102m), // Exit for 103 entry (highest priority for short bot)
             It.Is<decimal>(q => q == 1m),
             It.Is<bool>(b => b != bot.IsLong),
             It.IsAny<CancellationToken>()), Times.Once);
             
         ExchangeApiMock.Verify(x => x.PlaceOrder(
             It.Is<Bot>(b => b.Id == bot.Id),
-            It.Is<decimal>(p => p == 101m),
+            It.Is<decimal>(p => p == 101m), // Exit for 102 entry (second priority)
             It.Is<decimal>(q => q == 1m),
             It.Is<bool>(b => b != bot.IsLong),
             It.IsAny<CancellationToken>()), Times.Once);
             
         ExchangeApiMock.Verify(x => x.PlaceOrder(
             It.Is<Bot>(b => b.Id == bot.Id),
-            It.Is<decimal>(p => p == 102m),
+            It.Is<decimal>(p => p == 100m), // Exit for 101 entry (lowest priority)
             It.Is<decimal>(q => q == 1m),
             It.Is<bool>(b => b != bot.IsLong),
             It.IsAny<CancellationToken>()), Times.Once);

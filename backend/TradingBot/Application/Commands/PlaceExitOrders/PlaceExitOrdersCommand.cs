@@ -61,8 +61,12 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                                 (!bot.IsLong && ((t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) - bot.ExitStep < currentBid))
                             )
                         )
-                        .OrderBy(t => (bot.IsLong ? -1 : 1) * (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price))
-                        .Take(bot.PlaceOrdersInAdvance ? bot.ExitOrdersInAdvance : 0)
+                        .OrderBy(t => bot.IsLong
+                            // For long bots, prioritize lower entry prices since they'll become eligible sooner as price rises
+                            ? (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)
+                            // For short bots, prioritize higher entry prices since they'll become eligible sooner as price falls
+                            : -(t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price))
+                        .Take(bot.PlaceOrdersInAdvance && bot.ExitOrdersInAdvance > 0 ? bot.ExitOrdersInAdvance : 0)
                         .Select(t => new
                         {
                             Trade = t,
