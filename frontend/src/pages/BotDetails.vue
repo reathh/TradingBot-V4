@@ -4,13 +4,13 @@
       <div class="md-layout-item md-size-100">
         <card>
           <div slot="header" class="d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center mb-1">
               <el-tooltip content="Back to Bots" effect="dark" placement="top">
                 <router-link to="/bots" class="icon-action">
                   <i class="tim-icons icon-minimal-left"></i>
                 </router-link>
               </el-tooltip>
-              <span class="ml-2 card-title">{{ bot.name || 'Loading...' }}</span>
+              <span class="ml-2 card-title bot-title-align">{{ bot.name || 'Loading...' }}</span>
             </div>
             <div class="action-btn-group">
               <el-tooltip v-if="bot.id" :content="bot.enabled ? 'Deactivate Bot' : 'Activate Bot'" effect="dark" placement="top">
@@ -376,6 +376,14 @@ onMounted(() => {
   text-decoration: none;
 }
 .icon-action .tim-icons {
-  font-size: 1.2rem;
+  font-size: 1.35rem;
+}
+
+.bot-title-align {
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1;
+  position: relative;
+  top: 4px;
 }
 </style> 
