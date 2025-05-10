@@ -35,17 +35,9 @@
             icon
             size="sm"
             class="btn-link"
+            @click="$emit('view', row)"
           >
             <i class="tim-icons icon-zoom-split"></i>
-          </BaseButton>
-          <BaseButton
-            v-if="showRefreshButton"
-            type="success"
-            icon
-            size="sm"
-            class="btn-link"
-          >
-            <i class="tim-icons icon-refresh-01"></i>
           </BaseButton>
           <BaseButton
             v-if="showToggleStatusButton"
@@ -56,42 +48,6 @@
             @click="$emit('toggle-status', row)"
           >
             <i :class="row.enabled ? 'tim-icons icon-button-pause' : 'tim-icons icon-button-power'"></i>
-          </BaseButton>
-          <router-link
-            v-if="showTradesButton"
-            :to="{ name: 'Trades', query: { botId: row.id } }"
-          >
-            <BaseButton
-              class="btn-link"
-              type="info"
-              size="sm"
-              icon
-            >
-              <i class="tim-icons icon-chart-bar-32"></i>
-            </BaseButton>
-          </router-link>
-          <router-link
-            v-if="showEditButton"
-            :to="{ name: 'BotDetails', params: { id: row.id } }"
-          >
-            <BaseButton
-              class="edit btn-link"
-              type="warning"
-              size="sm"
-              icon
-            >
-              <i class="tim-icons icon-pencil"></i>
-            </BaseButton>
-          </router-link>
-          <BaseButton
-            v-if="showDeleteButton"
-            class="remove btn-link"
-            type="danger"
-            size="sm"
-            icon
-            @click="$emit('delete', row)"
-          >
-            <i class="tim-icons icon-simple-remove"></i>
           </BaseButton>
         </td>
       </template>

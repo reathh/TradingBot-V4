@@ -12,15 +12,14 @@
 
           <div>
             <BotTable
-              :showViewButton="false"
+              :showViewButton="true"
               :showRefreshButton="false"
               :showToggleStatusButton="true"
-              :showTradesButton="true"
-              :showEditButton="true"
-              :showDeleteButton="true"
+              :showTradesButton="false"
+              :showEditButton="false"
+              :showDeleteButton="false"
               @toggle-status="toggleBotStatus"
-              @edit="navigateToBotDetails"
-              @delete="deleteBot"
+              @view="navigateToBotDetails"
             ></BotTable>
           </div>
         </card>

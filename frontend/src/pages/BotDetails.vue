@@ -14,6 +14,14 @@
               >
                 {{ bot.enabled ? 'Deactivate' : 'Activate' }}
               </base-button>
+              <base-button 
+                v-if="bot.id" 
+                @click="deleteBot" 
+                type="danger"
+                class="ml-2"
+              >
+                Delete Bot
+              </base-button>
               <router-link to="/bots">
                 <base-button type="default">
                   Back to Bots
@@ -150,12 +158,12 @@
               </el-form-item>
 
               <div class="d-flex justify-content-between mt-4">
-                <router-link :to="{ name: 'Trades', query: { botId: bot.id }}">
-                  <base-button type="info">View Trades</base-button>
-                </router-link>
                 <base-button @click="saveBot" type="primary">Save Changes</base-button>
               </div>
             </el-form>
+            <div class="mt-5">
+              <TradesTable :botId="bot.id" />
+            </div>
           </div>
         </card>
       </div>
@@ -178,6 +186,7 @@ import Card from "@/components/Cards/Card.vue";
 import BaseButton from "@/components/BaseButton.vue";
 import Swal from "sweetalert2";
 import apiClient from "@/services/api";
+import TradesTable from '@/components/TradesTable.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -276,6 +285,35 @@ function formatNumberInput(event, field) {
     event.target.value = correctedValue;
     // Update the model
     bot.value[field] = parseFloat(correctedValue);
+  }
+}
+
+// Add deleteBot function
+async function deleteBot() {
+  if (!bot.value.id) return;
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: `You are about to delete bot "${bot.value.name}". This cannot be undone!`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, delete it!',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+  });
+  if (result.isConfirmed) {
+    try {
+      await apiClient.delete(`bots/${bot.value.id}`);
+      Swal.fire('Deleted!', 'The bot has been deleted.', 'success');
+      router.push({ name: 'Bots' });
+    } catch (error) {
+      console.error('Error deleting bot:', error);
+      Swal.fire({
+        title: 'Error',
+        text: 'Failed to delete bot',
+        icon: 'error'
+      });
+    }
   }
 }
 
