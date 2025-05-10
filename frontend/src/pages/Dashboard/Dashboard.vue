@@ -134,17 +134,12 @@
     <div class="col-lg-7">
       <Card class="card">
         <template #header>
-          <h5 class="card-title mb-0">Bot Performance</h5>
+          <h5 class="card-title mb-0">Trading Activity</h5>
         </template>
         <div class="table-responsive">
-          <BotTable 
-            :showViewButton="true"
-            :showRefreshButton="true"
-            :showToggleStatusButton="false"
-            :showTradesButton="false"
-            :showEditButton="false"
-            :showDeleteButton="false"
-          ></BotTable>
+          <TradesTable 
+            :period="timePeriods[selectedPeriodIndex].value"
+          />
         </div>
       </Card>
     </div>
@@ -166,6 +161,7 @@ import * as chartConfigs from "@/components/Charts/config";
 import TaskList from "@/pages/Dashboard/TaskList.vue";
 import UserTable from "@/pages/Dashboard/UserTable.vue";
 import BotTable from "@/components/BotTable.vue";
+import TradesTable from '@/components/TradesTable.vue';
 import CountryMapCard from "@/pages/Dashboard/CountryMapCard.vue";
 import StatsCard from "@/components/Cards/StatsCard.vue";
 import BaseDropdown from "@/components/BaseDropdown.vue";
@@ -242,24 +238,6 @@ const purpleLineChartData = ref({
       fill: false,
     },
   ],
-  // datasets: [
-  //   {
-  //     label: "Data",
-  //     fill: true,
-  //     borderColor: config.colors.primary,
-  //     borderWidth: 2,
-  //     borderDash: [],
-  //     borderDashOffset: 0.0,
-  //     backgroundColor: config.colors.primary,
-  //     BorderColor: "rgba(255,255,255,0)",
-  //     hoverBackgroundColor: config.colors.primary,
-  //     borderWidth: 20,
-  //     hoverRadius: 4,
-  //     hoverBorderWidth: 15,
-  //     radius: 4,
-  //     data: [80, 100, 70, 80, 120, 80],
-  //   },
-  // ],
 });
 const lineChartOptions = ref({
   responsive: true,
@@ -299,33 +277,6 @@ const lineChartOptions = ref({
     }
   },
 });
-const bigChartDatasetOptions = {
-  fill: true,
-  borderColor: config.colors.primary,
-  borderWidth: 2,
-  borderDash: [],
-  borderDashOffset: 0.0,
-  pointBackgroundColor: config.colors.primary,
-  pointBorderColor: "rgba(255,255,255,0)",
-  pointHoverBackgroundColor: config.colors.primary,
-  pointBorderWidth: 20,
-  pointHoverRadius: 4,
-  pointHoverBorderWidth: 15,
-  pointRadius: 4,
-};
-
-const bigLineChartData = ref({
-  datasets: [
-    {
-      ...bigChartDatasetOptions,
-      data: bigChartDataValues[0],
-    },
-  ],
-  labels: bigChartLabels,
-});
-const bigLineChartExtraOptions = ref(chartConfigs.purpleChartOptions);
-const bigLineChartGradientColors = ref(config.colors.primaryGradient);
-const bigLineChartGradientStops = ref([1, 0.4, 0]);
 
 const statsCards = ref([
   {
@@ -407,29 +358,6 @@ const blueBarChartData = ref({
 });
 const blueBarChartExtraOptions = ref(chartConfigs.barChartOptions);
 const blueBarChartGradientStops = ref([1, 0.4, 0]);
-
-const bigLineChartCategories = ref([
-  { name: "Accounts", icon: "tim-icons icon-single-02" },
-  { name: "Purchases", icon: "tim-icons icon-gift-2" },
-  { name: "Sessions", icon: "tim-icons icon-tap-02" },
-]);
-
-const initBigChart = (index) => {
-  const chartData = {
-    datasets: [
-      {
-        ...bigChartDatasetOptions,
-        data: bigChartDataValues[index],
-      },
-    ],
-    labels: bigChartLabels,
-  };
-  if (bigChartRef.value) {
-    bigChartRef.value.updateGradients(chartData);
-  }
-  bigLineChartData.value = chartData;
-  bigLineChartActiveIndex.value = index;
-};
 
 // Time period selectors for bot profit chart
 const timePeriods = [
