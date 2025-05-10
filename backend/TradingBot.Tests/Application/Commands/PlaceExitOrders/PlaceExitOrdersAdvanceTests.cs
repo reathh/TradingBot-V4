@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 using TradingBot.Application.Commands.PlaceExitOrders;
 using TradingBot.Data;
-using TradingBot.Services;
 
 namespace TradingBot.Tests.Application.Commands.PlaceExitOrders;
 

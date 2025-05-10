@@ -1,9 +1,7 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using TradingBot.Data;
 using TradingBot.Services;
 using TradingBot.Application.Common;
-using Microsoft.Extensions.Logging;
 
 namespace TradingBot.Application.Commands.VerifyBotBalance;
 

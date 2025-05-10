@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Reflection;
 using MediatR;
 using TradingBot.Application.Common;
 

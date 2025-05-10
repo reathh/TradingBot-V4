@@ -1,8 +1,5 @@
-using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using TradingBot.Application.Commands.VerifyBotBalance;
-using TradingBot.Application.Common;
 using TradingBot.Data;
 
 namespace TradingBot.Services;

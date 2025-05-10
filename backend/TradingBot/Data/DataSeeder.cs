@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace TradingBot.Data
 {
     public static class DataSeeder

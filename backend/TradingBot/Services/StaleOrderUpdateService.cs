@@ -1,7 +1,4 @@
-using MediatR;
-using Microsoft.Extensions.DependencyInjection;
 using TradingBot.Application.Commands.UpdateStaleOrders;
-using TradingBot.Application.Common;
 
 namespace TradingBot.Services;
 
