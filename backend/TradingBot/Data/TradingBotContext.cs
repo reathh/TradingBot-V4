@@ -7,6 +7,7 @@ namespace TradingBot.Data
         public DbSet<Bot> Bots { get; set; } = null!;
         public DbSet<Order> Orders { get; set; } = null!;
         public DbSet<Trade> Trades { get; set; } = null!;
+        public DbSet<TickerEntity> Tickers { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder) => modelBuilder.ApplyConfigurationsFromAssembly(typeof(TradingBotDbContext).Assembly);
     }

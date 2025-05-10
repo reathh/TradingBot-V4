@@ -2,6 +2,7 @@ using MediatR;
 using TradingBot.Application.Common;
 using TradingBot.Application.Commands.PlaceEntryOrders;
 using TradingBot.Application.Commands.PlaceExitOrders;
+using TradingBot.Application.Commands.SaveTicker;
 using TradingBot.Data;
 using TradingBot.Services;
 
@@ -23,6 +24,10 @@ public class NewTickerCommand : IRequest<Result>
             var ticker = request.Ticker;
             _logger.LogDebug("Processing ticker update for {Symbol}", ticker.Symbol);
         
+            // Save ticker data for historical records
+            _backgroundJobProcessor.Enqueue(new SaveTickerCommand { Ticker = ticker });
+            
+            // Process trading logic
             _backgroundJobProcessor.Enqueue(new PlaceEntryOrdersCommand { Ticker = ticker });
             _backgroundJobProcessor.Enqueue(new PlaceExitOrdersCommand { Ticker = ticker });
 
