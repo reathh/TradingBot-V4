@@ -10,38 +10,8 @@ namespace TradingBot.Tests.Application.Commands.PlaceEntryOrders;
 /// <summary>
 /// Tests for advance entry order placement functionality
 /// </summary>
-public class PlaceEntryOrdersAdvanceTests
+public class PlaceEntryOrdersAdvanceTests : BaseTest
 {
-    private readonly Mock<IExchangeApi> _exchangeApiMock;
-    private readonly Mock<IExchangeApiRepository> _exchangeApiRepositoryMock;
-    private readonly Mock<ILogger<PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler>> _loggerMock;
-    private readonly TradingBotDbContext _dbContext;
-    private readonly PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler _handler;
-
-    private readonly Random _random = new();
-    private int _nextBotId = 1;
-
-    public PlaceEntryOrdersAdvanceTests()
-    {
-        _exchangeApiMock = new Mock<IExchangeApi>();
-        _exchangeApiRepositoryMock = new Mock<IExchangeApiRepository>();
-        _loggerMock = new Mock<ILogger<PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler>>();
-
-        // Configure the repository mock to return the exchange API mock
-        _exchangeApiRepositoryMock.Setup(x => x.GetExchangeApi(It.IsAny<Bot>()))
-            .Returns(_exchangeApiMock.Object);
-
-        var options = new DbContextOptionsBuilder<TradingBotDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-
-        _dbContext = new TradingBotDbContext(options);
-        _handler = new PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler(
-            _dbContext,
-            _exchangeApiRepositoryMock.Object,
-            _loggerMock.Object);
-    }
-
     [Fact]
     public async Task Handle_ShouldPlaceOrdersInAdvance_WhenConfigured_LongBot()
     {
@@ -60,7 +30,7 @@ public class PlaceEntryOrdersAdvanceTests
             CreateOrder(bot, bot.IsLong ? ticker.Bid - 2 : ticker.Ask + 2, bot.EntryQuantity, bot.IsLong)
         };
 
-        _exchangeApiMock.SetupSequence(x => x.PlaceOrder(
+        ExchangeApiMock.SetupSequence(x => x.PlaceOrder(
                 It.IsAny<Bot>(),
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
@@ -71,17 +41,17 @@ public class PlaceEntryOrdersAdvanceTests
             .ReturnsAsync(orders[2]);
 
         // Act
-        await _handler.Handle(command, CancellationToken.None);
+        await Handler.Handle(command, CancellationToken.None);
 
         // Assert
-        _exchangeApiMock.Verify(x => x.PlaceOrder(
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
             It.IsAny<Bot>(),
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
             It.IsAny<CancellationToken>()), Times.Exactly(3));
 
-        var savedTrades = await _dbContext.Trades.ToListAsync();
+        var savedTrades = await DbContext.Trades.ToListAsync();
         Assert.Equal(3, savedTrades.Count);
     }
 
@@ -104,7 +74,7 @@ public class PlaceEntryOrdersAdvanceTests
             CreateOrder(bot, 103, bot.EntryQuantity, bot.IsLong)  // Ask + 2
         };
 
-        _exchangeApiMock.SetupSequence(x => x.PlaceOrder(
+        ExchangeApiMock.SetupSequence(x => x.PlaceOrder(
                 It.IsAny<Bot>(),
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
@@ -115,17 +85,17 @@ public class PlaceEntryOrdersAdvanceTests
             .ReturnsAsync(orders[2]);
 
         // Act
-        await _handler.Handle(command, CancellationToken.None);
+        await Handler.Handle(command, CancellationToken.None);
 
         // Assert
-        _exchangeApiMock.Verify(x => x.PlaceOrder(
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
             It.IsAny<Bot>(),
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
             It.IsAny<CancellationToken>()), Times.Exactly(3));
 
-        var savedTrades = await _dbContext.Trades.ToListAsync();
+        var savedTrades = await DbContext.Trades.ToListAsync();
         Assert.Equal(3, savedTrades.Count);
     }
 
@@ -138,7 +108,7 @@ public class PlaceEntryOrdersAdvanceTests
 
         // Place one order first
         var firstOrder = CreateOrder(bot, bot.IsLong ? ticker.Bid : ticker.Ask, bot.EntryQuantity, bot.IsLong);
-        _exchangeApiMock.Setup(x => x.PlaceOrder(
+        ExchangeApiMock.Setup(x => x.PlaceOrder(
                 It.IsAny<Bot>(),
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
@@ -147,66 +117,20 @@ public class PlaceEntryOrdersAdvanceTests
             .ReturnsAsync(firstOrder);
 
         var command = new PlaceEntryOrdersCommand { Ticker = ticker };
-        await _handler.Handle(command, CancellationToken.None);
+        await Handler.Handle(command, CancellationToken.None);
 
         // Reset mock for second attempt
-        _exchangeApiMock.Reset();
+        ExchangeApiMock.Reset();
 
         // Act - Try to place another order
-        await _handler.Handle(command, CancellationToken.None);
+        await Handler.Handle(command, CancellationToken.None);
 
         // Assert - Verify no additional orders were placed
-        _exchangeApiMock.Verify(x => x.PlaceOrder(
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
             It.IsAny<Bot>(),
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
             It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    private async Task<Bot> CreateBot(
-        bool isLong = true,
-        decimal? maxPrice = null,
-        decimal? minPrice = null,
-        bool placeOrdersInAdvance = false,
-        int ordersInAdvance = 0,
-        decimal entryQuantity = 1,
-        decimal entryStep = 0.1m,
-        decimal exitStep = 0.1m)
-    {
-        var botId = _nextBotId++;
-        var bot = new Bot(botId, "TestBot" + botId, "public_key_" + botId, "private_key_" + botId)
-        {
-            Symbol = "BTCUSDT",
-            Enabled = true,
-            IsLong = isLong,
-            MaxPrice = maxPrice,
-            MinPrice = minPrice,
-            PlaceOrdersInAdvance = placeOrdersInAdvance,
-            EntryOrdersInAdvance = ordersInAdvance,
-            ExitOrdersInAdvance = ordersInAdvance,
-            EntryQuantity = entryQuantity,
-            EntryStep = entryStep,
-            ExitStep = exitStep,
-            Trades = []
-        };
-
-        _dbContext.Bots.Add(bot);
-        await _dbContext.SaveChangesAsync();
-        return bot;
-    }
-
-    private TickerDto CreateTicker(decimal bid, decimal ask) => 
-        new("BTCUSDT", DateTime.UtcNow, bid, ask, lastPrice: _random.Next(2) == 0 ? bid : ask);
-
-    private Order CreateOrder(Bot bot, decimal price, decimal quantity, bool isBuy)
-    {
-        return new Order(Guid.NewGuid().ToString(), bot.Symbol, price, quantity, isBuy, DateTime.UtcNow)
-        {
-            Quantity = quantity,
-            QuantityFilled = quantity,
-            AverageFillPrice = price,
-            Fees = 0.001m * price * quantity
-        };
     }
 } 

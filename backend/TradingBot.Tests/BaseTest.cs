@@ -72,7 +72,7 @@ public abstract class BaseTest
         return bot;
     }
 
-    protected TickerDto CreateTicker(decimal bid, decimal ask) => new("BTCUSDT", DateTime.UtcNow, bid, ask, lastPrice: _random.Next(2) == 0 ? bid : ask);
+    protected TickerDto CreateTicker(decimal bid, decimal ask) => new("BTCUSDT", DateTime.UtcNow, bid, ask, _random.Next(2) == 0 ? bid : ask);
 
     protected Order CreateOrder(Bot bot, decimal price, decimal quantity, bool isBuy)
     {

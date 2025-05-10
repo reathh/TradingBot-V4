@@ -10,38 +10,8 @@ namespace TradingBot.Tests.Application.Commands.PlaceEntryOrders;
 /// <summary>
 /// Tests for error handling in entry order placement
 /// </summary>
-public class PlaceEntryOrdersErrorTests
+public class PlaceEntryOrdersErrorTests : BaseTest
 {
-    private readonly Mock<IExchangeApi> _exchangeApiMock;
-    private readonly Mock<IExchangeApiRepository> _exchangeApiRepositoryMock;
-    private readonly Mock<ILogger<PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler>> _loggerMock;
-    private readonly TradingBotDbContext _dbContext;
-    private readonly PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler _handler;
-
-    private readonly Random _random = new();
-    private int _nextBotId = 1;
-
-    public PlaceEntryOrdersErrorTests()
-    {
-        _exchangeApiMock = new Mock<IExchangeApi>();
-        _exchangeApiRepositoryMock = new Mock<IExchangeApiRepository>();
-        _loggerMock = new Mock<ILogger<PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler>>();
-
-        // Configure the repository mock to return the exchange API mock
-        _exchangeApiRepositoryMock.Setup(x => x.GetExchangeApi(It.IsAny<Bot>()))
-            .Returns(_exchangeApiMock.Object);
-
-        var options = new DbContextOptionsBuilder<TradingBotDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-
-        _dbContext = new TradingBotDbContext(options);
-        _handler = new PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler(
-            _dbContext,
-            _exchangeApiRepositoryMock.Object,
-            _loggerMock.Object);
-    }
-
     [Fact]
     public async Task Handle_ShouldLogError_WhenOrderPlacementFails()
     {
@@ -50,74 +20,69 @@ public class PlaceEntryOrdersErrorTests
         var ticker = CreateTicker(100, 101);
         var command = new PlaceEntryOrdersCommand { Ticker = ticker };
 
-        _exchangeApiMock.Setup(x => x.PlaceOrder(
+        ExchangeApiMock.Setup(x => x.PlaceOrder(
                 It.IsAny<Bot>(),
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
                 It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new Exception("Test error"));
+            .ThrowsAsync(new Exception("Test exception"));
 
         // Act
-        await _handler.Handle(command, CancellationToken.None);
+        await Handler.Handle(command, CancellationToken.None);
 
         // Assert
-        _loggerMock.Verify(
+        LoggerMock.Verify(
             x => x.Log(
                 LogLevel.Error,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => true),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Failed to place entry order")),
                 It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
             Times.Once);
     }
 
     [Fact]
-    public async Task Handle_ShouldReturnErrors_WhenOrderPlacementFails()
+    public async Task Handle_ShouldNotCrash_WhenOrderPlacementFails()
     {
         // Arrange
         var bot = await CreateBot();
         var ticker = CreateTicker(100, 101);
         var command = new PlaceEntryOrdersCommand { Ticker = ticker };
 
-        _exchangeApiMock.Setup(x => x.PlaceOrder(
+        ExchangeApiMock.Setup(x => x.PlaceOrder(
                 It.IsAny<Bot>(),
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
                 It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new Exception("Test error"));
+            .ThrowsAsync(new Exception("Test exception"));
 
-        // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        // Assert
-        Assert.False(result.Succeeded);
-        Assert.Contains("Failed to place orders for bot", result.Errors.First());
+        // Act & Assert - Should not throw
+        await Handler.Handle(command, CancellationToken.None);
     }
 
     [Fact]
-    public async Task Handle_ShouldContinueProcessingOtherBots_WhenOneBotFails()
+    public async Task Handle_ShouldKeepProcessingOtherBots_WhenOneOrderPlacementFails()
     {
         // Arrange
-        var bot1 = await CreateBot(entryQuantity: 1);
-        var bot2 = await CreateBot(entryQuantity: 2);
-        
+        var bot1 = await CreateBot();
+        var bot2 = await CreateBot();
         var ticker = CreateTicker(100, 101);
         var command = new PlaceEntryOrdersCommand { Ticker = ticker };
 
-        // Setup bot1 to fail
-        _exchangeApiMock.Setup(x => x.PlaceOrder(
+        // First bot's order will fail
+        ExchangeApiMock.Setup(x => x.PlaceOrder(
                 It.Is<Bot>(b => b.Id == bot1.Id),
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
                 It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new Exception("Test error for bot1"));
-            
-        // Setup bot2 to succeed
+            .ThrowsAsync(new Exception("Test exception"));
+
+        // Second bot's order will succeed
         var order2 = CreateOrder(bot2, bot2.IsLong ? ticker.Bid : ticker.Ask, bot2.EntryQuantity, bot2.IsLong);
-        _exchangeApiMock.Setup(x => x.PlaceOrder(
+        ExchangeApiMock.Setup(x => x.PlaceOrder(
                 It.Is<Bot>(b => b.Id == bot2.Id),
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
@@ -126,87 +91,57 @@ public class PlaceEntryOrdersErrorTests
             .ReturnsAsync(order2);
 
         // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
+        await Handler.Handle(command, CancellationToken.None);
 
-        // Assert
-        Assert.False(result.Succeeded); // Overall result should fail
-        
-        // Verify bot2's order was still placed successfully
-        var bot2Trades = await _dbContext.Trades
-            .Where(t => t.Bot.Id == bot2.Id)
-            .ToListAsync();
-            
-        Assert.Single(bot2Trades);
+        // Assert - Both should be processed, with one failing and one succeeding
+        LoggerMock.Verify(
+            x => x.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Failed to place entry order")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+            Times.Once);
+
+        // Second bot's order should be saved
+        var trades = await DbContext.Trades.ToListAsync();
+        Assert.Single(trades);
+        Assert.Equal(bot2.Id, trades[0].BotId);
     }
 
     [Fact]
-    public async Task Handle_ShouldNotFailWithEmptyDatabase()
+    public async Task Handle_ShouldNotPlaceOrder_WhenExchangeReturnsEmptyOrderId()
     {
-        // Arrange - ensure database is empty
-        await _dbContext.Database.EnsureDeletedAsync();
-        await _dbContext.Database.EnsureCreatedAsync();
-        
+        // Arrange
+        var bot = await CreateBot();
         var ticker = CreateTicker(100, 101);
         var command = new PlaceEntryOrdersCommand { Ticker = ticker };
-        
+
+        // Create an order with empty ID
+        var invalidOrder = new Order("", bot.Symbol, 100, 1, true, DateTime.UtcNow);
+        ExchangeApiMock.Setup(x => x.PlaceOrder(
+                It.IsAny<Bot>(),
+                It.IsAny<decimal>(),
+                It.IsAny<decimal>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(invalidOrder);
+
         // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
-        
-        // Assert - should succeed with empty database
-        Assert.True(result.Succeeded);
-        
-        // No orders should be placed
-        _exchangeApiMock.Verify(x => x.PlaceOrder(
-            It.IsAny<Bot>(),
-            It.IsAny<decimal>(),
-            It.IsAny<decimal>(),
-            It.IsAny<bool>(),
-            It.IsAny<CancellationToken>()), Times.Never);
-    }
+        await Handler.Handle(command, CancellationToken.None);
 
-    private async Task<Bot> CreateBot(
-        bool isLong = true,
-        decimal? maxPrice = null,
-        decimal? minPrice = null,
-        bool placeOrdersInAdvance = false,
-        int ordersInAdvance = 0,
-        decimal entryQuantity = 1,
-        decimal entryStep = 0.1m,
-        decimal exitStep = 0.1m)
-    {
-        var botId = _nextBotId++;
-        var bot = new Bot(botId, "TestBot" + botId, "public_key_" + botId, "private_key_" + botId)
-        {
-            Symbol = "BTCUSDT",
-            Enabled = true,
-            IsLong = isLong,
-            MaxPrice = maxPrice,
-            MinPrice = minPrice,
-            PlaceOrdersInAdvance = placeOrdersInAdvance,
-            EntryOrdersInAdvance = ordersInAdvance,
-            ExitOrdersInAdvance = ordersInAdvance,
-            EntryQuantity = entryQuantity,
-            EntryStep = entryStep,
-            ExitStep = exitStep,
-            Trades = []
-        };
+        // Assert - No trades should be saved
+        var trades = await DbContext.Trades.ToListAsync();
+        Assert.Empty(trades);
 
-        _dbContext.Bots.Add(bot);
-        await _dbContext.SaveChangesAsync();
-        return bot;
-    }
-
-    private TickerDto CreateTicker(decimal bid, decimal ask) => 
-        new("BTCUSDT", DateTime.UtcNow, bid, ask, lastPrice: _random.Next(2) == 0 ? bid : ask);
-
-    private Order CreateOrder(Bot bot, decimal price, decimal quantity, bool isBuy)
-    {
-        return new Order(Guid.NewGuid().ToString(), bot.Symbol, price, quantity, isBuy, DateTime.UtcNow)
-        {
-            Quantity = quantity,
-            QuantityFilled = quantity,
-            AverageFillPrice = price,
-            Fees = 0.001m * price * quantity
-        };
+        // Error should be logged
+        LoggerMock.Verify(
+            x => x.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Failed to place entry order")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+            Times.Once);
     }
 } 

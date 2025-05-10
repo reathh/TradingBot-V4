@@ -10,38 +10,8 @@ namespace TradingBot.Tests.Application.Commands.PlaceEntryOrders;
 /// <summary>
 /// Tests for quantity calculation in entry order placement
 /// </summary>
-public class PlaceEntryOrdersQuantityCalculationTests
+public class PlaceEntryOrdersQuantityCalculationTests : BaseTest
 {
-    private readonly Mock<IExchangeApi> _exchangeApiMock;
-    private readonly Mock<IExchangeApiRepository> _exchangeApiRepositoryMock;
-    private readonly Mock<ILogger<PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler>> _loggerMock;
-    private readonly TradingBotDbContext _dbContext;
-    private readonly PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler _handler;
-
-    private readonly Random _random = new();
-    private int _nextBotId = 1;
-
-    public PlaceEntryOrdersQuantityCalculationTests()
-    {
-        _exchangeApiMock = new Mock<IExchangeApi>();
-        _exchangeApiRepositoryMock = new Mock<IExchangeApiRepository>();
-        _loggerMock = new Mock<ILogger<PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler>>();
-
-        // Configure the repository mock to return the exchange API mock
-        _exchangeApiRepositoryMock.Setup(x => x.GetExchangeApi(It.IsAny<Bot>()))
-            .Returns(_exchangeApiMock.Object);
-
-        var options = new DbContextOptionsBuilder<TradingBotDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-
-        _dbContext = new TradingBotDbContext(options);
-        _handler = new PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler(
-            _dbContext,
-            _exchangeApiRepositoryMock.Object,
-            _loggerMock.Object);
-    }
-
     [Fact]
     public async Task Handle_ShouldCalculateCorrectQuantity_WhenPriceMovesUpAndDown_LongBot()
     {
@@ -54,7 +24,7 @@ public class PlaceEntryOrdersQuantityCalculationTests
 
         // Place initial order at 100 (Bid price since we're long)
         var firstOrder = CreateOrder(bot, 100, 1, bot.IsLong);
-        _exchangeApiMock.Setup(x => x.PlaceOrder(
+        ExchangeApiMock.Setup(x => x.PlaceOrder(
                 It.IsAny<Bot>(),
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
@@ -63,10 +33,10 @@ public class PlaceEntryOrdersQuantityCalculationTests
             .ReturnsAsync(firstOrder);
 
         // Act - Place first order
-        await _handler.Handle(firstCommand, CancellationToken.None);
+        await Handler.Handle(firstCommand, CancellationToken.None);
 
         // Assert - Verify first order
-        _exchangeApiMock.Verify(x => x.PlaceOrder(
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
             It.Is<Bot>(b => b.Id == bot.Id),
             It.Is<decimal>(p => p == 100),
             It.Is<decimal>(q => q == 1),
@@ -74,7 +44,7 @@ public class PlaceEntryOrdersQuantityCalculationTests
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Clear mock for next test
-        _exchangeApiMock.Reset();
+        ExchangeApiMock.Reset();
 
         // Second ticker: 95/96 (price dropped)
         var secondTicker = CreateTicker(95, 96);
@@ -83,7 +53,7 @@ public class PlaceEntryOrdersQuantityCalculationTests
         // We need orders at 99,98,97,96,95 (5 units)
         // We already have an order at 100
         var secondOrder = CreateOrder(bot, 95, 5, bot.IsLong);
-        _exchangeApiMock.Setup(x => x.PlaceOrder(
+        ExchangeApiMock.Setup(x => x.PlaceOrder(
                 It.IsAny<Bot>(),
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
@@ -92,10 +62,10 @@ public class PlaceEntryOrdersQuantityCalculationTests
             .ReturnsAsync(secondOrder);
 
         // Act - Place second order
-        await _handler.Handle(secondCommand, CancellationToken.None);
+        await Handler.Handle(secondCommand, CancellationToken.None);
 
         // Assert - Verify second order
-        _exchangeApiMock.Verify(x => x.PlaceOrder(
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
             It.Is<Bot>(b => b.Id == bot.Id),
             It.Is<decimal>(p => p == 95),
             It.Is<decimal>(q => q == 5),
@@ -115,7 +85,7 @@ public class PlaceEntryOrdersQuantityCalculationTests
 
         // Place initial order at 101 (Ask price since we're short)
         var firstOrder = CreateOrder(bot, 101, 1, bot.IsLong);
-        _exchangeApiMock.Setup(x => x.PlaceOrder(
+        ExchangeApiMock.Setup(x => x.PlaceOrder(
                 It.IsAny<Bot>(),
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
@@ -124,10 +94,10 @@ public class PlaceEntryOrdersQuantityCalculationTests
             .ReturnsAsync(firstOrder);
 
         // Act - Place first order
-        await _handler.Handle(firstCommand, CancellationToken.None);
+        await Handler.Handle(firstCommand, CancellationToken.None);
 
         // Assert - Verify first order
-        _exchangeApiMock.Verify(x => x.PlaceOrder(
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
             It.Is<Bot>(b => b.Id == bot.Id),
             It.Is<decimal>(p => p == 101),
             It.Is<decimal>(q => q == 1),
@@ -135,7 +105,7 @@ public class PlaceEntryOrdersQuantityCalculationTests
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Clear mock for next test
-        _exchangeApiMock.Reset();
+        ExchangeApiMock.Reset();
 
         // Second ticker: 105/106 (price rose)
         var secondTicker = CreateTicker(105, 106);
@@ -144,7 +114,7 @@ public class PlaceEntryOrdersQuantityCalculationTests
         // We need orders at 102,103,104,105,106 (5 units)
         // We already have an order at 101
         var secondOrder = CreateOrder(bot, 106, 5, bot.IsLong);
-        _exchangeApiMock.Setup(x => x.PlaceOrder(
+        ExchangeApiMock.Setup(x => x.PlaceOrder(
                 It.IsAny<Bot>(),
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
@@ -153,10 +123,10 @@ public class PlaceEntryOrdersQuantityCalculationTests
             .ReturnsAsync(secondOrder);
 
         // Act - Place second order
-        await _handler.Handle(secondCommand, CancellationToken.None);
+        await Handler.Handle(secondCommand, CancellationToken.None);
 
         // Assert - Verify second order
-        _exchangeApiMock.Verify(x => x.PlaceOrder(
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
             It.Is<Bot>(b => b.Id == bot.Id),
             It.Is<decimal>(p => p == 106),
             It.Is<decimal>(q => q == 5),
@@ -174,7 +144,7 @@ public class PlaceEntryOrdersQuantityCalculationTests
         var existingOrder = CreateOrder(bot, 100, bot.EntryQuantity, bot.IsLong);
         var existingTrade = new Trade(existingOrder);
         bot.Trades.Add(existingTrade);
-        await _dbContext.SaveChangesAsync();
+        await DbContext.SaveChangesAsync();
 
         // Create a ticker with price very close to existing order to generate 0 quantity
         // The price movement is less than entryStep, so no new orders should be placed
@@ -182,10 +152,10 @@ public class PlaceEntryOrdersQuantityCalculationTests
         var command = new PlaceEntryOrdersCommand { Ticker = ticker };
 
         // Act
-        await _handler.Handle(command, CancellationToken.None);
+        await Handler.Handle(command, CancellationToken.None);
 
         // Assert
-        _exchangeApiMock.Verify(x => x.PlaceOrder(
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
             It.IsAny<Bot>(),
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
@@ -205,7 +175,7 @@ public class PlaceEntryOrdersQuantityCalculationTests
 
         // Place initial order at 100 (Bid price since we're long)
         var firstOrder = CreateOrder(bot, 100, 1, bot.IsLong);
-        _exchangeApiMock.Setup(x => x.PlaceOrder(
+        ExchangeApiMock.Setup(x => x.PlaceOrder(
                 It.IsAny<Bot>(),
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
@@ -214,27 +184,25 @@ public class PlaceEntryOrdersQuantityCalculationTests
             .ReturnsAsync(firstOrder);
 
         // Act - Place first order
-        await _handler.Handle(firstCommand, CancellationToken.None);
+        await Handler.Handle(firstCommand, CancellationToken.None);
 
         // Now change the bot's entryStep and entryQuantity
-        bot.EntryStep = 2m;     // Larger step - should place fewer orders
-        bot.EntryQuantity = 3m; // Larger quantity - each order is larger
-        await _dbContext.SaveChangesAsync();
+        bot.EntryStep = 0.5m;  // Smaller step
+        bot.EntryQuantity = 2; // Larger quantity
+        await DbContext.SaveChangesAsync();
 
         // Clear mock for next test
-        _exchangeApiMock.Reset();
+        ExchangeApiMock.Reset();
 
         // Second ticker: 94/95 (price dropped)
         var secondTicker = CreateTicker(94, 95);
         var secondCommand = new PlaceEntryOrdersCommand { Ticker = secondTicker };
 
-        // With new entry step of 2, we need orders at:
-        // 98, 96, 94 (with first at 100, that's 3 price levels from 100 to 94)
-        // Total calculation: (100-94)/2 + 1 = 4 price levels
-        // 4 price levels × 3 units = 12 total units needed
-        // We already have 1 unit at 100, so need 11 more units
-        var secondOrder = CreateOrder(bot, 94, 11, bot.IsLong);
-        _exchangeApiMock.Setup(x => x.PlaceOrder(
+        // We now have steps of 0.5, so we need orders at:
+        // 99.5, 99, 98.5, 98, 97.5, 97, 96.5, 96, 95.5, 95, 94.5, 94 = 12 steps
+        // Each order should be quantity 2, so 12 * 2 = 24 total quantity
+        var secondOrder = CreateOrder(bot, 94, 24, bot.IsLong);
+        ExchangeApiMock.Setup(x => x.PlaceOrder(
                 It.IsAny<Bot>(),
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
@@ -242,61 +210,15 @@ public class PlaceEntryOrdersQuantityCalculationTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(secondOrder);
 
-        // Act - Place second order with updated bot parameters
-        await _handler.Handle(secondCommand, CancellationToken.None);
+        // Act - Place second order with new parameters
+        await Handler.Handle(secondCommand, CancellationToken.None);
 
-        // Assert - Verify second order with updated parameters
-        _exchangeApiMock.Verify(x => x.PlaceOrder(
+        // Assert - Verify second order has correct quantity based on new parameters
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
             It.Is<Bot>(b => b.Id == bot.Id),
             It.Is<decimal>(p => p == 94),
-            It.Is<decimal>(q => q == 11), // Correct quantity based on calculations
+            It.Is<decimal>(q => q == 24),
             It.Is<bool>(b => b == bot.IsLong),
             It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    private async Task<Bot> CreateBot(
-        bool isLong = true,
-        decimal? maxPrice = null,
-        decimal? minPrice = null,
-        bool placeOrdersInAdvance = false,
-        int ordersInAdvance = 0,
-        decimal entryQuantity = 1,
-        decimal entryStep = 0.1m,
-        decimal exitStep = 0.1m)
-    {
-        var botId = _nextBotId++;
-        var bot = new Bot(botId, "TestBot" + botId, "public_key_" + botId, "private_key_" + botId)
-        {
-            Symbol = "BTCUSDT",
-            Enabled = true,
-            IsLong = isLong,
-            MaxPrice = maxPrice,
-            MinPrice = minPrice,
-            PlaceOrdersInAdvance = placeOrdersInAdvance,
-            EntryOrdersInAdvance = ordersInAdvance,
-            ExitOrdersInAdvance = ordersInAdvance,
-            EntryQuantity = entryQuantity,
-            EntryStep = entryStep,
-            ExitStep = exitStep,
-            Trades = []
-        };
-
-        _dbContext.Bots.Add(bot);
-        await _dbContext.SaveChangesAsync();
-        return bot;
-    }
-
-    private TickerDto CreateTicker(decimal bid, decimal ask) => 
-        new("BTCUSDT", DateTime.UtcNow, bid, ask, lastPrice: _random.Next(2) == 0 ? bid : ask);
-
-    private Order CreateOrder(Bot bot, decimal price, decimal quantity, bool isBuy)
-    {
-        return new Order(Guid.NewGuid().ToString(), bot.Symbol, price, quantity, isBuy, DateTime.UtcNow)
-        {
-            Quantity = quantity,
-            QuantityFilled = quantity,
-            AverageFillPrice = price,
-            Fees = 0.001m * price * quantity
-        };
     }
 } 

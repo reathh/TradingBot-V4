@@ -106,11 +106,11 @@ public class TickerUpdateService(
         {
             // Create ticker from Binance data
             var tickerDto = new TickerDto(
-                symbol: symbol,
-                timestamp: DateTime.UtcNow,
-                bid: tickData.BestBidPrice,
-                ask: tickData.BestAskPrice,
-                lastPrice: tickData.LastPrice);
+                symbol,
+                DateTime.UtcNow,
+                tickData.BestBidPrice,
+                tickData.BestAskPrice,
+                tickData.LastPrice);
 
             // Log ticker update
             Logger.LogDebug("Received ticker update for {Symbol}: Bid={Bid}, Ask={Ask}, Last={Last}", 
