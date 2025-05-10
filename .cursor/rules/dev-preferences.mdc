@@ -5,3 +5,4 @@ alwaysApply: true
 ---
 - When fixing stuff never do workarounds or patchings. always fix stuff the correct way with clean code and DRY principles.
 - If you think something could be useful in the future extract it in a reusable component/function
+- in FE use apiClient to make requests to be

@@ -177,7 +177,7 @@ import {
 import Card from "@/components/Cards/Card.vue";
 import BaseButton from "@/components/BaseButton.vue";
 import Swal from "sweetalert2";
-import axios from "axios";
+import apiClient from "@/services/api";
 
 const route = useRoute();
 const router = useRouter();
@@ -206,7 +206,7 @@ const bot = ref({
 async function fetchBot() {
   loading.value = true;
   try {
-    const response = await axios.get(`/bots/${route.params.id}`);
+    const response = await apiClient.get(`bots/${route.params.id}`);
     bot.value = response.data;
   } catch (error) {
     console.error('Error fetching bot:', error);
@@ -223,7 +223,7 @@ async function fetchBot() {
 // Save the bot data
 async function saveBot() {
   try {
-    await axios.put(`/bots/${bot.value.id}`, bot.value);
+    await apiClient.put(`bots/${bot.value.id}`, bot.value);
     Swal.fire({
       title: 'Success',
       text: 'Bot updated successfully',
@@ -244,7 +244,7 @@ async function saveBot() {
 // Toggle bot enabled status
 async function toggleBotStatus() {
   try {
-    await axios.post(`/bots/${bot.value.id}/toggle`);
+    await apiClient.post(`bots/${bot.value.id}/toggle`);
     Swal.fire({
       title: 'Success',
       text: `Bot ${!bot.value.enabled ? 'activated' : 'deactivated'} successfully`,

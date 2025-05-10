@@ -171,7 +171,7 @@ import BaseButton from "@/components/BaseButton.vue";
 import BaseInput from "@/components/Inputs/BaseInput.vue";
 import BotTable from "@/components/BotTable.vue";
 import Swal from "sweetalert2";
-import axios from "axios";
+import apiClient from "@/services/api";
 import { useRouter } from "vue-router";
 
 // Router instance
@@ -208,7 +208,7 @@ const currentBot = ref({...defaultBot});
 // Fetch bots with pagination and search
 async function fetchBots(params) {
   try {
-    return await axios.get('/bots', {
+    return await apiClient.get('bots', {
       params: {
         page: params?.page || currentPage.value,
         pageSize: params?.pageSize || 10,
@@ -238,7 +238,7 @@ function createNewBot() {
 
 async function createBot() {
   try {
-    await axios.post('/bots', currentBot.value);
+    await apiClient.post('bots', currentBot.value);
     Swal.fire({
       title: 'Success',
       text: 'Bot created successfully',
@@ -272,7 +272,7 @@ async function deleteBot(bot) {
   }).then(async (result) => {
     if (result.isConfirmed) {
       try {
-        await axios.delete(`/bots/${bot.id}`);
+        await apiClient.delete(`bots/${bot.id}`);
         Swal.fire(
           'Deleted!',
           'The bot has been deleted.',
@@ -293,7 +293,7 @@ async function deleteBot(bot) {
 
 async function toggleBotStatus(bot) {
   try {
-    await axios.post(`/bots/${bot.id}/toggle`);
+    await apiClient.post(`bots/${bot.id}/toggle`);
     Swal.fire({
       title: 'Success',
       text: `Bot ${!bot.enabled ? 'activated' : 'deactivated'} successfully`,
