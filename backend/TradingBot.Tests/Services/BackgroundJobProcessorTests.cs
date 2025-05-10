@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -97,72 +96,6 @@ public class BackgroundJobProcessorTests : IDisposable
     }
 
     [Fact]
-    public async Task Enqueue_ShouldHandleErrors_Gracefully()
-    {
-        // Arrange - Skip the actual test verification since we can't reliably test the async behavior
-        await _processor.StartAsync(CancellationToken.None);
-        
-        // Arrange - Add a manual log entry for verification
-        _loggerMock.Object.Log(
-            LogLevel.Error,
-            new EventId(0),
-            new { Message = "Error processing background job for command TestCommand" },
-            new InvalidOperationException("Test exception"),
-            (state, ex) => state.ToString()!
-        );
-        
-        // Act
-        // We'll just verify the processor started successfully - the real test would require
-        // deeper integration that's difficult to achieve in unit tests
-        
-        // Assert - Our manual log entry should be verified
-        _loggerMock.Verify(
-            x => x.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.IsAny<It.IsAnyType>(),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.AtLeastOnce);
-
-        // Cleanup
-        await _processor.StopAsync(CancellationToken.None);
-    }
-
-    [Fact]
-    public async Task Enqueue_ShouldTrackResultFailures_AndLogThem()
-    {
-        // Arrange - Skip the actual test verification since we can't reliably test the async behavior
-        await _processor.StartAsync(CancellationToken.None);
-        
-        // Arrange - Add a manual log entry for verification
-        _loggerMock.Object.Log(
-            LogLevel.Error,
-            new EventId(0),
-            new { Message = "Command TestResultCommand failed: Test failure" },
-            null,
-            (state, ex) => state.ToString()!
-        );
-        
-        // Act
-        // We'll just verify the processor started successfully - the real test would require
-        // deeper integration that's difficult to achieve in unit tests
-        
-        // Assert - Our manual log entry should be verified
-        _loggerMock.Verify(
-            x => x.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.IsAny<It.IsAnyType>(),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.AtLeastOnce);
-
-        // Cleanup
-        await _processor.StopAsync(CancellationToken.None);
-    }
-
-    [Fact]
     public async Task StopAsync_ShouldStopProcessor()
     {
         // Arrange
@@ -181,4 +114,4 @@ public class BackgroundJobProcessorTests : IDisposable
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
-} 
+}
