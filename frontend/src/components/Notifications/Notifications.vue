@@ -55,9 +55,13 @@ const notificationsForPosition = (position) => {
     padding: 15px;
     pointer-events: none;
     max-width: 420px;
-    width: auto;
+    width: 100%;
     overflow-wrap: break-word;
     word-break: break-word;
+
+    @media (max-width: 600px) {
+      max-width: 90vw;
+    }
     
     & > * {
       pointer-events: auto;

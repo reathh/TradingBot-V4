@@ -72,158 +72,88 @@ function stopTimer() {
 .notification {
   display: flex;
   align-items: center;
-  max-width: 400px;
-  min-width: 300px;
-  padding: 15px;
-  border-radius: 10px;
-  box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.3);
-  margin-bottom: 15px;
-  transition: all 0.3s ease;
+  min-height: 64px;
+  max-width: 420px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 16px 40px 16px 20px;
+  border-radius: 12px;
+  background: #27293d;
+  margin-bottom: 16px;
   position: relative;
+  font-family: inherit;
+  box-shadow: 0 5px 15px -5px rgba(0,0,0,0.3);
   overflow: visible;
-  background-color: #27293d;
-  opacity: 0;
-  transform: translateY(-20px);
-  animation: notification-in 0.3s ease forwards;
-  border: none;
-  
-  .notification-close-button {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    color: rgba(255, 255, 255, 0.5);
-    cursor: pointer;
-    font-size: 16px;
-    z-index: 2;
-    background: none;
-    border: none;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    
-    &:hover {
-      color: white;
-    }
-  }
-  
+
+  // Left color bar
+  &.notification-success { border-left: 5px solid #41B883; }
+  &.notification-warning { border-left: 5px solid #FFC107; }
+  &.notification-danger  { border-left: 5px solid #FF5252; }
+  &.notification-info    { border-left: 5px solid #1E88E5; }
+
   .notification-icon {
-    margin-right: 15px;
-    font-size: 22px;
+    margin-right: 16px;
+    font-size: 24px;
     display: flex;
     align-items: center;
     flex-shrink: 0;
-    
-    i {
-      color: white;
-    }
   }
-  
+
   .notification-content {
     flex: 1;
-    padding-right: 30px;
     min-width: 0;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    
-    .notification-title {
-      font-weight: 600;
-      margin-bottom: 2px;
-      color: white;
-      word-break: break-word;
-      font-size: 15px;
-      line-height: 1.2;
-    }
-    
-    .notification-message {
-      color: rgba(255, 255, 255, 0.85);
-      font-size: 14px;
-      word-break: break-word;
-      line-height: 1.3;
-      white-space: pre-line;
-      overflow-wrap: break-word;
-      max-width: 100%;
-    }
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
   }
-  
-  &.notification-center {
-    margin-left: auto;
-    margin-right: auto;
+
+  .notification-title {
+    font-weight: 700;
+    font-size: 16px;
+    color: #fff;
+    margin-bottom: 2px;
+    line-height: 1.2;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
   }
-  
-  &.notification-middle {
-    align-self: center;
+
+  .notification-message {
+    font-weight: 400;
+    font-size: 15px;
+    color: #fff;
+    line-height: 1.3;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
   }
-  
-  &.notification-success {
-    .notification-icon i {
-      color: #41B883;
-    }
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 5px;
-      height: 100%;
-      background-color: #41B883;
-    }
-  }
-  
-  &.notification-warning {
-    .notification-icon i {
-      color: #FFC107;
-    }
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 5px;
-      height: 100%;
-      background-color: #FFC107;
-    }
-  }
-  
-  &.notification-danger {
-    .notification-icon i {
-      color: #FF5252;
-    }
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 5px;
-      height: 100%;
-      background-color: #FF5252;
-    }
-  }
-  
-  &.notification-info {
-    .notification-icon i {
-      color: #1E88E5;
-    }
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 5px;
-      height: 100%;
-      background-color: #1E88E5;
-    }
+
+  .notification-close-button {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    color: rgba(255,255,255,0.6);
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    z-index: 1;
+    transition: color 0.2s;
+    &:hover { color: #fff; }
   }
 }
 
-@keyframes notification-in {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+@media (max-width: 600px) {
+  .notification {
+    max-width: 95vw;
+    padding-left: 12px;
+    padding-right: 12px;
   }
 }
 </style>
