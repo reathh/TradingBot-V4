@@ -66,11 +66,11 @@ namespace TradingBot.Controllers
                 Quantity = t.EntryOrder.Quantity,
                 QuantityFilled = t.EntryOrder.QuantityFilled,
                 EntryFee = t.EntryOrder.Fees,
-                ExitFee = t.ExitOrder.Fees,
+                ExitFee = t.ExitOrder?.Fees ?? 0,
                 IsLong = t.EntryOrder.IsBuy,
                 Profit = CalculateProfit(t),
                 EntryTime = t.EntryOrder.CreatedAt,
-                ExitTime = t.ExitOrder.CreatedAt,
+                ExitTime = t.ExitOrder?.CreatedAt,
                 IsCompleted = t.ExitOrder != null && t.ExitOrder.Closed
             }).ToList();
 
@@ -162,6 +162,5 @@ namespace TradingBot.Controllers
         public DateTime EntryTime { get; set; }
         public DateTime? ExitTime { get; set; }
         public bool IsCompleted { get; set; }
-        public string Direction => IsLong ? "Buy" : "Sell";
     }
 }

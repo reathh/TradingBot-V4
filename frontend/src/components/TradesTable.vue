@@ -55,8 +55,8 @@
         <div class="row mb-3">
           <div class="col-md-6">
             <strong>Direction:</strong>
-            <span :class="selectedTrade.direction === 'Buy' ? 'text-success' : 'text-danger'">
-              {{ selectedTrade.direction }}
+            <span :class="selectedTrade.isLong ? 'text-success' : 'text-danger'">
+              {{ selectedTrade.isLong ? 'Buy' : 'Sell' }}
             </span>
           </div>
           <div class="col-md-6">
