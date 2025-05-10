@@ -18,8 +18,7 @@ namespace TradingBot.Data
         #region Navigation Properties
         public int? EntryTradeId { get; set; }
         public Trade? EntryTrade { get; set; } = null!;
-        public int? ExitTradeId { get; set; }
-        public Trade? ExitTrade { get; set; }
+        public ICollection<Trade> ExitTrades { get; set; } = [];
         #endregion
     }
 }

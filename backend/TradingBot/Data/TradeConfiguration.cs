@@ -13,8 +13,8 @@ namespace TradingBot.Data
                     .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasOne(t => t.ExitOrder)
-                    .WithOne(o => o.ExitTrade)
-                    .HasForeignKey<Order>(o => o.ExitTradeId)
+                    .WithMany(o => o.ExitTrades)
+                    .HasForeignKey(t => t.ExitOrderId)
                     .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasOne(t => t.Bot)
