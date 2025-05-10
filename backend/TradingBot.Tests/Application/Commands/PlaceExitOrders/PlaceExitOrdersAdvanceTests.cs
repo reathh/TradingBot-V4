@@ -206,7 +206,7 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
         await DbContext.SaveChangesAsync();
         
         // Create trades with different entry prices
-        var entryPrices = new[] { 100m, 99m, 98m };
+        var entryPrices = new[] { 100m, 99m, 98m, 97m };
         var trades = new List<Trade>();
         
         foreach (var price in entryPrices)
@@ -215,16 +215,20 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             trades.Add(trade);
         }
         
-        // Create ticker with price that DOES reach exit step for trades with entry 98m and 99m
-        // but not for the trade with entry 100m
-        var ticker = CreateTestTicker(100.2m, 100.2m); // Above exit threshold for 98m and 99m entries, below for 100m
+        // Create ticker with price that:
+        // - Reaches exit step for entries 97m and 98m (eligible for immediate exit)
+        // - Doesn't reach exit step for entries 99m and 100m (candidates for advance orders)
+        var ticker = CreateTestTicker(99.2m, 99.2m); // Above threshold for 97m and 98m entries, below for 99m and 100m
         var command = new PlaceExitOrdersCommand { Ticker = ticker };
         
-        // Setup for consolidated order (for entries 98m and 99m) and one advance order (for entry 100m)
+        // Setup for orders:
+        // 1. Consolidated order for entries 97m and 98m
+        // 2. ONE advance order for entry 99m (since it's closest to being eligible)
+        // Note: No advance order for entry 100m as ExitOrdersInAdvance=1
         var orders = new[]
         {
-            (100.2m, 2m), // Consolidated order for entries 98m and 99m (exits at current price)
-            (101m, 1m)    // Advance order for entry 100m
+            (99.2m, 2m), // Consolidated order for entries 97m and 98m (exits at current price)
+            (100m, 1m)   // Advance order for entry 99m (99 + 1 = 100)
         };
         
         SetupExitOrderSequence(bot, orders);
@@ -232,19 +236,19 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
         // Act
         await Handle(command, CancellationToken.None);
         
-        // Assert - verify both orders were placed
+        // Assert - verify exactly two orders were placed
         // First, the consolidated order
         ExchangeApiMock.Verify(x => x.PlaceOrder(
             It.Is<Bot>(b => b.Id == bot.Id),
-            It.Is<decimal>(p => p == 100.2m), // Consolidated exit at current price
-            It.Is<decimal>(q => q == 2m),     // For 2 trades
+            It.Is<decimal>(p => p == 99.2m), // Consolidated exit at current price
+            It.Is<decimal>(q => q == 2m),    // For 2 trades (entries 97m and 98m)
             It.Is<bool>(b => b != bot.IsLong),
             It.IsAny<CancellationToken>()), Times.Once);
             
-        // Then, the one advance order we're allowed to place (ExitOrdersInAdvance=1)
+        // Then, the ONE advance order for entry 99m
         ExchangeApiMock.Verify(x => x.PlaceOrder(
             It.Is<Bot>(b => b.Id == bot.Id),
-            It.Is<decimal>(p => p == 101m),  // Advance exit for entry 100m
+            It.Is<decimal>(p => p == 100m),  // Advance exit for entry 99m
             It.Is<decimal>(q => q == 1m),
             It.Is<bool>(b => b != bot.IsLong),
             It.IsAny<CancellationToken>()), Times.Once);
@@ -257,22 +261,23 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             It.IsAny<bool>(),
             It.IsAny<CancellationToken>()), Times.Exactly(2));
         
-        // Verify all trades have exit orders
+        // Verify which trades have exit orders
         var updatedTrades = await DbContext.Trades
             .Include(t => t.ExitOrder)
             .Where(t => trades.Select(tr => tr.Id).Contains(t.Id))
             .OrderByDescending(t => t.EntryOrder.Price)
             .ToListAsync();
             
-        Assert.Equal(3, updatedTrades.Count);
-        Assert.NotNull(updatedTrades[0].ExitOrder); // First trade (entry 100) has advance exit order
-        Assert.NotNull(updatedTrades[1].ExitOrder); // Second trade (entry 99) has consolidated exit order
-        Assert.NotNull(updatedTrades[2].ExitOrder); // Third trade (entry 98) has consolidated exit order
+        Assert.Equal(4, updatedTrades.Count);
+        Assert.Null(updatedTrades[0].ExitOrder);     // Entry 100m has NO exit order (not eligible for advance because of ExitOrdersInAdvance=1)
+        Assert.NotNull(updatedTrades[1].ExitOrder);  // Entry 99m has advance exit order
+        Assert.NotNull(updatedTrades[2].ExitOrder);  // Entry 98m has consolidated exit order
+        Assert.NotNull(updatedTrades[3].ExitOrder);  // Entry 97m has consolidated exit order
         
         // Verify correct exit prices
-        Assert.Equal(101m, updatedTrades[0].ExitOrder.Price);   // Advance exit at 101
-        Assert.Equal(100.2m, updatedTrades[1].ExitOrder.Price); // Consolidated exit at current price
-        Assert.Equal(100.2m, updatedTrades[2].ExitOrder.Price); // Consolidated exit at current price
+        Assert.Equal(100m, updatedTrades[1].ExitOrder.Price);   // Entry 99m: advance exit at 100m
+        Assert.Equal(99.2m, updatedTrades[2].ExitOrder.Price);  // Entry 98m: consolidated exit at current price
+        Assert.Equal(99.2m, updatedTrades[3].ExitOrder.Price);  // Entry 97m: consolidated exit at current price
     }
     
     [Fact]
