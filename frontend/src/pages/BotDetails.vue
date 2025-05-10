@@ -146,16 +146,34 @@
                 <el-checkbox v-model="bot.placeOrdersInAdvance">Place orders in advance</el-checkbox>
               </el-form-item>
 
-              <el-form-item v-if="bot.placeOrdersInAdvance" label="Orders in Advance">
-                <el-input
-                  v-model.number="bot.ordersInAdvance"
-                  type="number"
-                  min="1"
-                  max="1000"
-                  placeholder="Number of orders"
-                  @input="formatNumberInput($event, 'ordersInAdvance')"
-                ></el-input>
-              </el-form-item>
+              <template v-if="bot.placeOrdersInAdvance">
+                <div class="row">
+                  <div class="col-md-6">
+                    <el-form-item label="Entry Orders In Advance">
+                      <el-input
+                        v-model.number="bot.EntryOrdersInAdvance"
+                        type="number"
+                        min="1"
+                        max="1000"
+                        placeholder="Entry orders in advance"
+                        @input="formatNumberInput($event, 'EntryOrdersInAdvance')"
+                      ></el-input>
+                    </el-form-item>
+                  </div>
+                  <div class="col-md-6">
+                    <el-form-item label="Exit Orders In Advance">
+                      <el-input
+                        v-model.number="bot.ExitOrdersInAdvance"
+                        type="number"
+                        min="1"
+                        max="1000"
+                        placeholder="Exit orders in advance"
+                        @input="formatNumberInput($event, 'ExitOrdersInAdvance')"
+                      ></el-input>
+                    </el-form-item>
+                  </div>
+                </div>
+              </template>
 
               <div class="d-flex justify-content-between mt-4">
                 <base-button @click="saveBot" type="primary">Save Changes</base-button>
@@ -203,12 +221,13 @@ const bot = ref({
   quantity: 0,
   placeOrdersInAdvance: false,
   isLong: true,
-  ordersInAdvance: 100,
   exitStep: 0.01,
   entryStep: 0.01,
   entryQuantity: 0,
   startingBaseAmount: 0,
-  startFromMaxPrice: false
+  startFromMaxPrice: false,
+  EntryOrdersInAdvance: 100,
+  ExitOrdersInAdvance: 100
 });
 
 // Fetch the bot data
