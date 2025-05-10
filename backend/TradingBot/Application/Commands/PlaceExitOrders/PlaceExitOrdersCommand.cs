@@ -95,75 +95,89 @@ public class PlaceExitOrdersCommand : IRequest<Result>
 
             var exchangeApi = _exchangeApiRepository.GetExchangeApi(bot);
 
+            // Group eligible trades with similar entry prices
+            // For long positions, group trades with entry price <= current price - exit step
+            // For short positions, group trades with entry price >= current price + exit step
+            var targetExitPrice = bot.IsLong
+                ? Math.Max(eligibleTrades.Min(t => t.EntryPrice) + bot.ExitStep, currentPrice)
+                : Math.Min(eligibleTrades.Max(t => t.EntryPrice) - bot.ExitStep, currentPrice);
+
+            // Calculate total quantity needed for exit
+            var exitQuantity = eligibleTrades.Sum(t => t.EntryQuantity);
+
+            // Place consolidated exit order for all eligible trades
+            var consolidatedOrder = await exchangeApi.PlaceOrder(
+                bot,
+                targetExitPrice,
+                exitQuantity,
+                !bot.IsLong, // Exit is opposite of entry direction
+                cancellationToken);
+
+            // Assign the exit order to all eligible trades
+            foreach (var tradeInfo in eligibleTrades)
+            {
+                tradeInfo.Trade.ExitOrder = consolidatedOrder;
+                _logger.LogInformation(
+                    "Bot {BotId} assigned exit {Side} order at {Price} for trade with entry price {EntryPrice}",
+                    bot.Id,
+                    consolidatedOrder.IsBuy ? "buy" : "sell",
+                    consolidatedOrder.Price,
+                    tradeInfo.EntryPrice);
+            }
+
+            await _db.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation(
+                "Successfully placed exit order for {TradeCount} trades for bot {BotId} at price {Price} for {Quantity} units",
+                eligibleTrades.Count, bot.Id, consolidatedOrder.Price, consolidatedOrder.Quantity);
+
+            // Place additional exit orders in advance if configured
             if (bot.PlaceOrdersInAdvance)
             {
-                var orderTasks = new List<Task<Order>>();
+                // Get trades that are filled but don't have exit orders yet and aren't eligible for exit
+                var tradesWithoutExitOrders = trades
+                    .Except(eligibleTrades)
+                    .OrderBy(t => bot.IsLong ? t.EntryPrice : -t.EntryPrice) // Sort by entry price
+                    .Take(bot.ExitOrdersInAdvance) // Limit to the number of orders in advance
+                    .ToList();
 
-                foreach (var trade in eligibleTrades)
+                if (tradesWithoutExitOrders.Any())
                 {
-                    // For each trade, place an exit order
-                    var exitPrice = bot.IsLong
-                        ? Math.Max(trade.EntryPrice + bot.ExitStep, currentPrice)
-                        : Math.Min(trade.EntryPrice - bot.ExitStep, currentPrice);
+                    var orderTasks = new List<Task<Order>>();
 
-                    orderTasks.Add(exchangeApi.PlaceOrder(
-                        bot,
-                        exitPrice,
-                        trade.EntryQuantity,
-                        !bot.IsLong, // Exit is opposite of entry direction
-                        cancellationToken));
+                    foreach (var tradeInfo in tradesWithoutExitOrders)
+                    {
+                        var exitPrice = bot.IsLong
+                            ? tradeInfo.EntryPrice + bot.ExitStep
+                            : tradeInfo.EntryPrice - bot.ExitStep;
+
+                        orderTasks.Add(exchangeApi.PlaceOrder(
+                            bot,
+                            exitPrice,
+                            tradeInfo.EntryQuantity,
+                            !bot.IsLong, // Exit is opposite of entry direction
+                            cancellationToken));
+                    }
+
+                    var advanceOrders = await Task.WhenAll(orderTasks);
+
+                    for (int i = 0; i < advanceOrders.Length; i++)
+                    {
+                        var order = advanceOrders[i];
+                        var trade = tradesWithoutExitOrders[i].Trade;
+                        trade.ExitOrder = order;
+
+                        _logger.LogInformation(
+                            "Bot {BotId} placed advance exit {Side} order at {Price} for {Quantity} units ({OrderId})",
+                            bot.Id,
+                            order.IsBuy ? "buy" : "sell",
+                            order.Price,
+                            order.Quantity,
+                            order.Id);
+                    }
+
+                    await _db.SaveChangesAsync(cancellationToken);
+                    _logger.LogInformation("Successfully placed {OrderCount} advance exit orders for bot {BotId}", advanceOrders.Length, bot.Id);
                 }
-
-                var orders = await Task.WhenAll(orderTasks);
-
-                for (int i = 0; i < orders.Length; i++)
-                {
-                    var order = orders[i];
-                    var trade = eligibleTrades[i].Trade;
-                    trade.ExitOrder = order;
-
-                    _logger.LogInformation(
-                        "Bot {BotId} placed exit {Side} order at {Price} for {Quantity} units ({OrderId})",
-                        bot.Id,
-                        order.IsBuy ? "buy" : "sell",
-                        order.Price,
-                        order.Quantity,
-                        order.Id);
-                }
-
-                await _db.SaveChangesAsync(cancellationToken);
-                _logger.LogInformation("Successfully placed {OrderCount} exit orders for bot {BotId}", orders.Length, bot.Id);
-            }
-            else
-            {
-                // Process one trade at a time, standard behavior
-                foreach (var tradeInfo in eligibleTrades)
-                {
-                    var trade = tradeInfo.Trade;
-                    var exitPrice = bot.IsLong
-                        ? Math.Max(tradeInfo.EntryPrice + bot.ExitStep, currentPrice)
-                        : Math.Min(tradeInfo.EntryPrice - bot.ExitStep, currentPrice);
-
-                    var order = await exchangeApi.PlaceOrder(
-                        bot,
-                        exitPrice,
-                        tradeInfo.EntryQuantity,
-                        !bot.IsLong, // Exit is opposite of entry direction
-                        cancellationToken);
-
-                    trade.ExitOrder = order;
-
-                    _logger.LogInformation(
-                        "Bot {BotId} placed exit {Side} order at {Price} for {Quantity} units ({OrderId})",
-                        bot.Id,
-                        order.IsBuy ? "buy" : "sell",
-                        order.Price,
-                        order.Quantity,
-                        order.Id);
-                }
-
-                await _db.SaveChangesAsync(cancellationToken);
-                _logger.LogInformation("Successfully placed {OrderCount} exit orders for bot {BotId}", eligibleTrades.Count, bot.Id);
             }
         }
     }

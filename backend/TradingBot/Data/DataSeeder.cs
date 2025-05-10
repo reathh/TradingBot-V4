@@ -27,7 +27,8 @@ namespace TradingBot.Data
                     ExitStep = 300m,
                     IsLong = true,
                     PlaceOrdersInAdvance = true,
-                    OrdersInAdvance = 5,
+                    EntryOrdersInAdvance = 5,
+                    ExitOrdersInAdvance = 5,
                     StartingBaseAmount = 1m
                 };
 

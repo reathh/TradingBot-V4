@@ -169,7 +169,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
 
         // Now update the bot to have 5 orders in advance
         ExchangeApiMock.Reset();
-        bot.OrdersInAdvance = 5;
+        bot.EntryOrdersInAdvance = 5;
         await DbContext.SaveChangesAsync();
 
         // Create a new ticker with lower prices (96/100)
@@ -262,7 +262,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
 
         // Now update the bot to have 5 orders in advance
         ExchangeApiMock.Reset();
-        bot.OrdersInAdvance = 5;
+        bot.EntryOrdersInAdvance = 5;
         await DbContext.SaveChangesAsync();
 
         // Create a new ticker with higher prices (105/106)

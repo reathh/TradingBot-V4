@@ -29,7 +29,7 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                     (b.MaxPrice == null || b.IsLong && b.MaxPrice >= request.Ticker.Bid || !b.IsLong && b.MaxPrice >= request.Ticker.Ask) &&
                     (b.MinPrice == null || b.IsLong && b.MinPrice <= request.Ticker.Ask || !b.IsLong && b.MinPrice <= request.Ticker.Bid))
                 // Orders in advance filter
-                .Where(b => !b.PlaceOrdersInAdvance || b.PlaceOrdersInAdvance && b.Trades.Count(t => t.Profit == null) < b.OrdersInAdvance)
+                .Where(b => !b.PlaceOrdersInAdvance || b.PlaceOrdersInAdvance && b.Trades.Count(t => t.Profit == null) < b.EntryOrdersInAdvance)
                 // Select all data needed for calculation
                 .Select(b => new
                 {
@@ -103,7 +103,7 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
 
             if (bot.PlaceOrdersInAdvance)
             {
-                var ordersToPlace = bot.OrdersInAdvance - openTradesCount;
+                var ordersToPlace = bot.EntryOrdersInAdvance - openTradesCount;
 
                 if (ordersToPlace <= 0)
                 {
