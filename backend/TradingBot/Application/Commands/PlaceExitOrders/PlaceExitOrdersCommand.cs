@@ -50,7 +50,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                             t.ExitOrder
                         })
                         .ToList(),
-                    AdvanceCandidates = bot.Trades
+                    AdvanceTrades = bot.Trades
                         .Where(t =>
                             t.ExitOrder == null &&
                             t.Profit == null &&
@@ -71,7 +71,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                         .Take(bot.PlaceOrdersInAdvance ? bot.ExitOrdersInAdvance : 0)
                         .ToList()
                 })
-                .Where(x => x.ConsolidatedTrades.Any() || x.AdvanceCandidates.Any())
+                .Where(x => x.ConsolidatedTrades.Any() || x.AdvanceTrades.Any())
                 .ToListAsync(cancellationToken);
 
             // attach entry and exit orders to the trades
@@ -83,7 +83,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                     tradeInfo.Trade.ExitOrder = tradeInfo.ExitOrder;
                 }
 
-                foreach (var tradeInfo in botWithTrades.AdvanceCandidates)
+                foreach (var tradeInfo in botWithTrades.AdvanceTrades)
                 {
                     tradeInfo.Trade.EntryOrder = tradeInfo.EntryOrder;
                     tradeInfo.Trade.ExitOrder = tradeInfo.ExitOrder;
@@ -98,16 +98,16 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                 {
                     var bot = botWithTrades.Bot;
                     var consolidatedTrades = botWithTrades.ConsolidatedTrades.Select(t => t.Trade).ToList();
-                    var advanceCandidates = botWithTrades.AdvanceCandidates.Select(t => t.Trade).ToList();
+                    var advanceTrades = botWithTrades.AdvanceTrades.Select(t => t.Trade).ToList();
 
-                    if (consolidatedTrades.Count == 0 && advanceCandidates.Count == 0)
+                    if (consolidatedTrades.Count == 0 && advanceTrades.Count == 0)
                     {
                         return;
                     }
 
                     try
                     {
-                        await PlaceExitOrders(bot, request.Ticker, consolidatedTrades, advanceCandidates, token);
+                        await PlaceExitOrders(bot, request.Ticker, consolidatedTrades, advanceTrades, token);
                     }
                     catch (Exception ex)
                     {
@@ -121,7 +121,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                 : Result.Failure(errors);
         }
 
-        private async Task PlaceExitOrders(Bot bot, Ticker ticker, IList<Trade> consolidatedTrades, IList<Trade> advanceCandidates, CancellationToken cancellationToken)
+        private async Task PlaceExitOrders(Bot bot, Ticker ticker, IList<Trade> consolidatedTrades, IList<Trade> advanceTrades, CancellationToken cancellationToken)
         {
             var currentPrice = bot.IsLong ? ticker.Ask : ticker.Bid;
             var exchangeApi = _exchangeApiRepository.GetExchangeApi(bot);
@@ -147,7 +147,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
             }
 
             // Prepare advance exit orders
-            foreach (var trade in advanceCandidates)
+            foreach (var trade in advanceTrades)
             {
                 var exitPrice = bot.IsLong
                     ? (trade.EntryOrder.AverageFillPrice ?? trade.EntryOrder.Price) + bot.ExitStep
