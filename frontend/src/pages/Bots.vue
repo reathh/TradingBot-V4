@@ -169,7 +169,7 @@ import BasePagination from "@/components/BasePagination.vue";
 import BaseButton from "@/components/BaseButton.vue";
 import BaseInput from "@/components/Inputs/BaseInput.vue";
 import BotTable from "@/components/BotTable.vue";
-import Swal from "sweetalert2";
+import { useNotifications } from "@/components/Notifications/NotificationPlugin";
 import apiClient from "@/services/api";
 import { useRouter } from "vue-router";
 
@@ -204,6 +204,9 @@ const defaultBot = {
 
 const currentBot = ref({...defaultBot});
 
+// Notification composable
+const { notify } = useNotifications();
+
 // Fetch bots with pagination and search
 async function fetchBots(params) {
   try {
@@ -218,10 +221,11 @@ async function fetchBots(params) {
     });
   } catch (error) {
     console.error('Error fetching bots:', error);
-    Swal.fire({
+    notify({
+      type: 'danger',
       title: 'Error',
-      text: 'Failed to load bots',
-      icon: 'error'
+      message: 'Failed to load bots',
+      icon: 'fas fa-times',
     });
   }
 }
@@ -238,75 +242,66 @@ function createNewBot() {
 async function createBot() {
   try {
     await apiClient.post('bots', currentBot.value);
-    Swal.fire({
+    notify({
+      type: 'success',
       title: 'Success',
-      text: 'Bot created successfully',
-      icon: 'success',
-      timer: 2000,
-      showConfirmButton: false
+      message: 'Bot created successfully',
+      icon: 'fas fa-check',
     });
     showCreateModal.value = false;
     // Refresh the bots list through the BotTable component
     // which handles its own data fetching
   } catch (error) {
     console.error('Error creating bot:', error);
-    Swal.fire({
+    notify({
+      type: 'danger',
       title: 'Error',
-      text: error.response?.data?.message || 'Failed to create bot',
-      icon: 'error'
+      message: error.response?.data?.message || 'Failed to create bot',
+      icon: 'fas fa-times',
     });
   }
 }
 
 async function deleteBot(bot) {
-  Swal.fire({
-    title: 'Are you sure?',
-    text: `You are about to delete bot "${bot.name}". This cannot be undone!`,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Yes, delete it!',
-    cancelButtonText: 'Cancel',
-    confirmButtonColor: '#d33',
-    cancelButtonColor: '#3085d6',
-  }).then(async (result) => {
-    if (result.isConfirmed) {
-      try {
-        await apiClient.delete(`bots/${bot.id}`);
-        Swal.fire(
-          'Deleted!',
-          'The bot has been deleted.',
-          'success'
-        );
-        // Refresh will happen automatically through the BotTable component
-      } catch (error) {
-        console.error('Error deleting bot:', error);
-        Swal.fire({
-          title: 'Error',
-          text: 'Failed to delete bot',
-          icon: 'error'
-        });
-      }
-    }
-  });
+  // Use a confirm dialog for destructive actions, but show notifications for result
+  if (!confirm(`Are you sure you want to delete bot "${bot.name}"? This cannot be undone!`)) return;
+  try {
+    await apiClient.delete(`bots/${bot.id}`);
+    notify({
+      type: 'success',
+      title: 'Deleted',
+      message: 'The bot has been deleted.',
+      icon: 'fas fa-check',
+    });
+    // Refresh will happen automatically through the BotTable component
+  } catch (error) {
+    console.error('Error deleting bot:', error);
+    notify({
+      type: 'danger',
+      title: 'Error',
+      message: 'Failed to delete bot',
+      icon: 'fas fa-times',
+    });
+  }
 }
 
 async function toggleBotStatus(bot) {
   try {
     await apiClient.post(`bots/${bot.id}/toggle`);
-    Swal.fire({
+    notify({
+      type: 'success',
       title: 'Success',
-      text: `Bot ${!bot.enabled ? 'activated' : 'deactivated'} successfully`,
-      icon: 'success',
-      timer: 2000,
-      showConfirmButton: false
+      message: `Bot ${!bot.enabled ? 'activated' : 'deactivated'} successfully`,
+      icon: 'fas fa-check',
     });
     // Refresh will happen automatically through the BotTable component
   } catch (error) {
     console.error('Error toggling bot status:', error);
-    Swal.fire({
+    notify({
+      type: 'danger',
       title: 'Error',
-      text: 'Failed to update bot status',
-      icon: 'error'
+      message: 'Failed to update bot status',
+      icon: 'fas fa-times',
     });
   }
 }

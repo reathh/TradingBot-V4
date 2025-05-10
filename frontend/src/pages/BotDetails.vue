@@ -151,24 +151,24 @@
                   <div class="col-md-6">
                     <el-form-item label="Entry Orders In Advance">
                       <el-input
-                        v-model.number="bot.EntryOrdersInAdvance"
+                        v-model.number="bot.entryOrdersInAdvance"
                         type="number"
                         min="1"
                         max="1000"
                         placeholder="Entry orders in advance"
-                        @input="formatNumberInput($event, 'EntryOrdersInAdvance')"
+                        @input="formatNumberInput($event, 'entryOrdersInAdvance')"
                       ></el-input>
                     </el-form-item>
                   </div>
                   <div class="col-md-6">
                     <el-form-item label="Exit Orders In Advance">
                       <el-input
-                        v-model.number="bot.ExitOrdersInAdvance"
+                        v-model.number="bot.exitOrdersInAdvance"
                         type="number"
                         min="1"
                         max="1000"
                         placeholder="Exit orders in advance"
-                        @input="formatNumberInput($event, 'ExitOrdersInAdvance')"
+                        @input="formatNumberInput($event, 'exitOrdersInAdvance')"
                       ></el-input>
                     </el-form-item>
                   </div>
@@ -202,7 +202,7 @@ import {
 } from "element-plus";
 import Card from "@/components/Cards/Card.vue";
 import BaseButton from "@/components/BaseButton.vue";
-import Swal from "sweetalert2";
+import { useNotifications } from "@/components/Notifications/NotificationPlugin";
 import apiClient from "@/services/api";
 import TradesTable from '@/components/TradesTable.vue';
 
@@ -226,9 +226,11 @@ const bot = ref({
   entryQuantity: 0,
   startingBaseAmount: 0,
   startFromMaxPrice: false,
-  EntryOrdersInAdvance: 100,
-  ExitOrdersInAdvance: 100
+  entryOrdersInAdvance: 100,
+  exitOrdersInAdvance: 100
 });
+
+const { notify } = useNotifications();
 
 // Fetch the bot data
 async function fetchBot() {
@@ -238,10 +240,11 @@ async function fetchBot() {
     bot.value = response.data;
   } catch (error) {
     console.error('Error fetching bot:', error);
-    Swal.fire({
+    notify({
+      type: 'danger',
       title: 'Error',
-      text: 'Failed to load bot details',
-      icon: 'error'
+      message: 'Failed to load bot details',
+      icon: 'fas fa-times',
     });
   } finally {
     loading.value = false;
@@ -252,19 +255,19 @@ async function fetchBot() {
 async function saveBot() {
   try {
     await apiClient.put(`bots/${bot.value.id}`, bot.value);
-    Swal.fire({
+    notify({
+      type: 'success',
       title: 'Success',
-      text: 'Bot updated successfully',
-      icon: 'success',
-      timer: 2000,
-      showConfirmButton: false
+      message: 'Bot updated successfully',
+      icon: 'fas fa-check',
     });
   } catch (error) {
     console.error('Error saving bot:', error);
-    Swal.fire({
+    notify({
+      type: 'danger',
       title: 'Error',
-      text: error.response?.data?.message || 'Failed to save bot',
-      icon: 'error'
+      message: error.response?.data?.message || 'Failed to save bot',
+      icon: 'fas fa-times',
     });
   }
 }
@@ -273,21 +276,21 @@ async function saveBot() {
 async function toggleBotStatus() {
   try {
     await apiClient.post(`bots/${bot.value.id}/toggle`);
-    Swal.fire({
+    notify({
+      type: 'success',
       title: 'Success',
-      text: `Bot ${!bot.value.enabled ? 'activated' : 'deactivated'} successfully`,
-      icon: 'success',
-      timer: 2000,
-      showConfirmButton: false
+      message: `Bot ${!bot.value.enabled ? 'activated' : 'deactivated'} successfully`,
+      icon: 'fas fa-check',
     });
     // Refresh bot data to get updated status
     fetchBot();
   } catch (error) {
     console.error('Error toggling bot status:', error);
-    Swal.fire({
+    notify({
+      type: 'danger',
       title: 'Error',
-      text: 'Failed to update bot status',
-      icon: 'error'
+      message: 'Failed to update bot status',
+      icon: 'fas fa-times',
     });
   }
 }
@@ -310,29 +313,24 @@ function formatNumberInput(event, field) {
 // Add deleteBot function
 async function deleteBot() {
   if (!bot.value.id) return;
-  const result = await Swal.fire({
-    title: 'Are you sure?',
-    text: `You are about to delete bot "${bot.value.name}". This cannot be undone!`,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Yes, delete it!',
-    cancelButtonText: 'Cancel',
-    confirmButtonColor: '#d33',
-    cancelButtonColor: '#3085d6',
-  });
-  if (result.isConfirmed) {
-    try {
-      await apiClient.delete(`bots/${bot.value.id}`);
-      Swal.fire('Deleted!', 'The bot has been deleted.', 'success');
-      router.push({ name: 'Bots' });
-    } catch (error) {
-      console.error('Error deleting bot:', error);
-      Swal.fire({
-        title: 'Error',
-        text: 'Failed to delete bot',
-        icon: 'error'
-      });
-    }
+  if (!confirm(`Are you sure you want to delete bot "${bot.value.name}"? This cannot be undone!`)) return;
+  try {
+    await apiClient.delete(`bots/${bot.value.id}`);
+    notify({
+      type: 'success',
+      title: 'Deleted',
+      message: 'The bot has been deleted.',
+      icon: 'fas fa-check',
+    });
+    router.push({ name: 'Bots' });
+  } catch (error) {
+    console.error('Error deleting bot:', error);
+    notify({
+      type: 'danger',
+      title: 'Error',
+      message: 'Failed to delete bot',
+      icon: 'fas fa-times',
+    });
   }
 }
 

@@ -127,7 +127,7 @@ import BaseButton from "@/components/BaseButton.vue";
 import BaseInput from "@/components/Inputs/BaseInput.vue";
 import users from "./users";
 import Fuse from "fuse.js";
-import swal from "sweetalert2";
+import { useNotifications } from "@/components/Notifications/NotificationPlugin";
 
 // Table Columns
 const tableColumns = [
@@ -188,56 +188,35 @@ watch(searchQuery, (value) => {
 });
 
 // Handlers
+const { notify } = useNotifications();
+
 function handleLike(index, row) {
-  swal.fire({
-    title: `You liked ${row.name}`,
-    icon: "success",
-    buttonsStyling: false,
-    customClass: {
-      confirmButton: "btn btn-success btn-fill",
-    },
+  notify({
+    type: 'success',
+    title: 'Liked',
+    message: `You liked ${row.name}`,
+    icon: 'fas fa-heart',
   });
 }
 
 function handleEdit(index, row) {
-  swal.fire({
-    title: `You want to edit ${row.name}`,
-    icon: "info",
-    buttonsStyling: false,
-    customClass: {
-      confirmButton: "btn btn-info btn-fill",
-    },
+  notify({
+    type: 'info',
+    title: 'Edit',
+    message: `You want to edit ${row.name}`,
+    icon: 'fas fa-pencil-alt',
   });
 }
 
 function handleDelete(index, row) {
-  swal
-    .fire({
-      title: "Are you sure?",
-      text: `You won't be able to revert this!`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, delete it!",
-      buttonsStyling: false,
-      customClass: {
-        confirmButton: "btn btn-success btn-fill",
-        cancelButton: "btn btn-danger btn-fill",
-      },
-    })
-    .then((result) => {
-      if (result.isConfirmed) {
-        deleteRow(row);
-        swal.fire({
-          title: "Deleted!",
-          text: `You deleted ${row.name}`,
-          icon: "success",
-          buttonsStyling: false,
-          customClass: {
-            confirmButton: "btn btn-success btn-fill",
-          },
-        });
-      }
-    });
+  if (!confirm(`Are you sure you want to delete ${row.name}? This cannot be undone!`)) return;
+  deleteRow(row);
+  notify({
+    type: 'success',
+    title: 'Deleted',
+    message: `You deleted ${row.name}`,
+    icon: 'fas fa-trash',
+  });
 }
 
 function deleteRow(row) {

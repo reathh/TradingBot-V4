@@ -54,41 +54,47 @@ const notificationsForPosition = (position) => {
     flex-direction: column;
     padding: 15px;
     pointer-events: none;
+    max-width: 420px;
+    width: auto;
+    overflow-wrap: break-word;
+    word-break: break-word;
     
     & > * {
       pointer-events: auto;
     }
     
     &.top-left {
-      top: 0;
-      left: 0;
+      top: 20px;
+      left: 20px;
     }
     
     &.top-center {
-      top: 0;
+      top: 20px;
       left: 50%;
       transform: translateX(-50%);
     }
     
     &.top-right {
-      top: 0;
-      right: 0;
+      top: 20px;
+      right: 20px;
+      align-items: flex-end;
     }
     
     &.bottom-left {
-      bottom: 0;
-      left: 0;
+      bottom: 20px;
+      left: 20px;
     }
     
     &.bottom-center {
-      bottom: 0;
+      bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
     }
     
     &.bottom-right {
-      bottom: 0;
-      right: 0;
+      bottom: 20px;
+      right: 20px;
+      align-items: flex-end;
     }
   }
 }

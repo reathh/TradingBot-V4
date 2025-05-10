@@ -80,19 +80,26 @@ function stopTimer() {
   margin-bottom: 15px;
   transition: all 0.3s ease;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   background-color: #27293d;
   opacity: 0;
   transform: translateY(-20px);
   animation: notification-in 0.3s ease forwards;
+  border: none;
   
   .notification-close-button {
     position: absolute;
-    top: 5px;
-    right: 5px;
+    top: 10px;
+    right: 10px;
     color: rgba(255, 255, 255, 0.5);
     cursor: pointer;
-    font-size: 14px;
+    font-size: 16px;
+    z-index: 2;
+    background: none;
+    border: none;
+    padding: 0;
+    display: flex;
+    align-items: center;
     
     &:hover {
       color: white;
@@ -100,10 +107,11 @@ function stopTimer() {
   }
   
   .notification-icon {
-    padding: 0 15px 0 5px;
-    font-size: 20px;
+    margin-right: 15px;
+    font-size: 22px;
     display: flex;
     align-items: center;
+    flex-shrink: 0;
     
     i {
       color: white;
@@ -112,18 +120,29 @@ function stopTimer() {
   
   .notification-content {
     flex: 1;
-    padding-right: 10px;
+    padding-right: 30px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     
     .notification-title {
       font-weight: 600;
-      margin-bottom: 5px;
-      display: block;
+      margin-bottom: 2px;
       color: white;
+      word-break: break-word;
+      font-size: 15px;
+      line-height: 1.2;
     }
     
     .notification-message {
-      color: rgba(255, 255, 255, 0.8);
+      color: rgba(255, 255, 255, 0.85);
       font-size: 14px;
+      word-break: break-word;
+      line-height: 1.3;
+      white-space: pre-line;
+      overflow-wrap: break-word;
+      max-width: 100%;
     }
   }
   
