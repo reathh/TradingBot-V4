@@ -136,7 +136,16 @@
         <template #header>
           <h5 class="card-title mb-0">Bot Performance</h5>
         </template>
-        <div class="table-responsive"><BotPerformanceTable></BotPerformanceTable></div>
+        <div class="table-responsive">
+          <BotTable 
+            :showViewButton="true"
+            :showRefreshButton="true"
+            :showToggleStatusButton="false"
+            :showTradesButton="false"
+            :showEditButton="false"
+            :showDeleteButton="false"
+          ></BotTable>
+        </div>
       </Card>
     </div>
     <div class="col-lg-12"><CountryMapCard></CountryMapCard></div>
@@ -156,7 +165,7 @@ import BarChart from "@/components/Charts/BarChart.vue";
 import * as chartConfigs from "@/components/Charts/config";
 import TaskList from "@/pages/Dashboard/TaskList.vue";
 import UserTable from "@/pages/Dashboard/UserTable.vue";
-import BotPerformanceTable from "@/pages/Dashboard/BotPerformanceTable.vue";
+import BotTable from "@/components/BotTable.vue";
 import CountryMapCard from "@/pages/Dashboard/CountryMapCard.vue";
 import StatsCard from "@/components/Cards/StatsCard.vue";
 import BaseDropdown from "@/components/BaseDropdown.vue";

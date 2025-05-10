@@ -11,77 +11,17 @@
           </div>
 
           <div>
-            <PagedTable
-              :columns="botTableColumns"
-              :data="pagedResult.items"
-              :page="currentPage"
-              :total-pages="pagedResult.totalPages"
-              :total-count="pagedResult.totalCount"
-              :searchable="true"
-              :sortable="true"
-              :server-side="true"
-              :fetch-data="fetchBots"
-              thead-classes="text-primary"
-            >
-              <template #row="{ row }">
-                <td>{{ row.id }}</td>
-                <td>{{ row.name }}</td>
-                <td>{{ row.symbol }}</td>
-                <td>{{ row.quantity ? row.quantity.toFixed(4) : '0.0000' }}</td>
-                <td>
-                  <el-tag :type="row.enabled ? 'success' : 'danger'">
-                    {{ row.enabled ? 'Active' : 'Inactive' }}
-                  </el-tag>
-                </td>
-                <td>
-                  {{ row.minPrice ? row.minPrice.toFixed(2) : 'N/A' }} - {{ row.maxPrice ? row.maxPrice.toFixed(2) : 'N/A' }}
-                </td>
-                <td>
-                  <span :class="row.isLong ? 'text-success' : 'text-danger'">
-                    {{ row.isLong ? 'Long' : 'Short' }}
-                  </span>
-                </td>
-                <td class="text-right">
-                  <base-button
-                    @click.native="toggleBotStatus(row)"
-                    class="btn-link"
-                    :type="row.enabled ? 'warning' : 'success'"
-                    size="sm"
-                    icon
-                  >
-                    <i :class="row.enabled ? 'tim-icons icon-button-pause' : 'tim-icons icon-button-power'"></i>
-                  </base-button>
-                  <router-link :to="{ name: 'Trades', query: { botId: row.id } }">
-                    <base-button
-                      class="btn-link"
-                      type="info"
-                      size="sm"
-                      icon
-                    >
-                      <i class="tim-icons icon-chart-bar-32"></i>
-                    </base-button>
-                  </router-link>
-                  <base-button
-                    @click.native="editBot(row)"
-                    class="edit btn-link"
-                    type="warning"
-                    size="sm"
-                    icon
-                  >
-                    <i class="tim-icons icon-pencil"></i>
-                  </base-button>
-                  <base-button
-                    @click.native="deleteBot(row)"
-                    class="remove btn-link"
-                    type="danger"
-                    size="sm"
-                    icon
-                  >
-                    <i class="tim-icons icon-simple-remove"></i>
-                  </base-button>
-                </td>
-              </template>
-            </PagedTable>
+            <BotTable
+              :showViewButton="false"
+              :showRefreshButton="false"
+              :showToggleStatusButton="true"
+              :showTradesButton="true"
+              :showEditButton="true"
+              :showDeleteButton="true"
+              @toggle-status="toggleBotStatus"
+              @edit="editBot"
+              @delete="deleteBot"
+            ></BotTable>
           </div>
         </card>
       </div>
@@ -231,9 +171,9 @@ import Card from "@/components/Cards/Card.vue";
 import BasePagination from "@/components/BasePagination.vue";
 import BaseButton from "@/components/BaseButton.vue";
 import BaseInput from "@/components/Inputs/BaseInput.vue";
+import BotTable from "@/components/BotTable.vue";
 import Swal from "sweetalert2";
 import axios from "axios";
-import PagedTable from '@/components/PagedTable.vue';
 import { useRoute, useRouter } from "vue-router";
 
 // Route related

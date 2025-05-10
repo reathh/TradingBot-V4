@@ -9,25 +9,80 @@
       :searchable="true"
       :sortable="true"
       :server-side="true"
-      :fetch-data="fetchBotProfits"
+      :fetch-data="fetchBotData"
       thead-classes="text-primary"
     >
       <template #row="{ row }">
-        <td>{{ row.botId }}</td>
-        <td>{{ row.ticker }}</td>
+        <td>{{ row.botId || row.id }}</td>
+        <td>{{ row.ticker || row.symbol }}</td>
         <td>{{ formatCurrency(row.entryAvgPrice) }}</td>
         <td>{{ formatCurrency(row.exitAvgPrice) }}</td>
-        <td>{{ row.quantity }}</td>
+        <td>{{ row.quantity ? row.quantity.toFixed(4) : '0.0000' }}</td>
         <td>{{ formatCurrency(row.entryFee + row.exitFee) }}</td>
         <td class="text-right" :class="getProfitClass(row.profit)">
           {{ formatCurrency(row.profit) }}
         </td>
         <td class="text-right">
-          <BaseButton type="info" icon size="sm" class="btn-link">
+          <BaseButton 
+            v-if="showViewButton"
+            type="info" 
+            icon 
+            size="sm" 
+            class="btn-link"
+          >
             <i class="tim-icons icon-zoom-split"></i>
           </BaseButton>
-          <BaseButton type="success" icon size="sm" class="btn-link">
+          <BaseButton 
+            v-if="showRefreshButton"
+            type="success" 
+            icon 
+            size="sm" 
+            class="btn-link"
+          >
             <i class="tim-icons icon-refresh-01"></i>
+          </BaseButton>
+          <BaseButton
+            v-if="showToggleStatusButton"
+            class="btn-link"
+            :type="row.enabled ? 'warning' : 'success'"
+            size="sm"
+            icon
+            @click="$emit('toggle-status', row)"
+          >
+            <i :class="row.enabled ? 'tim-icons icon-button-pause' : 'tim-icons icon-button-power'"></i>
+          </BaseButton>
+          <router-link 
+            v-if="showTradesButton" 
+            :to="{ name: 'Trades', query: { botId: row.id || row.botId } }"
+          >
+            <BaseButton
+              class="btn-link"
+              type="info"
+              size="sm"
+              icon
+            >
+              <i class="tim-icons icon-chart-bar-32"></i>
+            </BaseButton>
+          </router-link>
+          <BaseButton
+            v-if="showEditButton"
+            class="edit btn-link"
+            type="warning"
+            size="sm"
+            icon
+            @click="$emit('edit', row)"
+          >
+            <i class="tim-icons icon-pencil"></i>
+          </BaseButton>
+          <BaseButton
+            v-if="showDeleteButton"
+            class="remove btn-link"
+            type="danger"
+            size="sm"
+            icon
+            @click="$emit('delete', row)"
+          >
+            <i class="tim-icons icon-simple-remove"></i>
           </BaseButton>
         </td>
       </template>
@@ -36,10 +91,22 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, defineProps, defineEmits } from "vue";
+import { ElTag } from "element-plus";
 import BaseButton from "@/components/BaseButton.vue";
 import PagedTable from "@/components/PagedTable.vue";
 import botService from "@/services/botService";
+
+const props = defineProps({
+  showViewButton: { type: Boolean, default: true },
+  showRefreshButton: { type: Boolean, default: true },
+  showToggleStatusButton: { type: Boolean, default: false },
+  showTradesButton: { type: Boolean, default: false },
+  showEditButton: { type: Boolean, default: false },
+  showDeleteButton: { type: Boolean, default: false }
+});
+
+const emit = defineEmits(['toggle-status', 'edit', 'delete']);
 
 // Data states
 const pagedResult = ref({
@@ -53,7 +120,7 @@ const pagedResult = ref({
 const currentPage = ref(1);
 const error = ref(null);
 
-// Table columns definition
+// Table columns
 const tableColumns = [
   { key: 'botId', label: 'BOT ID' },
   { key: 'ticker', label: 'TICKER' },
@@ -67,6 +134,7 @@ const tableColumns = [
 
 // Format currency with $ symbol and 2 decimal places
 const formatCurrency = (value) => {
+  if (value === undefined || value === null) return 'N/A';
   return `$${parseFloat(value).toFixed(2)}`;
 };
 
@@ -76,8 +144,8 @@ const getProfitClass = (profit) => {
   return profit > 0 ? 'text-success' : 'text-danger';
 };
 
-// Fetch bot profits with pagination
-const fetchBotProfits = async (params) => {
+// Fetch bot data with pagination
+const fetchBotData = async (params) => {
   try {
     const response = await botService.getTrades({ 
       page: params?.page || currentPage.value, 
@@ -95,12 +163,12 @@ const fetchBotProfits = async (params) => {
     }
   } catch (e) {
     error.value = e;
-    console.error('Error fetching trades:', e);
+    console.error('Error fetching data:', e);
   }
 };
 
 // Fetch data on mount
-onMounted(() => fetchBotProfits());
+onMounted(() => fetchBotData());
 </script>
 
 <style>
@@ -137,4 +205,4 @@ onMounted(() => fetchBotProfits());
 .white-content :deep(.el-select) {
   --el-fill-color-blank: #ffffff !important;
 }
-</style>
+</style> 
