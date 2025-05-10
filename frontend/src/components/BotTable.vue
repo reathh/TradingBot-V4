@@ -124,8 +124,8 @@ const error = ref(null);
 const tableColumns = [
   { key: 'botId', label: 'BOT ID' },
   { key: 'ticker', label: 'TICKER' },
-  { key: 'entryAvgPrice', label: 'ENTRY AVG. PRICE' },
-  { key: 'exitAvgPrice', label: 'EXIT AVG. PRICE' },
+  { key: 'entryAvgPrice', label: 'ENTRY PRICE' },
+  { key: 'exitAvgPrice', label: 'EXIT PRICE' },
   { key: 'quantity', label: 'QUANTITY' },
   { key: 'fees', label: 'FEES' },
   { key: 'profit', label: 'PROFIT', align: 'right' },

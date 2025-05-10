@@ -22,7 +22,7 @@
         <td class="text-right" :class="getProfitClass(row.profit)">
           {{ formatCurrency(row.profit) }}
         </td>
-        <td class="text-right">
+        <td class="text-center">
           <BaseButton 
             type="info" 
             icon 
@@ -30,7 +30,7 @@
             class="btn-link"
             @click="viewTradeDetails(row)"
           >
-            <i class="tim-icons icon-chart-pie-36"></i>
+            <i class="tim-icons icon-zoom-split"></i>
           </BaseButton>
         </td>
       </template>
@@ -169,7 +169,7 @@ const tableColumns = [
   { key: 'quantity', label: 'QUANTITY' },
   { key: 'fees', label: 'FEES' },
   { key: 'profit', label: 'PROFIT', align: 'right' },
-  { key: 'actions', label: 'ACTIONS', align: 'right' }
+  { key: 'actions', label: 'ACTIONS', align: 'center' }
 ];
 
 // Format currency with $ symbol and 2 decimal places
