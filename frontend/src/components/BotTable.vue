@@ -13,30 +13,36 @@
       thead-classes="text-primary"
     >
       <template #row="{ row }">
-        <td>{{ row.botId || row.id }}</td>
-        <td>{{ row.ticker || row.symbol }}</td>
-        <td>{{ formatCurrency(row.entryPrice) }}</td>
-        <td>{{ formatCurrency(row.exitPrice) }}</td>
+        <td>{{ row.id }}</td>
+        <td>{{ row.name }}</td>
+        <td>{{ row.symbol }}</td>
         <td>{{ formatNumber(row.quantity) }}</td>
-        <td>{{ formatCurrency(row.entryFee + row.exitFee) }}</td>
-        <td class="text-right" :class="getProfitClass(row.profit)">
-          {{ formatCurrency(row.profit) }}
+        <td>
+          <el-tag :type="row.enabled ? 'success' : 'info'">
+            {{ row.enabled ? 'Active' : 'Inactive' }}
+          </el-tag>
+        </td>
+        <td>{{ formatCurrency(row.minPrice) }} - {{ formatCurrency(row.maxPrice) }}</td>
+        <td>
+          <el-tag :type="row.isLong ? 'success' : 'danger'">
+            {{ row.isLong ? 'Long' : 'Short' }}
+          </el-tag>
         </td>
         <td class="text-right">
-          <BaseButton 
+          <BaseButton
             v-if="showViewButton"
-            type="info" 
-            icon 
-            size="sm" 
+            type="info"
+            icon
+            size="sm"
             class="btn-link"
           >
             <i class="tim-icons icon-zoom-split"></i>
           </BaseButton>
-          <BaseButton 
+          <BaseButton
             v-if="showRefreshButton"
-            type="success" 
-            icon 
-            size="sm" 
+            type="success"
+            icon
+            size="sm"
             class="btn-link"
           >
             <i class="tim-icons icon-refresh-01"></i>
@@ -51,9 +57,9 @@
           >
             <i :class="row.enabled ? 'tim-icons icon-button-pause' : 'tim-icons icon-button-power'"></i>
           </BaseButton>
-          <router-link 
-            v-if="showTradesButton" 
-            :to="{ name: 'Trades', query: { botId: row.id || row.botId } }"
+          <router-link
+            v-if="showTradesButton"
+            :to="{ name: 'Trades', query: { botId: row.id } }"
           >
             <BaseButton
               class="btn-link"
@@ -96,6 +102,7 @@ import { ElTag } from "element-plus";
 import BaseButton from "@/components/BaseButton.vue";
 import PagedTable from "@/components/PagedTable.vue";
 import botService from "@/services/botService";
+import apiClient from "@/services/api";
 import { formatCurrency, formatNumber, getProfitClass } from "@/util/formatters";
 
 const props = defineProps({
@@ -121,38 +128,41 @@ const pagedResult = ref({
 const currentPage = ref(1);
 const error = ref(null);
 
-// Table columns
+// Table columns for bots (not trades)
 const tableColumns = [
-  { key: 'botId', label: 'BOT ID' },
-  { key: 'ticker', label: 'TICKER' },
-  { key: 'entryPrice', label: 'ENTRY PRICE' },
-  { key: 'exitPrice', label: 'EXIT PRICE' },
+  { key: 'id', label: 'ID' },
+  { key: 'name', label: 'NAME' },
+  { key: 'symbol', label: 'SYMBOL' },
   { key: 'quantity', label: 'QUANTITY' },
-  { key: 'fees', label: 'FEES' },
-  { key: 'profit', label: 'PROFIT', align: 'right' },
+  { key: 'status', label: 'STATUS' },
+  { key: 'minMaxPrice', label: 'MIN/MAX PRICE' },
+  { key: 'direction', label: 'DIRECTION' },
   { key: 'actions', label: 'ACTIONS', align: 'right' }
 ];
 
 // Fetch bot data with pagination
 const fetchBotData = async (params) => {
   try {
-    const response = await botService.getTrades({ 
-      page: params?.page || currentPage.value, 
-      pageSize: params?.pageSize || 10,
-      sortKey: params?.sortKey,
-      sortDirection: params?.sortDirection
+    const response = await apiClient.get('/bots', {
+      params: {
+        page: params?.page || currentPage.value,
+        pageSize: params?.pageSize || 10,
+        searchQuery: params?.searchQuery || undefined,
+        sortKey: params?.sortKey,
+        sortDirection: params?.sortDirection
+      }
     });
-    
+
     // Update local state with response data
     pagedResult.value = response.data;
-    
+
     // Sync the current page and page size
     if (params) {
       currentPage.value = params.page || currentPage.value;
     }
   } catch (e) {
     error.value = e;
-    console.error('Error fetching data:', e);
+    console.error('Error fetching bots data:', e);
   }
 };
 
@@ -194,4 +204,4 @@ onMounted(() => fetchBotData());
 .white-content :deep(.el-select) {
   --el-fill-color-blank: #ffffff !important;
 }
-</style> 
+</style>

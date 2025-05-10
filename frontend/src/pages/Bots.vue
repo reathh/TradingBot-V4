@@ -231,7 +231,7 @@ const botTableColumns = [
 // Fetch specific bot by ID
 async function fetchBotById(id) {
   try {
-    const response = await axios.get(`/api/bots/${id}`);
+    const response = await axios.get(`/bots/${id}`);
     // If we're in single bot view, display only this bot
     if (isSingleBotView.value) {
       pagedResult.value = {
@@ -266,7 +266,7 @@ async function fetchBots(params) {
   }
 
   try {
-    const response = await axios.get('/api/bots', {
+    const response = await axios.get('/bots', {
       params: {
         page: params?.page || currentPage.value,
         pageSize: params?.pageSize || 10,
