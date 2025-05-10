@@ -27,7 +27,7 @@ export default {
      */
     getTrades ( { page = 1, pageSize = 10, period = 'month', botId = null } = {} )
     {
-        return apiClient.get( '/api/trades', {
+        return apiClient.get( '/trades', {
             params: { page, pageSize, period, botId }
         } );
     },

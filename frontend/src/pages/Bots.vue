@@ -234,6 +234,12 @@ import BaseInput from "@/components/Inputs/BaseInput.vue";
 import Swal from "sweetalert2";
 import axios from "axios";
 import PagedTable from '@/components/PagedTable.vue';
+import { useRoute, useRouter } from "vue-router";
+
+// Route related
+const route = useRoute();
+const router = useRouter();
+const isSingleBotView = computed(() => route.name === 'Bot' && route.params.id);
 
 // State variables
 const pagedResult = ref({
@@ -282,8 +288,43 @@ const botTableColumns = [
   { key: 'actions', label: 'Actions', minWidth: 200, align: 'right' },
 ];
 
+// Fetch specific bot by ID
+async function fetchBotById(id) {
+  try {
+    const response = await axios.get(`/api/bots/${id}`);
+    // If we're in single bot view, display only this bot
+    if (isSingleBotView.value) {
+      pagedResult.value = {
+        page: 1,
+        pageSize: 1,
+        totalPages: 1,
+        totalCount: 1,
+        items: [response.data]
+      };
+    }
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching bot by ID:', error);
+    Swal.fire({
+      title: 'Error',
+      text: 'Failed to load bot details',
+      icon: 'error'
+    });
+    // Redirect back to bots list if there's an error
+    if (isSingleBotView.value) {
+      router.push({ name: 'Bots' });
+    }
+  }
+}
+
 // Fetch bots with pagination and search
 async function fetchBots(params) {
+  // If we're in single bot view, get that specific bot
+  if (isSingleBotView.value) {
+    await fetchBotById(route.params.id);
+    return;
+  }
+
   try {
     const response = await axios.get('/api/bots', {
       params: {
@@ -440,7 +481,11 @@ function formatNumberInput(event, field) {
 
 // Fetch bots on mount
 onMounted(() => {
-  fetchBots();
+  if (isSingleBotView.value) {
+    fetchBotById(route.params.id);
+  } else {
+    fetchBots();
+  }
 });
 </script>
 

@@ -1,8 +1,9 @@
 import axios from 'axios';
 
-// In Replit, both frontend and backend must share the same port
-// We'll use a proxy in vite.config.js to forward API requests to the backend
-let baseURL = '/api';
+// Set the base URL to the relative API path
+// This will work regardless of whether frontend is hosted at the same origin as API
+// or if it's accessed via HTTP or HTTPS
+const baseURL = '/api';
 
 const apiClient = axios.create({
   baseURL,
@@ -38,6 +39,14 @@ apiClient.interceptors.response.use(
       localStorage.removeItem('token');
       window.location.href = '/auth/login';
     }
+    
+    // Log error information to help with debugging
+    console.error('API Error:', error.message);
+    if (error.response) {
+      console.error('Status:', error.response.status);
+      console.error('Data:', error.response.data);
+    }
+    
     return Promise.reject(error);
   }
 );

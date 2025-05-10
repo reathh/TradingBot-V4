@@ -79,7 +79,7 @@ const getProfitClass = (profit) => {
 // Fetch bot profits with pagination
 const fetchBotProfits = async (params) => {
   try {
-    const response = await botService.getBotProfits({ 
+    const response = await botService.getTrades({ 
       page: params?.page || currentPage.value, 
       pageSize: params?.pageSize || 10,
       sortKey: params?.sortKey,
@@ -95,7 +95,7 @@ const fetchBotProfits = async (params) => {
     }
   } catch (e) {
     error.value = e;
-    console.error('Error fetching bot profits:', e);
+    console.error('Error fetching trades:', e);
   }
 };
 

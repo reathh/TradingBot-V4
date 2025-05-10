@@ -44,6 +44,12 @@ const routes = [
         meta: { requiresAuth: true },
       },
       {
+        path: "bot/:id",
+        name: "Bot",
+        component: Bots,
+        meta: { requiresAuth: true },
+      },
+      {
         path: "trades",
         name: "Trades",
         component: Trades,

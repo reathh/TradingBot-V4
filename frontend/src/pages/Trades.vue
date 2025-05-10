@@ -57,22 +57,25 @@
                 <td>{{ row.tradeId }}</td>
                 <td>{{ row.symbol }}</td>
                 <td>
-                  <span :class="row.isLong ? 'text-success' : 'text-danger'">
-                    {{ row.isLong ? 'Long' : 'Short' }}
+                  <span :class="row.direction === 'Buy' ? 'text-success' : 'text-danger'">
+                    {{ row.direction }}
                   </span>
                 </td>
-                <td>{{ row.entryAvgPrice.toFixed(2) }}</td>
-                <td>{{ row.exitAvgPrice ? row.exitAvgPrice.toFixed(2) : 'N/A' }}</td>
-                <td>{{ row.quantity.toFixed(4) }}</td>
+                <td>{{ row.entryPrice?.toFixed(2) ?? 'N/A' }}</td>
+                <td>{{ row.exitPrice?.toFixed(2) ?? 'N/A' }}</td>
+                <td>{{ row.entryAvgPrice?.toFixed(2) ?? 'N/A' }}</td>
+                <td>{{ row.exitAvgPrice?.toFixed(2) ?? 'N/A' }}</td>
+                <td>{{ row.quantity?.toFixed(4) ?? 'N/A' }}</td>
+                <td>{{ row.quantityFilled?.toFixed(4) ?? 'N/A' }}</td>
                 <td>
                   <span :class="row.profit > 0 ? 'text-success' : 'text-danger'">
-                    {{ row.profit ? row.profit.toFixed(2) : 'N/A' }}
+                    {{ row.profit != null ? row.profit.toFixed(2) : 'N/A' }}
                   </span>
                 </td>
                 <td>{{ formatDate(row.entryTime) }}</td>
                 <td>{{ formatDate(row.exitTime) }}</td>
                 <td>
-                  <router-link :to="{ name: 'Bot', params: { id: row.botId } }" class="text-info">
+                  <router-link :to="{ name: 'Bot', params: { id: row.botId.toString() } }" class="text-info">
                     {{ getBotName(row.botId) }}
                   </router-link>
                 </td>
@@ -113,8 +116,8 @@
         <div class="row mb-3">
           <div class="col-md-6">
             <strong>Direction:</strong>
-            <span :class="selectedTrade.isLong ? 'text-success' : 'text-danger'">
-              {{ selectedTrade.isLong ? 'Long' : 'Short' }}
+            <span :class="selectedTrade.direction === 'Buy' ? 'text-success' : 'text-danger'">
+              {{ selectedTrade.direction }}
             </span>
           </div>
           <div class="col-md-6">
@@ -128,19 +131,19 @@
         <h5 class="mt-4">Entry Details</h5>
         <div class="row mb-3">
           <div class="col-md-6">
-            <strong>Price:</strong> {{ selectedTrade.entryPrice.toFixed(2) }}
+            <strong>Price:</strong> {{ selectedTrade.entryPrice?.toFixed(2) ?? 'N/A' }}
           </div>
           <div class="col-md-6">
-            <strong>Average Fill:</strong> {{ selectedTrade.entryAvgPrice.toFixed(2) }}
+            <strong>Average Fill:</strong> {{ selectedTrade.entryAvgPrice?.toFixed(2) ?? 'N/A' }}
           </div>
         </div>
 
         <div class="row mb-3">
           <div class="col-md-6">
-            <strong>Quantity:</strong> {{ selectedTrade.quantity.toFixed(4) }}
+            <strong>Quantity:</strong> {{ selectedTrade.quantity?.toFixed(4) ?? 'N/A' }}
           </div>
           <div class="col-md-6">
-            <strong>Fee:</strong> {{ selectedTrade.entryFee.toFixed(4) }}
+            <strong>Fee:</strong> {{ selectedTrade.entryFee?.toFixed(4) ?? 'N/A' }}
           </div>
         </div>
 
@@ -153,16 +156,16 @@
         <h5 class="mt-4">Exit Details</h5>
         <div class="row mb-3">
           <div class="col-md-6">
-            <strong>Price:</strong> {{ selectedTrade.exitPrice.toFixed(2) }}
+            <strong>Price:</strong> {{ selectedTrade.exitPrice?.toFixed(2) ?? 'N/A' }}
           </div>
           <div class="col-md-6">
-            <strong>Average Fill:</strong> {{ selectedTrade.exitAvgPrice ? selectedTrade.exitAvgPrice.toFixed(2) : 'N/A' }}
+            <strong>Average Fill:</strong> {{ selectedTrade.exitAvgPrice?.toFixed(2) ?? 'N/A' }}
           </div>
         </div>
 
         <div class="row mb-3">
           <div class="col-md-6">
-            <strong>Fee:</strong> {{ selectedTrade.exitFee.toFixed(4) }}
+            <strong>Fee:</strong> {{ selectedTrade.exitFee?.toFixed(4) ?? 'N/A' }}
           </div>
           <div class="col-md-6">
             <strong>Status:</strong> {{ selectedTrade.isCompleted ? 'Completed' : 'Open' }}
@@ -192,7 +195,7 @@ import {
 import Card from "@/components/Cards/Card.vue";
 import BaseButton from "@/components/BaseButton.vue";
 import PagedTable from '@/components/PagedTable.vue';
-import axios from "axios";
+import apiClient from "@/services/api";
 
 // State variables
 const isLoading = ref(false);
@@ -225,9 +228,12 @@ const tradeColumns = [
   { key: 'tradeId', label: 'ID', minWidth: 70 },
   { key: 'symbol', label: 'Symbol', minWidth: 100 },
   { key: 'direction', label: 'Direction', minWidth: 100 },
-  { key: 'entryAvgPrice', label: 'Entry Price', minWidth: 120 },
-  { key: 'exitAvgPrice', label: 'Exit Price', minWidth: 120 },
+  { key: 'entryPrice', label: 'Entry Price', minWidth: 120 },
+  { key: 'exitPrice', label: 'Exit Price', minWidth: 120 },
+  { key: 'entryAvgPrice', label: 'Entry Avg Price', minWidth: 120 },
+  { key: 'exitAvgPrice', label: 'Exit Avg Price', minWidth: 120 },
   { key: 'quantity', label: 'Quantity', minWidth: 120 },
+  { key: 'quantityFilled', label: 'Filled', minWidth: 120 },
   { key: 'profit', label: 'Profit', minWidth: 120 },
   { key: 'entryTime', label: 'Entry Date', minWidth: 160 },
   { key: 'exitTime', label: 'Exit Date', minWidth: 160 },
@@ -239,7 +245,7 @@ const tradeColumns = [
 async function fetchTrades(params) {
   isLoading.value = true;
   try {
-    const response = await axios.get('/api/trades', {
+    const response = await apiClient.get('trades', {
       params: {
         page: params?.page || currentPage.value,
         pageSize: params?.pageSize || 10,
@@ -267,7 +273,7 @@ async function fetchTrades(params) {
 // Fetch available bots for the filter dropdown
 async function fetchBots() {
   try {
-    const response = await axios.get('/api/bots', {
+    const response = await apiClient.get('bots', {
       params: { pageSize: 100 } // Get a larger number of bots for the filter
     });
     availableBots.value = response.data.items;
