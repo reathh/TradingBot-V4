@@ -70,16 +70,19 @@
               <i class="tim-icons icon-chart-bar-32"></i>
             </BaseButton>
           </router-link>
-          <BaseButton
+          <router-link
             v-if="showEditButton"
-            class="edit btn-link"
-            type="warning"
-            size="sm"
-            icon
-            @click="$emit('edit', row)"
+            :to="{ name: 'BotDetails', params: { id: row.id } }"
           >
-            <i class="tim-icons icon-pencil"></i>
-          </BaseButton>
+            <BaseButton
+              class="edit btn-link"
+              type="warning"
+              size="sm"
+              icon
+            >
+              <i class="tim-icons icon-pencil"></i>
+            </BaseButton>
+          </router-link>
           <BaseButton
             v-if="showDeleteButton"
             class="remove btn-link"

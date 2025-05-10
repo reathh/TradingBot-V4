@@ -19,7 +19,7 @@
               :showEditButton="true"
               :showDeleteButton="true"
               @toggle-status="toggleBotStatus"
-              @edit="editBot"
+              @edit="navigateToBotDetails"
               @delete="deleteBot"
             ></BotTable>
           </div>
@@ -27,10 +27,10 @@
       </div>
     </div>
 
-    <!-- Create/Edit Bot Modal -->
+    <!-- Create New Bot Modal -->
     <el-dialog
-      :title="isEditing ? 'Edit Bot' : 'Create New Bot'"
-      v-model="showCreateEditModal"
+      title="Create New Bot"
+      v-model="showCreateModal"
       width="600px"
     >
       <el-form ref="botForm" :model="currentBot" label-position="top">
@@ -144,17 +144,15 @@
       </el-form>
 
       <span slot="footer" class="dialog-footer">
-        <base-button @click="showCreateEditModal = false" type="danger">Cancel</base-button>
-        <base-button @click="saveBot" type="primary">{{ isEditing ? 'Update' : 'Create' }}</base-button>
+        <base-button @click="showCreateModal = false" type="danger">Cancel</base-button>
+        <base-button @click="createBot" type="primary">Create</base-button>
       </span>
     </el-dialog>
-
-    <!-- Trade modal removed, now using dedicated Trades page -->
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import {
   ElTable,
   ElTableColumn,
@@ -174,25 +172,15 @@ import BaseInput from "@/components/Inputs/BaseInput.vue";
 import BotTable from "@/components/BotTable.vue";
 import Swal from "sweetalert2";
 import axios from "axios";
-import { useRoute, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 
-// Route related
-const route = useRoute();
+// Router instance
 const router = useRouter();
-const isSingleBotView = computed(() => route.name === 'Bot' && route.params.id);
 
 // State variables
-const pagedResult = ref({
-  page: 1,
-  pageSize: 10,
-  totalPages: 0,
-  totalCount: 0,
-  items: []
-});
+const showCreateModal = ref(false);
 const currentPage = ref(1);
 const searchTerm = ref('');
-const showCreateEditModal = ref(false);
-const isEditing = ref(false);
 
 // Default bot model
 const defaultBot = {
@@ -217,56 +205,10 @@ const defaultBot = {
 
 const currentBot = ref({...defaultBot});
 
-const botTableColumns = [
-  { key: 'id', label: 'ID', minWidth: 70 },
-  { key: 'name', label: 'Name', minWidth: 200 },
-  { key: 'symbol', label: 'Symbol', minWidth: 120 },
-  { key: 'quantity', label: 'Quantity', minWidth: 100 },
-  { key: 'status', label: 'Status', minWidth: 100 },
-  { key: 'minMaxPrice', label: 'Min/Max Price', minWidth: 150 },
-  { key: 'direction', label: 'Direction', minWidth: 100 },
-  { key: 'actions', label: 'Actions', minWidth: 200, align: 'right' },
-];
-
-// Fetch specific bot by ID
-async function fetchBotById(id) {
-  try {
-    const response = await axios.get(`/bots/${id}`);
-    // If we're in single bot view, display only this bot
-    if (isSingleBotView.value) {
-      pagedResult.value = {
-        page: 1,
-        pageSize: 1,
-        totalPages: 1,
-        totalCount: 1,
-        items: [response.data]
-      };
-    }
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching bot by ID:', error);
-    Swal.fire({
-      title: 'Error',
-      text: 'Failed to load bot details',
-      icon: 'error'
-    });
-    // Redirect back to bots list if there's an error
-    if (isSingleBotView.value) {
-      router.push({ name: 'Bots' });
-    }
-  }
-}
-
 // Fetch bots with pagination and search
 async function fetchBots(params) {
-  // If we're in single bot view, get that specific bot
-  if (isSingleBotView.value) {
-    await fetchBotById(route.params.id);
-    return;
-  }
-
   try {
-    const response = await axios.get('/bots', {
+    return await axios.get('/bots', {
       params: {
         page: params?.page || currentPage.value,
         pageSize: params?.pageSize || 10,
@@ -275,16 +217,6 @@ async function fetchBots(params) {
         sortDirection: params?.sortDirection
       }
     });
-
-    pagedResult.value = response.data;
-
-    // Sync the current page and page size
-    if (params) {
-      currentPage.value = params.page || currentPage.value;
-      if (params.searchQuery !== undefined) {
-        searchTerm.value = params.searchQuery;
-      }
-    }
   } catch (error) {
     console.error('Error fetching bots:', error);
     Swal.fire({
@@ -295,47 +227,33 @@ async function fetchBots(params) {
   }
 }
 
-function editBot(bot) {
-  isEditing.value = true;
-  currentBot.value = {...bot};
-  showCreateEditModal.value = true;
+function navigateToBotDetails(bot) {
+  router.push({ name: 'BotDetails', params: { id: bot.id }});
 }
 
 function createNewBot() {
-  isEditing.value = false;
   currentBot.value = {...defaultBot};
-  showCreateEditModal.value = true;
+  showCreateModal.value = true;
 }
 
-async function saveBot() {
+async function createBot() {
   try {
-    if (isEditing.value) {
-      await axios.put(`/api/bots/${currentBot.value.id}`, currentBot.value);
-      Swal.fire({
-        title: 'Success',
-        text: 'Bot updated successfully',
-        icon: 'success',
-        timer: 2000,
-        showConfirmButton: false
-      });
-    } else {
-      await axios.post('/api/bots', currentBot.value);
-      Swal.fire({
-        title: 'Success',
-        text: 'Bot created successfully',
-        icon: 'success',
-        timer: 2000,
-        showConfirmButton: false
-      });
-    }
-    showCreateEditModal.value = false;
-    // Refresh the bots list
-    fetchBots();
+    await axios.post('/bots', currentBot.value);
+    Swal.fire({
+      title: 'Success',
+      text: 'Bot created successfully',
+      icon: 'success',
+      timer: 2000,
+      showConfirmButton: false
+    });
+    showCreateModal.value = false;
+    // Refresh the bots list through the BotTable component
+    // which handles its own data fetching
   } catch (error) {
-    console.error('Error saving bot:', error);
+    console.error('Error creating bot:', error);
     Swal.fire({
       title: 'Error',
-      text: error.response?.data?.message || 'Failed to save bot',
+      text: error.response?.data?.message || 'Failed to create bot',
       icon: 'error'
     });
   }
@@ -354,14 +272,13 @@ async function deleteBot(bot) {
   }).then(async (result) => {
     if (result.isConfirmed) {
       try {
-        await axios.delete(`/api/bots/${bot.id}`);
+        await axios.delete(`/bots/${bot.id}`);
         Swal.fire(
           'Deleted!',
           'The bot has been deleted.',
           'success'
         );
-        // Refresh the bots list
-        fetchBots();
+        // Refresh will happen automatically through the BotTable component
       } catch (error) {
         console.error('Error deleting bot:', error);
         Swal.fire({
@@ -376,7 +293,7 @@ async function deleteBot(bot) {
 
 async function toggleBotStatus(bot) {
   try {
-    await axios.post(`/api/bots/${bot.id}/toggle`);
+    await axios.post(`/bots/${bot.id}/toggle`);
     Swal.fire({
       title: 'Success',
       text: `Bot ${!bot.enabled ? 'activated' : 'deactivated'} successfully`,
@@ -384,8 +301,7 @@ async function toggleBotStatus(bot) {
       timer: 2000,
       showConfirmButton: false
     });
-    // Refresh the bots list to get updated status
-    fetchBots();
+    // Refresh will happen automatically through the BotTable component
   } catch (error) {
     console.error('Error toggling bot status:', error);
     Swal.fire({
@@ -395,8 +311,6 @@ async function toggleBotStatus(bot) {
     });
   }
 }
-
-// Trade related functions moved to Trades.vue page
 
 // Helper function to ensure decimal separator is a dot
 function formatNumberInput(event, field) {
@@ -412,15 +326,6 @@ function formatNumberInput(event, field) {
     currentBot.value[field] = parseFloat(correctedValue);
   }
 }
-
-// Fetch bots on mount
-onMounted(() => {
-  if (isSingleBotView.value) {
-    fetchBotById(route.params.id);
-  } else {
-    fetchBots();
-  }
-});
 </script>
 
 <style>

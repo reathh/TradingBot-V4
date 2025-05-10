@@ -13,6 +13,7 @@ import ChartsPage from "@/pages/Charts.vue";
 import UserProfile from "@/pages/UserProfile.vue";
 import Pricing from "@/pages/Pricing.vue";
 import Bots from "@/pages/Bots.vue";
+import BotDetails from "@/pages/BotDetails.vue";
 import Trades from "@/pages/Trades.vue";
 
 // Tables
@@ -45,8 +46,8 @@ const routes = [
       },
       {
         path: "bot/:id",
-        name: "Bot",
-        component: Bots,
+        name: "BotDetails",
+        component: BotDetails,
         meta: { requiresAuth: true },
       },
       {
