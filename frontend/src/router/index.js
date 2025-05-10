@@ -13,6 +13,7 @@ import ChartsPage from "@/pages/Charts.vue";
 import UserProfile from "@/pages/UserProfile.vue";
 import Pricing from "@/pages/Pricing.vue";
 import Bots from "@/pages/Bots.vue";
+import Trades from "@/pages/Trades.vue";
 
 // Tables
 import RegularTables from "@/pages/Tables/RegularTables.vue";
@@ -40,6 +41,12 @@ const routes = [
         path: "bots",
         name: "Bots",
         component: Bots,
+        meta: { requiresAuth: true },
+      },
+      {
+        path: "trades",
+        name: "Trades",
+        component: Trades,
         meta: { requiresAuth: true },
       },
       {
@@ -133,16 +140,17 @@ const routes = [
   },
 ];
 
-const router = createRouter({
+const router = createRouter( {
   history: createWebHistory(),
   routes,
   linkActiveClass: "active",
-});
+} );
 
-router.beforeEach((to, from, next) => {
+router.beforeEach( ( to, from, next ) =>
+{
   const authStore = useAuthStore();
-  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
-  const guestOnly = to.matched.some((record) => record.meta.guestOnly);
+  const requiresAuth = to.matched.some( ( record ) => record.meta.requiresAuth );
+  const guestOnly = to.matched.some( ( record ) => record.meta.guestOnly );
   next();
   // if (requiresAuth && !authStore.isAuthenticated) {
   //   next("/auth/login");
@@ -151,6 +159,6 @@ router.beforeEach((to, from, next) => {
   // } else {
   //   next();
   // }
-});
+} );
 
 export default router;

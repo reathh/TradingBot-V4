@@ -31,19 +31,19 @@ namespace TradingBot.Controllers
             if (pageSize < 1 || pageSize > 100) pageSize = 10;
 
             var query = _context.Bots.AsQueryable();
-            
+
             // Apply search filter if provided
             if (!string.IsNullOrWhiteSpace(search))
             {
                 search = search.ToLower();
-                query = query.Where(b => b.Name.ToLower().Contains(search) || 
+                query = query.Where(b => b.Name.ToLower().Contains(search) ||
                                          b.Symbol.ToLower().Contains(search));
             }
 
             // Get total count for pagination
             var totalCount = await query.CountAsync();
             var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-            
+
             // Apply pagination
             var bots = await query
                 .OrderBy(b => b.Id)
@@ -127,18 +127,6 @@ namespace TradingBot.Controllers
             return NoContent();
         }
 
-        // This endpoint has been deprecated in favor of the /api/dashboard/bot-profits endpoint
-        // which supports pagination and filtering by bot ID.
-        //
-        // GET: api/Bots/5/trades
-        [HttpGet("{id}/trades")]
-        [Obsolete("This endpoint is deprecated. Use '/api/dashboard/bot-profits?botId=X' instead")]
-        public ActionResult<IEnumerable<BotTradeDto>> GetBotTrades(int id)
-        {
-            // Return a message indicating this endpoint is deprecated
-            return BadRequest(new { message = "This endpoint is deprecated. Use '/api/dashboard/bot-profits?botId=" + id + "' instead" });
-        }
-
         // POST: api/Bots/5/toggle
         [HttpPost("{id}/toggle")]
         public async Task<IActionResult> ToggleBotStatus(int id)
@@ -179,4 +167,4 @@ namespace TradingBot.Controllers
         public DateTime? ExitTime { get; set; }
         public bool IsCompleted { get; set; }
     }
-} 
+}

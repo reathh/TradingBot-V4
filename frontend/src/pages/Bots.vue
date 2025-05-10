@@ -9,7 +9,7 @@
               <i class="tim-icons icon-simple-add"></i>
             </base-button>
           </div>
-          
+
           <div>
             <PagedTable
               :columns="botTableColumns"
@@ -51,15 +51,16 @@
                   >
                     <i :class="row.enabled ? 'tim-icons icon-button-pause' : 'tim-icons icon-button-power'"></i>
                   </base-button>
-                  <base-button
-                    @click.native="viewBotTrades(row)"
-                    class="btn-link"
-                    type="info"
-                    size="sm"
-                    icon
-                  >
-                    <i class="tim-icons icon-chart-bar-32"></i>
-                  </base-button>
+                  <router-link :to="{ name: 'Trades', query: { botId: row.id } }">
+                    <base-button
+                      class="btn-link"
+                      type="info"
+                      size="sm"
+                      icon
+                    >
+                      <i class="tim-icons icon-chart-bar-32"></i>
+                    </base-button>
+                  </router-link>
                   <base-button
                     @click.native="editBot(row)"
                     class="edit btn-link"
@@ -85,7 +86,7 @@
         </card>
       </div>
     </div>
-    
+
     <!-- Create/Edit Bot Modal -->
     <el-dialog
       :title="isEditing ? 'Edit Bot' : 'Create New Bot'"
@@ -96,11 +97,11 @@
         <el-form-item label="Bot Name" required>
           <el-input v-model="currentBot.name" placeholder="Enter bot name"></el-input>
         </el-form-item>
-        
+
         <el-form-item label="Trading Symbol" required>
           <el-input v-model="currentBot.symbol" placeholder="e.g. BTCUSDT"></el-input>
         </el-form-item>
-        
+
         <div class="row">
           <div class="col-md-6">
             <el-form-item label="API Public Key" required>
@@ -113,7 +114,7 @@
             </el-form-item>
           </div>
         </div>
-        
+
         <div class="row">
           <div class="col-md-6">
             <el-form-item label="Trade Direction">
@@ -125,24 +126,24 @@
           </div>
           <div class="col-md-6">
             <el-form-item label="Trade Quantity" required>
-              <el-input 
-                v-model.number="currentBot.quantity" 
-                type="number" 
-                step="0.0001" 
+              <el-input
+                v-model.number="currentBot.quantity"
+                type="number"
+                step="0.0001"
                 placeholder="Enter quantity"
                 @input="formatNumberInput($event, 'quantity')"
               ></el-input>
             </el-form-item>
           </div>
         </div>
-        
+
         <div class="row">
           <div class="col-md-6">
             <el-form-item label="Min Price">
-              <el-input 
-                v-model.number="currentBot.minPrice" 
-                type="number" 
-                step="0.01" 
+              <el-input
+                v-model.number="currentBot.minPrice"
+                type="number"
+                step="0.01"
                 placeholder="Min price"
                 @input="formatNumberInput($event, 'minPrice')"
               ></el-input>
@@ -150,24 +151,24 @@
           </div>
           <div class="col-md-6">
             <el-form-item label="Max Price">
-              <el-input 
-                v-model.number="currentBot.maxPrice" 
-                type="number" 
-                step="0.01" 
+              <el-input
+                v-model.number="currentBot.maxPrice"
+                type="number"
+                step="0.01"
                 placeholder="Max price"
                 @input="formatNumberInput($event, 'maxPrice')"
               ></el-input>
             </el-form-item>
           </div>
         </div>
-        
+
         <div class="row">
           <div class="col-md-6">
             <el-form-item label="Entry Step" required>
-              <el-input 
-                v-model.number="currentBot.entryStep" 
-                type="number" 
-                step="0.01" 
+              <el-input
+                v-model.number="currentBot.entryStep"
+                type="number"
+                step="0.01"
                 placeholder="Entry step"
                 @input="formatNumberInput($event, 'entryStep')"
               ></el-input>
@@ -175,95 +176,40 @@
           </div>
           <div class="col-md-6">
             <el-form-item label="Exit Step" required>
-              <el-input 
-                v-model.number="currentBot.exitStep" 
-                type="number" 
-                step="0.01" 
+              <el-input
+                v-model.number="currentBot.exitStep"
+                type="number"
+                step="0.01"
                 placeholder="Exit step"
                 @input="formatNumberInput($event, 'exitStep')"
               ></el-input>
             </el-form-item>
           </div>
         </div>
-        
+
         <el-form-item>
           <el-checkbox v-model="currentBot.placeOrdersInAdvance">Place orders in advance</el-checkbox>
         </el-form-item>
-        
+
         <el-form-item v-if="currentBot.placeOrdersInAdvance" label="Orders in Advance">
-          <el-input 
-            v-model.number="currentBot.ordersInAdvance" 
-            type="number" 
-            min="1" 
-            max="1000" 
+          <el-input
+            v-model.number="currentBot.ordersInAdvance"
+            type="number"
+            min="1"
+            max="1000"
             placeholder="Number of orders"
             @input="formatNumberInput($event, 'ordersInAdvance')"
           ></el-input>
         </el-form-item>
       </el-form>
-      
+
       <span slot="footer" class="dialog-footer">
         <base-button @click="showCreateEditModal = false" type="danger">Cancel</base-button>
         <base-button @click="saveBot" type="primary">{{ isEditing ? 'Update' : 'Create' }}</base-button>
       </span>
     </el-dialog>
-    
-    <!-- Bot Trades Modal -->
-    <el-dialog
-      title="Bot Trades"
-      v-model="showTradesModal"
-      width="800px"
-    >
-      <el-table :data="botTrades" :empty-text="isLoadingTrades ? 'Loading trades...' : 'No trades found'">
-        <el-table-column label="Symbol" prop="ticker" min-width="80"></el-table-column>
-        <el-table-column label="Entry Price" min-width="120">
-          <template v-slot="scope">
-            {{ scope.row.entryAvgPrice ? scope.row.entryAvgPrice.toFixed(2) : 'N/A' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="Exit Price" min-width="120">
-          <template v-slot="scope">
-            {{ scope.row.exitAvgPrice ? scope.row.exitAvgPrice.toFixed(2) : 'N/A' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="Quantity" min-width="100">
-          <template v-slot="scope">
-            {{ scope.row.quantity ? scope.row.quantity.toFixed(4) : 'N/A' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="Profit" min-width="100">
-          <template v-slot="scope">
-            <span :class="scope.row.profit > 0 ? 'text-success' : 'text-danger'">
-              {{ scope.row.profit ? scope.row.profit.toFixed(2) : 'N/A' }}
-            </span>
-          </template>
-        </el-table-column>
-        <el-table-column label="Entry Date" min-width="160">
-          <template v-slot="scope">
-            {{ formatDate(scope.row.entryTime) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="Exit Date" min-width="160">
-          <template v-slot="scope">
-            {{ formatDate(scope.row.exitTime) }}
-          </template>
-        </el-table-column>
-      </el-table>
-      
-      <div v-if="tradesPagination" class="mt-4 d-flex justify-content-between align-items-center">
-        <div>
-          <span class="text-sm">
-            Showing {{ botTrades.length }} of {{ tradesPagination.totalCount }} trades
-          </span>
-        </div>
-        <base-pagination 
-          :per-page="tradesPagination.pageSize" 
-          :total="tradesPagination.totalCount"
-          :current-page="tradesPagination.page"
-          @page-change="onTradePageChange"
-        />
-      </div>
-    </el-dialog>
+
+    <!-- Trade modal removed, now using dedicated Trades page -->
   </div>
 </template>
 
@@ -288,10 +234,8 @@ import BaseInput from "@/components/Inputs/BaseInput.vue";
 import Swal from "sweetalert2";
 import axios from "axios";
 import PagedTable from '@/components/PagedTable.vue';
-import botService from '@/services/botService';
 
 // State variables
-const isLoadingTrades = ref(false);
 const pagedResult = ref({
   page: 1,
   pageSize: 10,
@@ -301,11 +245,8 @@ const pagedResult = ref({
 });
 const currentPage = ref(1);
 const searchTerm = ref('');
-const botTrades = ref([]);
 const showCreateEditModal = ref(false);
-const showTradesModal = ref(false);
 const isEditing = ref(false);
-const tradesPagination = ref(null);
 
 // Default bot model
 const defaultBot = {
@@ -353,9 +294,9 @@ async function fetchBots(params) {
         sortDirection: params?.sortDirection
       }
     });
-    
+
     pagedResult.value = response.data;
-    
+
     // Sync the current page and page size
     if (params) {
       currentPage.value = params.page || currentPage.value;
@@ -474,45 +415,7 @@ async function toggleBotStatus(bot) {
   }
 }
 
-async function viewBotTrades(bot, page = 1, pageSize = 10) {
-  isLoadingTrades.value = true;
-  botTrades.value = [];
-  showTradesModal.value = true;
-  currentBot.value = bot; // Store current bot so we can use it for pagination
-  
-  try {
-    // Use the botService instead of direct axios call
-    const response = await botService.getBotProfits({ 
-      botId: bot.id,
-      page: page,
-      pageSize: pageSize
-    });
-    
-    botTrades.value = response.data.items;
-    tradesPagination.value = {
-      page: response.data.page,
-      pageSize: response.data.pageSize,
-      totalCount: response.data.totalCount,
-      totalPages: response.data.totalPages
-    };
-  } catch (error) {
-    console.error('Error fetching bot trades:', error);
-    Swal.fire({
-      title: 'Error',
-      text: 'Failed to load bot trades',
-      icon: 'error'
-    });
-  } finally {
-    isLoadingTrades.value = false;
-  }
-}
-
-// Handle pagination for bot trades
-async function onTradePageChange(page) {
-  if (currentBot.value) {
-    await viewBotTrades(currentBot.value, page, tradesPagination.value.pageSize);
-  }
-}
+// Trade related functions moved to Trades.vue page
 
 function formatDate(dateString) {
   if (!dateString) return 'N/A';
@@ -524,7 +427,7 @@ function formatDate(dateString) {
 function formatNumberInput(event, field) {
   // Get the input value
   const value = event.target.value;
-  
+
   // Replace comma with dot if present
   if (value && value.includes(',')) {
     const correctedValue = value.replace(',', '.');
@@ -553,4 +456,4 @@ onMounted(() => {
 .card-title {
   margin-bottom: 0;
 }
-</style> 
+</style>

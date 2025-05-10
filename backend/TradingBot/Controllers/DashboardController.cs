@@ -1,4 +1,5 @@
 using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -41,7 +42,7 @@ namespace TradingBot.Controllers
         }
 
         [HttpGet("recent-trades")]
-        public async Task<ActionResult<IEnumerable<TradeDto>>> GetRecentTrades()
+        public async Task<ActionResult<IEnumerable<object>>> GetRecentTrades()
         {
             return await _context.Trades
                 .Include(t => t.EntryOrder)
@@ -49,8 +50,7 @@ namespace TradingBot.Controllers
                 .Where(t => t.EntryOrder != null)
                 .OrderByDescending(t => t.EntryOrder.CreatedAt)
                 .Take(5)
-                .Select(t => new TradeDto
-                {
+                .Select(t => new {
                     Symbol = t.EntryOrder.Symbol,
                     Direction = t.EntryOrder.IsBuy ? "Buy" : "Sell",
                     EntryPrice = t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price,
@@ -97,64 +97,18 @@ namespace TradingBot.Controllers
         }
 
         [HttpGet("bot-profits")]
-        public async Task<ActionResult<PagedResult<BotProfitDto>>> GetBotProfits(
+        [Obsolete("This endpoint is deprecated. Use '/api/trades' instead")]
+        public ActionResult<PagedResult<BotProfitDto>> GetBotProfits(
             [FromQuery] string? period = "month",
             [FromQuery] int? botId = null,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10)
         {
-            // Validate page parameters
-            if (page < 1) page = 1;
-            if (pageSize < 1 || pageSize > 100) pageSize = 10;
-
-            var query = _context.Trades
-                .Include(t => t.EntryOrder)
-                .Include(t => t.ExitOrder)
-                .Include(t => t.Bot)
-                .Where(t => t.ExitOrder != null && t.ExitOrder.Closed && t.ExitOrder.QuantityFilled > 0 && t.EntryOrder != null && t.ExitOrder != null);
-                
-            // Filter by bot ID if provided
-            if (botId.HasValue)
+            return BadRequest(new
             {
-                query = query.Where(t => t.Bot != null && t.Bot.Id == botId.Value);
-            }
-                
-            query = query.OrderByDescending(t => t.ExitOrder!.CreatedAt);
-
-            // Get total count for pagination info
-            var totalCount = await query.CountAsync();
-            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-
-            // Apply pagination
-            var trades = await query
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            var botProfits = trades.Select(t => new BotProfitDto
-            {
-                BotId = t.Bot?.Id.ToString() ?? "Unknown",
-                Ticker = t.EntryOrder.Symbol,
-                EntryAvgPrice = t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price,
-                ExitAvgPrice = t.ExitOrder.AverageFillPrice ?? t.ExitOrder.Price,
-                Quantity = t.EntryOrder.Quantity,
-                EntryFee = t.EntryOrder.Fees,
-                ExitFee = t.ExitOrder.Fees,
-                Profit = CalculateProfit(t),
-                EntryTime = t.EntryOrder.CreatedAt,
-                ExitTime = t.ExitOrder.CreatedAt
-            }).ToList();
-
-            var result = new PagedResult<BotProfitDto>
-            {
-                Page = page,
-                PageSize = pageSize,
-                TotalPages = totalPages,
-                TotalCount = totalCount,
-                Items = botProfits
-            };
-
-            return result;
+                message = "This endpoint is deprecated. Use '/api/trades' instead with the same parameters.",
+                newEndpoint = $"/api/trades?period={period}&botId={botId}&page={page}&pageSize={pageSize}"
+            });
         }
 
         [HttpGet("bot-profits-chart")]
@@ -204,7 +158,7 @@ namespace TradingBot.Controllers
 
             // Group by the period and sum the profits
             var groupedProfits = trades
-                .GroupBy(t => getGroupKey(t.ExitOrder.CreatedAt))
+                .GroupBy(t => getGroupKey(t.ExitOrder!.CreatedAt))
                 .ToDictionary(g => g.Key, g => g.Sum(t => t.Profit ?? CalculateProfit(t)));
 
             // Prepare data array to match the labels
@@ -246,17 +200,6 @@ namespace TradingBot.Controllers
         public int ActiveOrders { get; set; }
         public int CompletedTrades { get; set; }
         public decimal TotalProfit { get; set; }
-    }
-
-    public class TradeDto
-    {
-        public required string Symbol { get; set; }
-        public required string Direction { get; set; }
-        public decimal EntryPrice { get; set; }
-        public decimal ExitPrice { get; set; }
-        public decimal ProfitLoss { get; set; }
-        public DateTime Timestamp { get; set; }
-        public required string Status { get; set; }
     }
 
     public class PerformanceData

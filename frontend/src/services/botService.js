@@ -9,25 +9,36 @@ export default {
      * @param {string} period - The time period (day, week, month, year)
      * @returns {Promise} Promise with bot performance chart data
      */
-    getBotPerformance(period = 'month') {
-        return apiClient.get('/dashboard/bot-profits-chart', {
+    getBotPerformance ( period = 'month' )
+    {
+        return apiClient.get( '/dashboard/bot-profits-chart', {
             params: { period }
-        });
+        } );
     },
 
     /**
-     * Get detailed bot trading history with profit calculations
+     * Get detailed trading history with profit calculations
      * @param {Object} options - Options for the request
      * @param {number} options.page - Page number to fetch (starting from 1)
      * @param {number} options.pageSize - Number of items per page
      * @param {string} options.period - Time period to filter results
      * @param {number} options.botId - Optional bot ID to filter results by bot
-     * @returns {Promise} Promise with bot trading history
+     * @returns {Promise} Promise with trading history
      */
-    getBotProfits({ page = 1, pageSize = 10, period = 'month', botId = null } = {}) {
-        return apiClient.get('/dashboard/bot-profits', {
+    getTrades ( { page = 1, pageSize = 10, period = 'month', botId = null } = {} )
+    {
+        return apiClient.get( '/api/trades', {
             params: { page, pageSize, period, botId }
-        });
+        } );
+    },
+
+    /**
+     * @deprecated Use getTrades() instead
+     */
+    getBotProfits ( { page = 1, pageSize = 10, period = 'month', botId = null } = {} )
+    {
+        console.warn( 'getBotProfits is deprecated. Use getTrades instead.' );
+        return this.getTrades( { page, pageSize, period, botId } );
     },
 
     /**
@@ -35,16 +46,18 @@ export default {
      * @param {Object} order - Order data with entry and exit prices
      * @returns {Number} - Calculated profit
      */
-    calculateProfit(order) {
-        if (!order || !order.entryAvgPrice || !order.exitAvgPrice) {
+    calculateProfit ( order )
+    {
+        if ( !order || !order.entryAvgPrice || !order.exitAvgPrice )
+        {
             return 0;
         }
 
         // Calculate profit: (exit price - entry price) * quantity - fees
         const profit =
-            (order.exitAvgPrice - order.entryAvgPrice) * order.quantity -
-            (order.entryFee + order.exitFee);
+            ( order.exitAvgPrice - order.entryAvgPrice ) * order.quantity -
+            ( order.entryFee + order.exitFee );
 
-        return parseFloat(profit.toFixed(2));
+        return parseFloat( profit.toFixed( 2 ) );
     }
 };

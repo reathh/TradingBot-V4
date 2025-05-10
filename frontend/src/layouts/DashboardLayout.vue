@@ -43,7 +43,7 @@ const shortTitle = ref("DB");
 
 // Dark mode related computed properties
 const isDarkMode = computed(() => themeStore.isDarkMode);
-const darkModeIcon = computed(() => 
+const darkModeIcon = computed(() =>
   isDarkMode.value ? "tim-icons icon-button-power" : "tim-icons icon-bulb-63"
 );
 
@@ -66,6 +66,11 @@ const menuItems = ref([
     name: "Bots",
     icon: "tim-icons icon-settings",
     path: "/bots",
+  },
+  {
+    name: "Trades",
+    icon: "tim-icons icon-chart-bar-32",
+    path: "/trades",
   },
   {
     name: "Pages",
@@ -97,7 +102,7 @@ const menuItems = ref([
   },
   {
     name: "Charts",
-    icon: "tim-icons icon-chart-bar-32",
+    icon: "tim-icons icon-chart-pie-36",
     path: "/charts",
   },
   {
