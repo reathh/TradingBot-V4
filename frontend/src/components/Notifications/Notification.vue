@@ -14,7 +14,6 @@
       <i :class="notification.icon"></i>
     </div>
     <div class="notification-content">
-      <span v-if="notification.title" class="notification-title">{{ notification.title }}</span>
       <div class="notification-message" v-html="notification.message"></div>
     </div>
     <a v-if="notification.showClose" class="notification-close-button" @click="close">
@@ -72,14 +71,14 @@ function stopTimer() {
 .notification {
   display: flex;
   align-items: center;
-  min-height: 64px;
+  min-height: 48px;
   max-width: 420px;
   width: 100%;
   box-sizing: border-box;
-  padding: 16px 40px 16px 20px;
+  padding: 12px 36px 12px 18px;
   border-radius: 12px;
   background: #27293d;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   position: relative;
   font-family: inherit;
   box-shadow: 0 5px 15px -5px rgba(0,0,0,0.3);
@@ -92,8 +91,8 @@ function stopTimer() {
   &.notification-info    { border-left: 5px solid #1E88E5; }
 
   .notification-icon {
-    margin-right: 16px;
-    font-size: 24px;
+    margin-right: 14px;
+    font-size: 22px;
     display: flex;
     align-items: center;
     flex-shrink: 0;
@@ -105,17 +104,6 @@ function stopTimer() {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    overflow-wrap: break-word;
-    word-break: break-word;
-    white-space: normal;
-  }
-
-  .notification-title {
-    font-weight: 700;
-    font-size: 16px;
-    color: #fff;
-    margin-bottom: 2px;
-    line-height: 1.2;
     overflow-wrap: break-word;
     word-break: break-word;
     white-space: normal;
@@ -133,8 +121,8 @@ function stopTimer() {
 
   .notification-close-button {
     position: absolute;
-    top: 16px;
-    right: 16px;
+    top: 12px;
+    right: 12px;
     color: rgba(255,255,255,0.6);
     background: none;
     border: none;
@@ -152,8 +140,8 @@ function stopTimer() {
 @media (max-width: 600px) {
   .notification {
     max-width: 95vw;
-    padding-left: 12px;
-    padding-right: 12px;
+    padding-left: 10px;
+    padding-right: 10px;
   }
 }
 </style>
