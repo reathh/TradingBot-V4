@@ -5,28 +5,34 @@
         <card>
           <div slot="header" class="d-flex justify-content-between align-items-center">
             <h4 class="card-title">Bot Details: {{ bot.name || 'Loading...' }}</h4>
-            <div>
-              <base-button 
-                v-if="bot.id" 
-                @click="toggleBotStatus" 
-                :type="bot.enabled ? 'warning' : 'success'" 
-                class="mr-2"
-              >
-                {{ bot.enabled ? 'Deactivate' : 'Activate' }}
-              </base-button>
-              <base-button 
-                v-if="bot.id" 
-                @click="deleteBot" 
-                type="danger"
-                class="ml-2"
-              >
-                Delete Bot
-              </base-button>
-              <router-link to="/bots">
-                <base-button type="default">
-                  Back to Bots
+            <div class="action-btn-group">
+              <el-tooltip v-if="bot.id" :content="bot.enabled ? 'Deactivate Bot' : 'Activate Bot'" effect="dark" placement="top">
+                <base-button 
+                  @click="toggleBotStatus" 
+                  :type="bot.enabled ? 'warning' : 'success'"
+                  icon
+                  size="sm"
+                >
+                  <i :class="bot.enabled ? 'tim-icons icon-button-pause' : 'tim-icons icon-button-power'"></i>
                 </base-button>
-              </router-link>
+              </el-tooltip>
+              <el-tooltip v-if="bot.id" content="Delete Bot" effect="dark" placement="top">
+                <base-button 
+                  @click="deleteBot" 
+                  type="danger"
+                  icon
+                  size="sm"
+                >
+                  <i class="tim-icons icon-trash-simple"></i>
+                </base-button>
+              </el-tooltip>
+              <el-tooltip content="Back to Bots" effect="dark" placement="top">
+                <router-link to="/bots">
+                  <base-button type="default" icon size="sm">
+                    <i class="tim-icons icon-minimal-left"></i>
+                  </base-button>
+                </router-link>
+              </el-tooltip>
             </div>
           </div>
 
@@ -341,8 +347,9 @@ onMounted(() => {
 </script>
 
 <style>
-.mr-2 {
-  margin-right: 0.5rem;
+.action-btn-group {
+  display: flex;
+  gap: 0.75rem;
 }
 
 .fa-spin {
