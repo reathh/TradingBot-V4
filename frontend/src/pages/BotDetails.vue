@@ -4,34 +4,24 @@
       <div class="md-layout-item md-size-100">
         <card>
           <div slot="header" class="d-flex justify-content-between align-items-center">
-            <h4 class="card-title">Bot Details: {{ bot.name || 'Loading...' }}</h4>
+            <div class="d-flex align-items-center">
+              <el-tooltip content="Back to Bots" effect="dark" placement="top">
+                <router-link to="/bots" class="icon-action">
+                  <i class="tim-icons icon-minimal-left"></i>
+                </router-link>
+              </el-tooltip>
+              <span class="ml-2 card-title">{{ bot.name || 'Loading...' }}</span>
+            </div>
             <div class="action-btn-group">
               <el-tooltip v-if="bot.id" :content="bot.enabled ? 'Deactivate Bot' : 'Activate Bot'" effect="dark" placement="top">
-                <base-button 
-                  @click="toggleBotStatus" 
-                  :type="bot.enabled ? 'warning' : 'success'"
-                  icon
-                  size="sm"
-                >
+                <button @click="toggleBotStatus" class="icon-action" :aria-label="bot.enabled ? 'Deactivate Bot' : 'Activate Bot'">
                   <i :class="bot.enabled ? 'tim-icons icon-button-pause' : 'tim-icons icon-button-power'"></i>
-                </base-button>
+                </button>
               </el-tooltip>
               <el-tooltip v-if="bot.id" content="Delete Bot" effect="dark" placement="top">
-                <base-button 
-                  @click="deleteBot" 
-                  type="danger"
-                  icon
-                  size="sm"
-                >
+                <button @click="deleteBot" class="icon-action" aria-label="Delete Bot">
                   <i class="tim-icons icon-trash-simple"></i>
-                </base-button>
-              </el-tooltip>
-              <el-tooltip content="Back to Bots" effect="dark" placement="top">
-                <router-link to="/bots">
-                  <base-button type="default" icon size="sm">
-                    <i class="tim-icons icon-minimal-left"></i>
-                  </base-button>
-                </router-link>
+                </button>
               </el-tooltip>
             </div>
           </div>
@@ -363,5 +353,29 @@ onMounted(() => {
   100% {
     transform: rotate(359deg);
   }
+}
+
+.icon-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: #bfc9da;
+  background: none;
+  border: none;
+  outline: none;
+  border-radius: 50%;
+  transition: background 0.2s, color 0.2s;
+  cursor: pointer;
+  padding: 0;
+}
+.icon-action:hover, .icon-action:focus {
+  background: rgba(191, 201, 218, 0.1);
+  color: #fff;
+  text-decoration: none;
+}
+.icon-action .tim-icons {
+  font-size: 1.2rem;
 }
 </style> 
