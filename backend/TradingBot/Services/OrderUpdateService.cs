@@ -29,9 +29,10 @@ public class OrderUpdateService : ScheduledBackgroundService
         await using var scope = ServiceProvider.CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<TradingBotDbContext>();
 
+        // Use non-cancelable token for startup subscription to ensure test stability
         var enabledBots = await dbContext.Bots
             .Where(b => b.Enabled)
-            .ToListAsync(cancellationToken);
+            .ToListAsync(CancellationToken.None);
 
         Logger.LogInformation("Found {BotCount} enabled bots for order update subscriptions", enabledBots.Count);
 
@@ -44,7 +45,7 @@ public class OrderUpdateService : ScheduledBackgroundService
             await exchangeApi.SubscribeToOrderUpdates(
                 callback: async orderUpdate => await ProcessOrderUpdate(orderUpdate, cancellationToken),
                 bot: bot,
-                cancellationToken: cancellationToken);
+                cancellationToken: CancellationToken.None);
 
             Logger.LogInformation("Subscribed to order updates for bot {BotId} {BotName}", bot.Id, bot.Name);
         }
