@@ -62,13 +62,13 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                             )
                         )
                         .OrderBy(t => (bot.IsLong ? -1 : 1) * (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price))
+                        .Take(bot.PlaceOrdersInAdvance ? bot.ExitOrdersInAdvance : 0)
                         .Select(t => new
                         {
                             Trade = t,
                             t.EntryOrder,
                             t.ExitOrder
                         })
-                        .Take(bot.PlaceOrdersInAdvance ? bot.ExitOrdersInAdvance : 0)
                         .ToList()
                 })
                 .Where(x => x.ConsolidatedTrades.Any() || x.AdvanceTrades.Any())

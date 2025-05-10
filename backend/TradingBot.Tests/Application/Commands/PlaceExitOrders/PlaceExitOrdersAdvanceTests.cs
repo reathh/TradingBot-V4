@@ -206,7 +206,7 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
         await DbContext.SaveChangesAsync();
         
         // Create trades with different entry prices
-        // None are eligible for immediate exit
+        // None are eligible for immediate exit (we'll use a price below all exit thresholds)
         var entryPrices = new[] { 100m, 99m, 98m };
         var trades = new List<Trade>();
         
@@ -216,11 +216,12 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             trades.Add(trade);
         }
         
-        // Create ticker with price that doesn't reach exit step
-        var ticker = CreateTestTicker(100.5m, 100.8m); // Below exit threshold (100 + 1 = 101)
+        // Create ticker with price that doesn't reach exit step for ANY trade
+        var ticker = CreateTestTicker(98.8m, 98.8m); // Below exit threshold for all trades (98 + 1 = 99 > 98.8)
         var command = new PlaceExitOrdersCommand { Ticker = ticker };
         
         // Setup advance exit order (only one due to ExitOrdersInAdvance=1)
+        // The order should be for the highest entry price trade (100m)
         var advanceOrder = (101m, 1m); // Advance exit for first trade
         SetupExitOrderSequence(bot, advanceOrder);
         
@@ -233,9 +234,9 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             It.Is<decimal>(p => p == 101m),
             It.Is<decimal>(q => q == 1m),
             It.Is<bool>(b => b != bot.IsLong),
-            It.IsAny<CancellationToken>()), Times.Once);
+            It.IsAny<CancellationToken>()), Times.Exactly(1));
         
-        // Verify only first trade has exit order
+        // Verify only first trade has exit order (highest priority for advance orders)
         var updatedTrades = await DbContext.Trades
             .Include(t => t.ExitOrder)
             .Where(t => trades.Select(tr => tr.Id).Contains(t.Id))
@@ -243,9 +244,9 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             .ToListAsync();
             
         Assert.Equal(3, updatedTrades.Count);
-        Assert.NotNull(updatedTrades[0].ExitOrder); // First trade has exit
-        Assert.Null(updatedTrades[1].ExitOrder); // Second trade has no exit
-        Assert.Null(updatedTrades[2].ExitOrder); // Third trade has no exit
+        Assert.NotNull(updatedTrades[0].ExitOrder); // First trade (entry 100) has exit order
+        Assert.Null(updatedTrades[1].ExitOrder);    // Second trade has no exit
+        Assert.Null(updatedTrades[2].ExitOrder);    // Third trade has no exit
     }
     
     [Fact]
