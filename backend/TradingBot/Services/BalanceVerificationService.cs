@@ -7,20 +7,13 @@ namespace TradingBot.Services;
 /// <summary>
 /// Background service that verifies the correct balance on exchanges for all bots
 /// </summary>
-public class BalanceVerificationService : ScheduledBackgroundService
+public class BalanceVerificationService(
+    IServiceProvider serviceProvider,
+    IExchangeApiRepository exchangeApiRepository,
+    ILogger<BalanceVerificationService> logger) : ScheduledBackgroundService(serviceProvider, logger, TimeSpan.FromMinutes(1), "Balance verification service")
 {
-    private readonly IExchangeApiRepository _exchangeApiRepository;
-    private readonly IServiceProvider _serviceProvider;
-
-    public BalanceVerificationService(
-        IServiceProvider serviceProvider,
-        IExchangeApiRepository exchangeApiRepository,
-        ILogger<BalanceVerificationService> logger)
-        : base(serviceProvider, logger, TimeSpan.FromMinutes(1), "Balance verification service")
-    {
-        _exchangeApiRepository = exchangeApiRepository;
-        _serviceProvider = serviceProvider;
-    }
+    private readonly IExchangeApiRepository _exchangeApiRepository = exchangeApiRepository;
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
 
     protected internal override async Task ExecuteScheduledWorkAsync(CancellationToken cancellationToken)
     {

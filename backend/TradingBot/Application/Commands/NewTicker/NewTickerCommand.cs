@@ -11,21 +11,14 @@ public class NewTickerCommand : IRequest<Result>
 {
     public required Ticker Ticker { get; set; }
 
-    public class NewTickerCommandHandler : BaseCommandHandler<NewTickerCommand>
+    public class NewTickerCommandHandler(
+        TradingBotDbContext db,
+        IMediator mediator,
+        ILogger<NewTickerCommand.NewTickerCommandHandler> logger) : BaseCommandHandler<NewTickerCommand>(logger)
     {
-        private readonly TradingBotDbContext _db;
-        private readonly IMediator _mediator;
-        private readonly ILogger<NewTickerCommandHandler> _logger;
-
-        public NewTickerCommandHandler(
-            TradingBotDbContext db,
-            IMediator mediator,
-            ILogger<NewTickerCommandHandler> logger) : base(logger)
-        {
-            _db = db;
-            _mediator = mediator;
-            _logger = logger;
-        }
+        private readonly TradingBotDbContext _db = db;
+        private readonly IMediator _mediator = mediator;
+        private readonly ILogger<NewTickerCommandHandler> _logger = logger;
 
         protected override async Task<Result> HandleCore(NewTickerCommand request, CancellationToken cancellationToken)
         {

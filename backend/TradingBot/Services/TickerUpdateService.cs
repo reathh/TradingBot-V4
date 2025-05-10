@@ -1,7 +1,5 @@
 using Binance.Net.Clients;
 using Binance.Net.Interfaces;
-using Binance.Net.Objects.Models.Spot.Socket;
-using CryptoExchange.Net.Authentication;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using TradingBot.Application;
@@ -12,31 +10,13 @@ namespace TradingBot.Services;
 /// <summary>
 /// Background service that subscribes to Binance ticker updates and dispatches NewTickerCommand
 /// </summary>
-public class TickerUpdateService : ScheduledBackgroundService
+public class TickerUpdateService(
+    IServiceProvider serviceProvider,
+    ILogger<TickerUpdateService> logger) : ScheduledBackgroundService(serviceProvider, logger, TimeSpan.FromMinutes(5), "Ticker update service")
 {
-    private readonly BinanceSocketClient _socketClient;
+    private readonly BinanceSocketClient _socketClient = new BinanceSocketClient();
     private readonly Dictionary<string, CancellationTokenSource> _subscriptions = [];
-    private readonly object _lock = new();
-
-    public TickerUpdateService(
-        IServiceProvider serviceProvider,
-        IConfiguration configuration,
-        ILogger<TickerUpdateService> logger)
-        : base(serviceProvider, logger, TimeSpan.FromMinutes(5), "Ticker update service")
-    {
-        // Get API credentials from configuration
-        var publicKey = configuration["Binance:ApiKey"] ?? "";
-        var privateKey = configuration["Binance:ApiSecret"] ?? "";
-        
-        // Create a socket client for subscribing to ticker updates
-        _socketClient = new BinanceSocketClient(options =>
-        {
-            if (!string.IsNullOrEmpty(publicKey) && !string.IsNullOrEmpty(privateKey))
-            {
-                options.ApiCredentials = new ApiCredentials(publicKey, privateKey);
-            }
-        });
-    }
+    private readonly Lock _lock = new();
 
     protected override async Task OnStartAsync(CancellationToken cancellationToken)
     {

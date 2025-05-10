@@ -6,24 +6,16 @@ namespace TradingBot.Services;
 /// <summary>
 /// Base class for background services that run on a schedule
 /// </summary>
-public abstract class ScheduledBackgroundService : BackgroundService
+public abstract class ScheduledBackgroundService(
+    IServiceProvider serviceProvider,
+    ILogger logger,
+    TimeSpan interval,
+    string serviceName) : BackgroundService
 {
-    protected readonly IServiceProvider ServiceProvider;
-    protected readonly ILogger Logger;
-    protected readonly TimeSpan Interval;
-    protected readonly string ServiceName;
-
-    protected ScheduledBackgroundService(
-        IServiceProvider serviceProvider,
-        ILogger logger,
-        TimeSpan interval,
-        string serviceName)
-    {
-        ServiceProvider = serviceProvider;
-        Logger = logger;
-        Interval = interval;
-        ServiceName = serviceName;
-    }
+    protected readonly IServiceProvider ServiceProvider = serviceProvider;
+    protected readonly ILogger Logger = logger;
+    protected readonly TimeSpan Interval = interval;
+    protected readonly string ServiceName = serviceName;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

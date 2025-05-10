@@ -7,14 +7,9 @@ namespace TradingBot.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class TradesController : ControllerBase
+    public class TradesController(TradingBotDbContext context) : ControllerBase
     {
-        private readonly TradingBotDbContext _context;
-
-        public TradesController(TradingBotDbContext context)
-        {
-            _context = context;
-        }
+        private readonly TradingBotDbContext _context = context;
 
         // GET: api/Trades
         [HttpGet]

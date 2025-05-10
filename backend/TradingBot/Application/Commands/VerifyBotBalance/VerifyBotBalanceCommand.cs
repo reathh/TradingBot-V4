@@ -10,23 +10,16 @@ public class VerifyBotBalanceCommand : IRequest<Result>
     public required Bot Bot { get; set; }
     public required decimal CurrentPrice { get; set; }
 
-    public class VerifyBotBalanceCommandHandler : BaseCommandHandler<VerifyBotBalanceCommand>
+    public class VerifyBotBalanceCommandHandler(
+        TradingBotDbContext dbContext,
+        IExchangeApiRepository exchangeApiRepository,
+        ILogger<VerifyBotBalanceCommand.VerifyBotBalanceCommandHandler> logger) : BaseCommandHandler<VerifyBotBalanceCommand>(logger)
     {
-        private readonly TradingBotDbContext _dbContext;
-        private readonly IExchangeApiRepository _exchangeApiRepository;
+        private readonly TradingBotDbContext _dbContext = dbContext;
+        private readonly IExchangeApiRepository _exchangeApiRepository = exchangeApiRepository;
         private readonly int _maxRetries = 5;
         private readonly TimeSpan _delayBetweenChecks = TimeSpan.FromSeconds(5);
-        private readonly ILogger<VerifyBotBalanceCommandHandler> _logger;
-
-        public VerifyBotBalanceCommandHandler(
-            TradingBotDbContext dbContext,
-            IExchangeApiRepository exchangeApiRepository,
-            ILogger<VerifyBotBalanceCommandHandler> logger) : base(logger)
-        {
-            _dbContext = dbContext;
-            _exchangeApiRepository = exchangeApiRepository;
-            _logger = logger;
-        }
+        private readonly ILogger<VerifyBotBalanceCommandHandler> _logger = logger;
 
         protected override async Task<Result> HandleCore(VerifyBotBalanceCommand request, CancellationToken cancellationToken)
         {

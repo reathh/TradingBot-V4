@@ -8,18 +8,12 @@ namespace TradingBot.Services;
 /// <summary>
 /// Background service that subscribes to order updates for all enabled bots
 /// </summary>
-public class OrderUpdateService : ScheduledBackgroundService
+public class OrderUpdateService(
+    IServiceProvider serviceProvider,
+    IExchangeApiRepository exchangeApiRepository,
+    ILogger<OrderUpdateService> logger) : ScheduledBackgroundService(serviceProvider, logger, TimeSpan.FromMinutes(5), "Order update service")
 {
-    private readonly IExchangeApiRepository _exchangeApiRepository;
-
-    public OrderUpdateService(
-        IServiceProvider serviceProvider,
-        IExchangeApiRepository exchangeApiRepository,
-        ILogger<OrderUpdateService> logger)
-        : base(serviceProvider, logger, TimeSpan.FromMinutes(5), "Order update service")
-    {
-        _exchangeApiRepository = exchangeApiRepository;
-    }
+    private readonly IExchangeApiRepository _exchangeApiRepository = exchangeApiRepository;
 
     protected override async Task OnStartAsync(CancellationToken cancellationToken)
     {

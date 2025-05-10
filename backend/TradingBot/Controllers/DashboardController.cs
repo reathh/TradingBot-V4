@@ -7,14 +7,9 @@ namespace TradingBot.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class DashboardController : ControllerBase
+    public class DashboardController(TradingBotDbContext context) : ControllerBase
     {
-        private readonly TradingBotDbContext _context;
-
-        public DashboardController(TradingBotDbContext context)
-        {
-            _context = context;
-        }
+        private readonly TradingBotDbContext _context = context;
 
         [HttpGet("summary")]
         public async Task<ActionResult<DashboardSummary>> GetSummary()
