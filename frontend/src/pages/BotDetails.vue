@@ -175,10 +175,13 @@
                 <base-button @click="saveBot" type="primary">Save Changes</base-button>
               </div>
             </el-form>
-            <div class="mt-5">
-              <TradesTable :botId="bot.id" />
-            </div>
           </div>
+        </card>
+        <card class="mt-4">
+          <div slot="header">
+            <span class="card-title">Trades</span>
+          </div>
+          <TradesTable :botId="bot.id" />
         </card>
       </div>
     </div>
