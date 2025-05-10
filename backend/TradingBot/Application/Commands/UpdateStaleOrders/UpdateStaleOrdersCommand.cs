@@ -89,7 +89,7 @@ public class UpdateStaleOrdersCommandHandler(
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Failed to get status for order {OrderId} from the exchange", order.Id);
+                        _logger.LogError(ex, "Failed to get status for order {OrderId} from the exchange", order!.Id);
 
                         // Just update the timestamp so we don't continuously try to update the same failing order
                         order.LastUpdated = currentTime;

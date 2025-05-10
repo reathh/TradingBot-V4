@@ -1,9 +1,9 @@
+using System.Collections.Concurrent;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using TradingBot.Application.Common;
 using TradingBot.Data;
 using TradingBot.Services;
-using System.Collections.Concurrent;
 
 namespace TradingBot.Application.Commands.PlaceExitOrders;
 
@@ -42,9 +42,15 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                                 (!bot.IsLong && ((t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) - bot.ExitStep >= currentBid))
                             )
                         )
+                        .OrderByDescending(t => bot.IsLong ? (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) : -(t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price))
+                        .Select(t => new
+                        {
+                            Trade = t,
+                            t.EntryOrder,
+                            t.ExitOrder
+                        })
                         .ToList(),
-                    AdvanceCandidates = bot.PlaceOrdersInAdvance
-                        ? bot.Trades
+                    AdvanceCandidates = bot.Trades
                             .Where(t =>
                                 t.ExitOrder == null &&
                                 t.Profit == null &&
@@ -56,14 +62,33 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                                 )
                             )
                             .OrderByDescending(t => bot.IsLong ? (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) : -(t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price))
-                            .Take(bot.ExitOrdersInAdvance)
+                            .Select(t => new
+                            {
+                                Trade = t,
+                                t.EntryOrder,
+                                t.ExitOrder
+                            })
+                            .Take(bot.PlaceOrdersInAdvance ? bot.ExitOrdersInAdvance : 0)
                             .ToList()
-                        : new List<Trade>()
                 })
                 .Where(x => x.EligibleTrades.Any() || x.AdvanceCandidates.Any())
-                .Include(x => x.Bot.Trades)
-                .ThenInclude(t => t.EntryOrder)
                 .ToListAsync(cancellationToken);
+
+            // attach entry and exit orders to the trades
+            foreach (var botWithTrades in botsWithTrades)
+            {
+                foreach (var tradeInfo in botWithTrades.EligibleTrades)
+                {
+                    tradeInfo.Trade.EntryOrder = tradeInfo.EntryOrder;
+                    tradeInfo.Trade.ExitOrder = tradeInfo.ExitOrder;
+                }
+
+                foreach (var tradeInfo in botWithTrades.AdvanceCandidates)
+                {
+                    tradeInfo.Trade.EntryOrder = tradeInfo.EntryOrder;
+                    tradeInfo.Trade.ExitOrder = tradeInfo.ExitOrder;
+                }
+            }
 
             ConcurrentBag<string> errors = [];
 
@@ -72,8 +97,8 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                 async (botWithTrades, token) =>
                 {
                     var bot = botWithTrades.Bot;
-                    var eligibleTrades = botWithTrades.EligibleTrades;
-                    var advanceCandidates = botWithTrades.AdvanceCandidates;
+                    var eligibleTrades = botWithTrades.EligibleTrades.Select(t => t.Trade).ToList();
+                    var advanceCandidates = botWithTrades.AdvanceCandidates.Select(t => t.Trade).ToList();
 
                     if (eligibleTrades.Count == 0 && advanceCandidates.Count == 0)
                     {

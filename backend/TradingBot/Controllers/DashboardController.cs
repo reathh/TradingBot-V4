@@ -51,7 +51,7 @@ namespace TradingBot.Controllers
                 .OrderByDescending(t => t.EntryOrder.CreatedAt)
                 .Take(5)
                 .Select(t => new {
-                    Symbol = t.EntryOrder.Symbol,
+                    t.EntryOrder.Symbol,
                     Direction = t.EntryOrder.IsBuy ? "Buy" : "Sell",
                     EntryPrice = t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price,
                     ExitPrice = t.ExitOrder != null ? (t.ExitOrder.AverageFillPrice ?? t.ExitOrder.Price) : 0,
