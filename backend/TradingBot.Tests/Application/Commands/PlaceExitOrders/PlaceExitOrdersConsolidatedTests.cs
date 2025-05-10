@@ -231,8 +231,8 @@ public class PlaceExitOrdersConsolidatedTests : PlaceExitOrdersTestBase
         
         // Only first trade (entry 100) should have exit order
         Assert.NotNull(updatedTrades[0].ExitOrder);
-        Assert.Equal(consolidatedPrice, updatedTrades[0].ExitOrder.Price);
-        Assert.Equal(consolidatedQuantity, updatedTrades[0].ExitOrder.Quantity);
+        Assert.Equal(consolidatedPrice, updatedTrades[0].ExitOrder!.Price);
+        Assert.Equal(consolidatedQuantity, updatedTrades[0].ExitOrder!.Quantity);
         
         // Other trades should not have exit orders
         Assert.Null(updatedTrades[1].ExitOrder); // entry 101

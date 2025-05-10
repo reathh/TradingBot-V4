@@ -43,8 +43,8 @@ public class PlaceExitOrdersErrorTests : PlaceExitOrdersTestBase
             x => x.Log(
                 LogLevel.Error,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((o, t) => true),
-                It.Is<Exception>(ex => ex.Message == testException.Message),
+                It.Is<It.IsAnyType>((v, t) => true),
+                It.Is<Exception>(ex => ex!.Message == testException.Message),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
@@ -82,8 +82,8 @@ public class PlaceExitOrdersErrorTests : PlaceExitOrdersTestBase
             x => x.Log(
                 LogLevel.Error,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((o, t) => true),
-                It.Is<Exception>(ex => ex.Message == testException.Message),
+                It.Is<It.IsAnyType>((v, t) => true),
+                It.Is<Exception>(ex => ex!.Message == testException.Message),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
@@ -134,8 +134,8 @@ public class PlaceExitOrdersErrorTests : PlaceExitOrdersTestBase
             x => x.Log(
                 LogLevel.Error,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((o, t) => true),
-                It.Is<Exception>(ex => ex.Message == testException.Message),
+                It.Is<It.IsAnyType>((v, t) => true),
+                It.Is<Exception>(ex => ex!.Message == testException.Message),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
         
@@ -243,7 +243,9 @@ public class PlaceExitOrdersErrorTests : PlaceExitOrdersTestBase
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Successfully placed")),
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+                It.Is<It.IsAnyType>((v, t) => v != null && v.ToString() != null && v.ToString().Contains("Successfully placed") && v.ToString().Contains("exit orders for bot")),
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
@@ -264,6 +266,6 @@ public class PlaceExitOrdersErrorTests : PlaceExitOrdersTestBase
             
         Assert.Equal(2, updatedTrades.Count);
         Assert.All(updatedTrades, t => Assert.NotNull(t.ExitOrder));
-        Assert.All(updatedTrades, t => Assert.Equal(consolidatedOrder.Id, t.ExitOrder.Id));
+        Assert.All(updatedTrades, t => Assert.Equal(consolidatedOrder.Id, t.ExitOrder!.Id));
     }
 }

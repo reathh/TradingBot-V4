@@ -79,13 +79,13 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
         Assert.All(updatedTrades, t => Assert.NotNull(t.ExitOrder));
         
         // Verify exit price for highest entry price (100)
-        Assert.Equal(101.0m, updatedTrades[0].ExitOrder.Price);
+        Assert.Equal(101.0m, updatedTrades[0].ExitOrder!.Price);
         
         // Verify exit price for the two lower entry prices (consolidated)
-        var lowerPriceExitOrderId = updatedTrades[1].ExitOrder.Id;
-        Assert.Equal(lowerPriceExitOrderId, updatedTrades[2].ExitOrder.Id); // Same order for both
-        Assert.Equal(100.8m, updatedTrades[1].ExitOrder.Price);
-        Assert.Equal(100.8m, updatedTrades[2].ExitOrder.Price);
+        var lowerPriceExitOrderId = updatedTrades[1].ExitOrder!.Id;
+        Assert.Equal(lowerPriceExitOrderId, updatedTrades[2].ExitOrder!.Id); // Same order for both
+        Assert.Equal(100.8m, updatedTrades[1].ExitOrder!.Price);
+        Assert.Equal(100.8m, updatedTrades[2].ExitOrder!.Price);
     }
     
     [Fact]
@@ -148,11 +148,11 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
         Assert.All(updatedTrades, t => Assert.NotNull(t.ExitOrder));
         
         // All trades should reference the same exit order with price 101.1
-        var exitOrderId = updatedTrades[0].ExitOrder.Id;
-        Assert.Equal(exitOrderId, updatedTrades[1].ExitOrder.Id);
-        Assert.Equal(exitOrderId, updatedTrades[2].ExitOrder.Id);
-        Assert.Equal(101.1m, updatedTrades[0].ExitOrder.Price);
-        Assert.Equal(3m, updatedTrades[0].ExitOrder.Quantity);
+        var exitOrderId = updatedTrades[0].ExitOrder!.Id;
+        Assert.Equal(exitOrderId, updatedTrades[1].ExitOrder!.Id);
+        Assert.Equal(exitOrderId, updatedTrades[2].ExitOrder!.Id);
+        Assert.Equal(101.1m, updatedTrades[0].ExitOrder!.Price);
+        Assert.Equal(3m, updatedTrades[0].ExitOrder!.Quantity);
     }
     
     [Fact]
@@ -239,9 +239,9 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
         Assert.NotNull(updatedTrades[3].ExitOrder);  // Entry 97m has consolidated exit order
         
         // Verify correct exit prices
-        Assert.Equal(100m, updatedTrades[1].ExitOrder.Price);   // Entry 99m: advance exit at 100m
-        Assert.Equal(99.2m, updatedTrades[2].ExitOrder.Price);  // Entry 98m: consolidated exit at current price
-        Assert.Equal(99.2m, updatedTrades[3].ExitOrder.Price);  // Entry 97m: consolidated exit at current price
+        Assert.Equal(100m, updatedTrades[1].ExitOrder!.Price);   // Entry 99m: advance exit at 100m
+        Assert.Equal(99.2m, updatedTrades[2].ExitOrder!.Price);  // Entry 98m: consolidated exit at current price
+        Assert.Equal(99.2m, updatedTrades[3].ExitOrder!.Price);  // Entry 97m: consolidated exit at current price
     }
     
     [Fact]
@@ -296,10 +296,10 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
         Assert.NotNull(updatedTrades[2].ExitOrder); // Trade with entry 98m has exit
         
         // Both eligible trades should have the same exit order
-        var exitOrderId = updatedTrades[1].ExitOrder.Id;
-        Assert.Equal(exitOrderId, updatedTrades[2].ExitOrder.Id);
-        Assert.Equal(100.8m, updatedTrades[1].ExitOrder.Price);
-        Assert.Equal(2m, updatedTrades[1].ExitOrder.Quantity);
+        var exitOrderId = updatedTrades[1].ExitOrder!.Id;
+        Assert.Equal(exitOrderId, updatedTrades[2].ExitOrder!.Id);
+        Assert.Equal(100.8m, updatedTrades[1].ExitOrder!.Price);
+        Assert.Equal(2m, updatedTrades[1].ExitOrder!.Quantity);
     }
     
     [Fact]
@@ -369,12 +369,12 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
         Assert.All(updatedTrades, t => Assert.NotNull(t.ExitOrder));
         
         // Trade with entry 101m has individual exit order
-        Assert.Equal(100.0m, updatedTrades[0].ExitOrder.Price);
+        Assert.Equal(100.0m, updatedTrades[0].ExitOrder!.Price);
         
         // Trades with entries 102m and 103m share consolidated exit order
-        var higherEntriesOrderId = updatedTrades[1].ExitOrder.Id;
-        Assert.Equal(higherEntriesOrderId, updatedTrades[2].ExitOrder.Id);
-        Assert.Equal(100.5m, updatedTrades[1].ExitOrder.Price);
-        Assert.Equal(100.5m, updatedTrades[2].ExitOrder.Price);
+        var higherEntriesOrderId = updatedTrades[1].ExitOrder!.Id;
+        Assert.Equal(higherEntriesOrderId, updatedTrades[2].ExitOrder!.Id);
+        Assert.Equal(100.5m, updatedTrades[1].ExitOrder!.Price);
+        Assert.Equal(100.5m, updatedTrades[2].ExitOrder!.Price);
     }
 }
