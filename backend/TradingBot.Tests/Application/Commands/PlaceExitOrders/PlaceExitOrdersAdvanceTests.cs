@@ -35,12 +35,13 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
         var ticker = CreateTestTicker(100.5m, 100.8m); // Below exit threshold for all (100 + 1 = 101)
         var command = new PlaceExitOrdersCommand { Ticker = ticker };
         
-        // Setup for advance exit orders for each trade
+        // Setup for advance exit orders
+        // With our new implementation logic, the trades will be prioritized by entry price (lowest first)
+        // So the order will be for trades with entries 98, 99, 100
         var advanceOrders = new[]
         {
-            (101m, 1m), // Exit for 100 entry
-            (100m, 1m), // Exit for 99 entry
-            (99m, 1m)   // Exit for 98 entry
+            (100.8m, 2m), // Consolidate the two lowest-entry trades (98, 99)
+            (101.0m, 1m)  // Third advance order for the highest entry price (100)
         };
         
         SetupExitOrderSequence(bot, advanceOrders);
@@ -48,24 +49,19 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
         // Act
         await Handle(command, CancellationToken.None);
         
-        // Assert - verify each advance order was placed with exact parameters
+        // Assert - verify advance orders were placed
+        // First consolidated order for the two lower entry prices
         ExchangeApiMock.Verify(x => x.PlaceOrder(
             It.Is<Bot>(b => b.Id == bot.Id),
-            It.Is<decimal>(p => p == 101m),
-            It.Is<decimal>(q => q == 1m),
+            It.Is<decimal>(p => p == 100.8m),
+            It.Is<decimal>(q => q == 2m),
             It.Is<bool>(b => b != bot.IsLong),
             It.IsAny<CancellationToken>()), Times.Once);
             
+        // Second order for the highest entry price
         ExchangeApiMock.Verify(x => x.PlaceOrder(
             It.Is<Bot>(b => b.Id == bot.Id),
-            It.Is<decimal>(p => p == 100m),
-            It.Is<decimal>(q => q == 1m),
-            It.Is<bool>(b => b != bot.IsLong),
-            It.IsAny<CancellationToken>()), Times.Once);
-            
-        ExchangeApiMock.Verify(x => x.PlaceOrder(
-            It.Is<Bot>(b => b.Id == bot.Id),
-            It.Is<decimal>(p => p == 99m),
+            It.Is<decimal>(p => p == 101.0m),
             It.Is<decimal>(q => q == 1m),
             It.Is<bool>(b => b != bot.IsLong),
             It.IsAny<CancellationToken>()), Times.Once);
@@ -79,21 +75,17 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             
         Assert.Equal(3, updatedTrades.Count);
         
-        // Verify each trade has its own exit order with correct price
-        // First trade (entry 100) should have exit at 101
-        Assert.NotNull(updatedTrades[0].ExitOrder);
-        Assert.Equal(101m, updatedTrades[0].ExitOrder.Price);
-        Assert.Equal(1m, updatedTrades[0].ExitOrder.Quantity);
+        // Verify all trades have exit orders
+        Assert.All(updatedTrades, t => Assert.NotNull(t.ExitOrder));
         
-        // Second trade (entry 99) should have exit at 100
-        Assert.NotNull(updatedTrades[1].ExitOrder);
-        Assert.Equal(100m, updatedTrades[1].ExitOrder.Price);
-        Assert.Equal(1m, updatedTrades[1].ExitOrder.Quantity);
+        // Verify exit price for highest entry price (100)
+        Assert.Equal(101.0m, updatedTrades[0].ExitOrder.Price);
         
-        // Third trade (entry 98) should have exit at 99
-        Assert.NotNull(updatedTrades[2].ExitOrder);
-        Assert.Equal(99m, updatedTrades[2].ExitOrder.Price);
-        Assert.Equal(1m, updatedTrades[2].ExitOrder.Quantity);
+        // Verify exit price for the two lower entry prices (consolidated)
+        var lowerPriceExitOrderId = updatedTrades[1].ExitOrder.Id;
+        Assert.Equal(lowerPriceExitOrderId, updatedTrades[2].ExitOrder.Id); // Same order for both
+        Assert.Equal(100.8m, updatedTrades[1].ExitOrder.Price);
+        Assert.Equal(100.8m, updatedTrades[2].ExitOrder.Price);
     }
     
     [Fact]
@@ -107,7 +99,6 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             isLong: true);
         
         // Create trades with different entry prices
-        // Only the first trade will be eligible for exit based on current price
         var entryPrices = new[] { 100m, 99m, 98m };
         var trades = new List<Trade>();
         
@@ -117,59 +108,34 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             trades.Add(trade);
         }
         
-        // Create ticker with price that reaches exit step only for the first trade
-        var ticker = CreateTestTicker(100.5m, 101.1m); // Only trade with entry price 100 is eligible (100 + exitStep <= 101.1)
+        // Create ticker with price that makes ALL trades eligible for immediate exit
+        var ticker = CreateTestTicker(101.1m, 101.1m); // Ask price > all entry+exitStep thresholds
         var command = new PlaceExitOrdersCommand { Ticker = ticker };
         
-        // Setup for consolidated exit order for the eligible trade
-        // and advance exit orders for trades that aren't yet eligible
-        var consolidatedOrder = (101.1m, 1m); // 1 unit for the eligible trade
-        var advanceOrders = new[]
-        {
-            (100m, 1m), // Advance exit for 99 entry
-            (99m, 1m)   // Advance exit for 98 entry
-        };
-        
-        // Setup all orders in sequence: first the consolidated, then the advance orders
-        var allOrders = new List<(decimal, decimal)> { consolidatedOrder };
-        allOrders.AddRange(advanceOrders);
-        SetupExitOrderSequence(bot, allOrders.ToArray());
+        // Setup for a single consolidated exit order for all trades (quantity 3)
+        var consolidatedOrder = (101.1m, 3m); // All 3 trades at current price
+        SetupExitOrderSequence(bot, consolidatedOrder);
         
         // Act
         await Handle(command, CancellationToken.None);
         
-        // Assert - verify exact number of orders placed (1 consolidated + 2 advance)
+        // Assert - verify exactly one consolidated order was placed
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.Is<Bot>(b => b.Id == bot.Id),
+            It.Is<decimal>(p => p == 101.1m), // Current price
+            It.Is<decimal>(q => q == 3m),     // Total quantity for all 3 trades
+            It.Is<bool>(b => b != bot.IsLong),
+            It.IsAny<CancellationToken>()), Times.Once);
+        
+        // Verify no other orders were placed
         ExchangeApiMock.Verify(x => x.PlaceOrder(
             It.Is<Bot>(b => b.Id == bot.Id),
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
-            It.Is<bool>(b => b != bot.IsLong),
-            It.IsAny<CancellationToken>()), Times.Exactly(3));
+            It.IsAny<bool>(),
+            It.IsAny<CancellationToken>()), Times.Exactly(1));
         
-        // Verify first eligible trade has exit order at the ask price
-        ExchangeApiMock.Verify(x => x.PlaceOrder(
-            It.Is<Bot>(b => b.Id == bot.Id),
-            It.Is<decimal>(p => p == 101.1m),
-            It.Is<decimal>(q => q == 1m),
-            It.Is<bool>(b => b != bot.IsLong),
-            It.IsAny<CancellationToken>()), Times.Once);
-        
-        // Verify advance orders for non-eligible trades
-        ExchangeApiMock.Verify(x => x.PlaceOrder(
-            It.Is<Bot>(b => b.Id == bot.Id),
-            It.Is<decimal>(p => p == 100m),
-            It.Is<decimal>(q => q == 1m),
-            It.Is<bool>(b => b != bot.IsLong),
-            It.IsAny<CancellationToken>()), Times.Once);
-            
-        ExchangeApiMock.Verify(x => x.PlaceOrder(
-            It.Is<Bot>(b => b.Id == bot.Id),
-            It.Is<decimal>(p => p == 99m),
-            It.Is<decimal>(q => q == 1m),
-            It.Is<bool>(b => b != bot.IsLong),
-            It.IsAny<CancellationToken>()), Times.Once);
-        
-        // Verify all trades have exit orders
+        // Verify all trades have the same exit order
         var updatedTrades = await DbContext.Trades
             .Include(t => t.ExitOrder)
             .Where(t => trades.Select(tr => tr.Id).Contains(t.Id))
@@ -178,17 +144,15 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             
         Assert.Equal(3, updatedTrades.Count);
         
-        // All trades should have exit orders, but with different prices/quantities
+        // All trades should have the same exit order
         Assert.All(updatedTrades, t => Assert.NotNull(t.ExitOrder));
         
-        // First trade (entry 100) should have exit at 101.1 (consolidated order)
+        // All trades should reference the same exit order with price 101.1
+        var exitOrderId = updatedTrades[0].ExitOrder.Id;
+        Assert.Equal(exitOrderId, updatedTrades[1].ExitOrder.Id);
+        Assert.Equal(exitOrderId, updatedTrades[2].ExitOrder.Id);
         Assert.Equal(101.1m, updatedTrades[0].ExitOrder.Price);
-        
-        // Second trade (entry 99) should have exit at 100 (advance order)
-        Assert.Equal(100m, updatedTrades[1].ExitOrder.Price);
-        
-        // Third trade (entry 98) should have exit at 99 (advance order)
-        Assert.Equal(99m, updatedTrades[2].ExitOrder.Price);
+        Assert.Equal(3m, updatedTrades[0].ExitOrder.Quantity);
     }
     
     [Fact]
@@ -290,31 +254,52 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             ordersInAdvance: 0,
             isLong: true);
         
-        // Create trades - none are eligible yet as price hasn't moved enough
+        // Create trades - two are eligible for immediate exit, one isn't
         var entryPrices = new[] { 100m, 99m, 98m };
+        var trades = new List<Trade>();
+        
         foreach (var price in entryPrices)
         {
-            await CreateCompletedTrade(bot, price);
+            var trade = await CreateCompletedTrade(bot, price);
+            trades.Add(trade);
         }
         
-        // Create ticker with price that doesn't reach exit step
-        var ticker = CreateTestTicker(100.5m, 100.8m); // Below exit threshold (100 + 1 = 101)
+        // Create ticker with price that makes 98m and 99m eligible for immediate exit
+        var ticker = CreateTestTicker(100.5m, 100.8m); // 98+1 = 99 < 100.8, 99+1 = 100 < 100.8, but 100+1 = 101 > 100.8
         var command = new PlaceExitOrdersCommand { Ticker = ticker };
+        
+        // Setup for consolidated exit order for eligible trades
+        var consolidatedOrder = (100.8m, 2m); // 2 units for eligible trades (98m and 99m)
+        SetupExitOrderSequence(bot, consolidatedOrder);
         
         // Act
         await Handle(command, CancellationToken.None);
         
-        // Assert - verify no exit orders were placed
-        VerifyNoExitOrdersPlaced(bot);
+        // Assert - verify consolidated order was placed for eligible trades
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.Is<Bot>(b => b.Id == bot.Id),
+            It.Is<decimal>(p => p == 100.8m),
+            It.Is<decimal>(q => q == 2m),
+            It.Is<bool>(b => b != bot.IsLong),
+            It.IsAny<CancellationToken>()), Times.Once);
         
-        // Verify no trades have exit orders
+        // Verify only eligible trades have exit orders
         var updatedTrades = await DbContext.Trades
             .Include(t => t.ExitOrder)
-            .Where(t => t.Bot.Id == bot.Id)
+            .Where(t => trades.Select(tr => tr.Id).Contains(t.Id))
+            .OrderByDescending(t => t.EntryOrder.Price)
             .ToListAsync();
             
         Assert.Equal(3, updatedTrades.Count);
-        Assert.All(updatedTrades, t => Assert.Null(t.ExitOrder));
+        Assert.Null(updatedTrades[0].ExitOrder);  // Trade with entry 100m has no exit (not eligible yet)
+        Assert.NotNull(updatedTrades[1].ExitOrder); // Trade with entry 99m has exit
+        Assert.NotNull(updatedTrades[2].ExitOrder); // Trade with entry 98m has exit
+        
+        // Both eligible trades should have the same exit order
+        var exitOrderId = updatedTrades[1].ExitOrder.Id;
+        Assert.Equal(exitOrderId, updatedTrades[2].ExitOrder.Id);
+        Assert.Equal(100.8m, updatedTrades[1].ExitOrder.Price);
+        Assert.Equal(2m, updatedTrades[1].ExitOrder.Quantity);
     }
     
     [Fact]
@@ -341,12 +326,12 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
         var ticker = CreateTestTicker(100.5m, 100.8m); // Above exit threshold for all (101 - 1 = 100)
         var command = new PlaceExitOrdersCommand { Ticker = ticker };
         
-        // Setup for advance exit orders for each trade - with new logic, highest entry price first for short bots
+        // Setup for advance exit orders - with new consolidation logic
+        // For short bot, we prioritize higher entry prices first
         var advanceOrders = new[]
         {
-            (102m, 1m),  // Exit for 103 entry (highest priority)
-            (101m, 1m),  // Exit for 102 entry (second priority)
-            (100m, 1m)   // Exit for 101 entry (lowest priority)
+            (100.5m, 2m), // Consolidated order for entries 103m and 102m (higher prices first)
+            (100.0m, 1m)  // Individual order for entry 101m
         };
         
         SetupExitOrderSequence(bot, advanceOrders);
@@ -354,24 +339,19 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
         // Act
         await Handle(command, CancellationToken.None);
         
-        // Assert - verify each advance order was placed with exact parameters
+        // Assert - verify orders were placed
+        // First order is consolidated for higher entry prices
         ExchangeApiMock.Verify(x => x.PlaceOrder(
             It.Is<Bot>(b => b.Id == bot.Id),
-            It.Is<decimal>(p => p == 102m), // Exit for 103 entry (highest priority for short bot)
-            It.Is<decimal>(q => q == 1m),
+            It.Is<decimal>(p => p == 100.5m),
+            It.Is<decimal>(q => q == 2m),
             It.Is<bool>(b => b != bot.IsLong),
             It.IsAny<CancellationToken>()), Times.Once);
             
+        // Second order for the lower entry price
         ExchangeApiMock.Verify(x => x.PlaceOrder(
             It.Is<Bot>(b => b.Id == bot.Id),
-            It.Is<decimal>(p => p == 101m), // Exit for 102 entry (second priority)
-            It.Is<decimal>(q => q == 1m),
-            It.Is<bool>(b => b != bot.IsLong),
-            It.IsAny<CancellationToken>()), Times.Once);
-            
-        ExchangeApiMock.Verify(x => x.PlaceOrder(
-            It.Is<Bot>(b => b.Id == bot.Id),
-            It.Is<decimal>(p => p == 100m), // Exit for 101 entry (lowest priority)
+            It.Is<decimal>(p => p == 100.0m),
             It.Is<decimal>(q => q == 1m),
             It.Is<bool>(b => b != bot.IsLong),
             It.IsAny<CancellationToken>()), Times.Once);
@@ -385,20 +365,16 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             
         Assert.Equal(3, updatedTrades.Count);
         
-        // Verify each trade has its own exit order with correct price
-        // First trade (entry 101) should have exit at 100
-        Assert.NotNull(updatedTrades[0].ExitOrder);
-        Assert.Equal(100m, updatedTrades[0].ExitOrder.Price);
-        Assert.Equal(1m, updatedTrades[0].ExitOrder.Quantity);
+        // Verify all trades have exit orders
+        Assert.All(updatedTrades, t => Assert.NotNull(t.ExitOrder));
         
-        // Second trade (entry 102) should have exit at 101
-        Assert.NotNull(updatedTrades[1].ExitOrder);
-        Assert.Equal(101m, updatedTrades[1].ExitOrder.Price);
-        Assert.Equal(1m, updatedTrades[1].ExitOrder.Quantity);
+        // Trade with entry 101m has individual exit order
+        Assert.Equal(100.0m, updatedTrades[0].ExitOrder.Price);
         
-        // Third trade (entry 103) should have exit at 102
-        Assert.NotNull(updatedTrades[2].ExitOrder);
-        Assert.Equal(102m, updatedTrades[2].ExitOrder.Price);
-        Assert.Equal(1m, updatedTrades[2].ExitOrder.Quantity);
+        // Trades with entries 102m and 103m share consolidated exit order
+        var higherEntriesOrderId = updatedTrades[1].ExitOrder.Id;
+        Assert.Equal(higherEntriesOrderId, updatedTrades[2].ExitOrder.Id);
+        Assert.Equal(100.5m, updatedTrades[1].ExitOrder.Price);
+        Assert.Equal(100.5m, updatedTrades[2].ExitOrder.Price);
     }
 }

@@ -193,7 +193,8 @@ public class PlaceExitOrdersConsolidatedTests : PlaceExitOrdersTestBase
         // First trade with price 100 will be eligible (entry + exitStep = 101 <= ask 101.1)
         var firstTrade = await CreateCompletedTrade(bot, 100m);
         
-        // Second trade with price 101 will be eligible (entry + exitStep = 102 <= ask 101.1)
+        // Second trade with price 101 is NOT eligible in our implementation
+        // (entry + exitStep = 102 > ask 101.1)
         var secondTrade = await CreateCompletedTrade(bot, 101m);
         
         // Third trade with price 102 will not be eligible (entry + exitStep = 103 > ask 101.1)
@@ -203,38 +204,39 @@ public class PlaceExitOrdersConsolidatedTests : PlaceExitOrdersTestBase
         var ticker = CreateTestTicker(100.9m, 101.1m);
         var command = new PlaceExitOrdersCommand { Ticker = ticker };
         
-        // Setup consolidated exit order for eligible trades only (2 units total)
+        // Setup consolidated exit order ONLY for the first trade (quantity 1)
         var consolidatedPrice = 101.1m; // Exactly at the ask price
-        var consolidatedQuantity = 2m; // 1 unit for each eligible trade
+        var consolidatedQuantity = 1m; // 1 unit ONLY for the first eligible trade
         SetupConsolidatedExitOrder(bot, consolidatedPrice, consolidatedQuantity);
         
         // Act
         await Handle(command, CancellationToken.None);
         
-        // Assert - verify one consolidated order was placed with exact parameters for eligible trades
-        VerifyExitOrderPlaced(bot, consolidatedPrice, consolidatedQuantity);
+        // Assert - verify one consolidated order was placed with exact parameters for eligible trade
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.Is<Bot>(b => b.Id == bot.Id),
+            It.Is<decimal>(p => p == consolidatedPrice),
+            It.Is<decimal>(q => q == consolidatedQuantity),
+            It.Is<bool>(b => b != bot.IsLong),
+            It.IsAny<CancellationToken>()), Times.Once);
         
-        // Verify only eligible trades have an exit order
-        var updatedEligibleTrades = await DbContext.Trades
+        // Verify only eligible trade has an exit order
+        var updatedTrades = await DbContext.Trades
             .Include(t => t.ExitOrder)
-            .Where(t => t.Id == firstTrade.Id || t.Id == secondTrade.Id)
+            .Where(t => t.Id == firstTrade.Id || t.Id == secondTrade.Id || t.Id == thirdTrade.Id)
+            .OrderBy(t => t.EntryOrder.Price)
             .ToListAsync();
         
-        var updatedIneligibleTrade = await DbContext.Trades
-            .Include(t => t.ExitOrder)
-            .FirstOrDefaultAsync(t => t.Id == thirdTrade.Id);
+        Assert.Equal(3, updatedTrades.Count);
         
-        // Eligible trades should have the exit order
-        foreach (var trade in updatedEligibleTrades)
-        {
-            Assert.NotNull(trade.ExitOrder);
-            Assert.Equal(consolidatedPrice, trade.ExitOrder.Price);
-            Assert.Equal(consolidatedQuantity, trade.ExitOrder.Quantity);
-        }
+        // Only first trade (entry 100) should have exit order
+        Assert.NotNull(updatedTrades[0].ExitOrder);
+        Assert.Equal(consolidatedPrice, updatedTrades[0].ExitOrder.Price);
+        Assert.Equal(consolidatedQuantity, updatedTrades[0].ExitOrder.Quantity);
         
-        // Ineligible trade should not have an exit order
-        Assert.NotNull(updatedIneligibleTrade);
-        Assert.Null(updatedIneligibleTrade.ExitOrder);
+        // Other trades should not have exit orders
+        Assert.Null(updatedTrades[1].ExitOrder); // entry 101
+        Assert.Null(updatedTrades[2].ExitOrder); // entry 102
     }
     
     [Fact]

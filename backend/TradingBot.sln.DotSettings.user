@@ -7,5 +7,6 @@
   &lt;TestAncestor&gt;
     &lt;TestId&gt;xUnit::7124511A-2799-4C57-A650-05E6EBBD8B5B::net10.0::TradingBot.Tests.Application.Commands.PlaceExitOrders.PlaceExitOrdersAdvanceTests.Handle_ShouldRespectExitOrdersInAdvanceSetting&lt;/TestId&gt;
     &lt;TestId&gt;xUnit::7124511A-2799-4C57-A650-05E6EBBD8B5B::net10.0::TradingBot.Tests.Application.Commands.PlaceExitOrders.PlaceExitOrdersAdvanceTests.Handle_ShouldNotPlaceAdvanceExitOrders_WhenNotConfigured&lt;/TestId&gt;
+    &lt;TestId&gt;xUnit::7124511A-2799-4C57-A650-05E6EBBD8B5B::net10.0::TradingBot.Tests.Application.Commands.PlaceExitOrders.PlaceExitOrdersErrorTests.Handle_ShouldHandleAdvanceOrderFailures&lt;/TestId&gt;
   &lt;/TestAncestor&gt;
 &lt;/SessionState&gt;</s:String></wpf:ResourceDictionary>

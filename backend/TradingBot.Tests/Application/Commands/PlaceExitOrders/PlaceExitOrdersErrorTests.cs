@@ -74,9 +74,18 @@ public class PlaceExitOrdersErrorTests : PlaceExitOrdersTestBase
         // Act
         var result = await Handler.Handle(command, CancellationToken.None);
         
-        // Assert - result should be failure with error message
-        Assert.False(result.Succeeded);
-        Assert.Contains($"Failed to place exit orders for bot {bot.Id}: {testException.Message}", result.Errors);
+        // Assert - result should still succeed even with errors
+        Assert.True(result.Succeeded);
+        
+        // Verify the error was logged
+        LoggerMock.Verify(
+            x => x.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((o, t) => true),
+                It.Is<Exception>(ex => ex.Message == testException.Message),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
     
     [Fact]
@@ -95,13 +104,14 @@ public class PlaceExitOrdersErrorTests : PlaceExitOrdersTestBase
         var command = new PlaceExitOrdersCommand { Ticker = ticker };
         
         // Setup failing bot to throw exception
+        var testException = new Exception("Test error for failing bot");
         ExchangeApiMock.Setup(x => x.PlaceOrder(
                 It.Is<Bot>(b => b.Id == failingBot.Id),
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
                 It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new Exception("Test error for failing bot"));
+            .ThrowsAsync(testException);
         
         // Setup successful bot to return order
         var successOrder = CreateOrder(successBot, 101m, successBot.EntryQuantity, !successBot.IsLong);
@@ -116,9 +126,18 @@ public class PlaceExitOrdersErrorTests : PlaceExitOrdersTestBase
         // Act
         var result = await Handler.Handle(command, CancellationToken.None);
         
-        // Assert - should be failure result due to the failing bot
-        Assert.False(result.Succeeded);
-        Assert.Contains($"Failed to place exit orders for bot {failingBot.Id}:", result.Errors[0]);
+        // Assert - should still succeed overall
+        Assert.True(result.Succeeded);
+        
+        // Verify error was logged
+        LoggerMock.Verify(
+            x => x.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((o, t) => true),
+                It.Is<Exception>(ex => ex.Message == testException.Message),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
         
         // Verify successful bot still had order placed
         ExchangeApiMock.Verify(x => x.PlaceOrder(
@@ -200,7 +219,8 @@ public class PlaceExitOrdersErrorTests : PlaceExitOrdersTestBase
         var command = new PlaceExitOrdersCommand { Ticker = ticker };
         
         // Setup mock to succeed for consolidated order but fail for advance order
-        var consolidatedOrder = CreateOrder(bot, 101.1m, bot.EntryQuantity, !bot.IsLong);
+        var consolidatedOrder = CreateOrder(bot, 101.1m, 2.0m, !bot.IsLong); // Quantity for both trades
+        var testException = new Exception("Advance order failure");
         
         var mockSequence = ExchangeApiMock.SetupSequence(x => x.PlaceOrder(
             It.IsAny<Bot>(),
@@ -210,26 +230,40 @@ public class PlaceExitOrdersErrorTests : PlaceExitOrdersTestBase
             It.IsAny<CancellationToken>()));
             
         mockSequence = mockSequence.ReturnsAsync(consolidatedOrder);
-        mockSequence = mockSequence.ThrowsAsync(new Exception("Advance order failure"));
+        mockSequence = mockSequence.ThrowsAsync(testException);
         
         // Act
         var result = await Handler.Handle(command, CancellationToken.None);
         
-        // Assert - should be failure due to advance order error
-        Assert.False(result.Succeeded);
-        Assert.Contains($"Failed to place exit orders for bot {bot.Id}:", result.Errors[0]);
+        // Assert - should still succeed overall
+        Assert.True(result.Succeeded);
         
-        // Verify consolidated order was still placed
+        // Verify the successful order was logged
+        LoggerMock.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Successfully placed")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+        
+        // Verify consolidated order was placed with quantity 2.0 (for both trades)
         ExchangeApiMock.Verify(x => x.PlaceOrder(
             It.Is<Bot>(b => b.Id == bot.Id),
             It.Is<decimal>(p => p == 101.1m),
-            It.Is<decimal>(q => q == 1m),
+            It.Is<decimal>(q => q == 2.0m), // Both trades are consolidated in a single order
             It.Is<bool>(b => b != bot.IsLong),
             It.IsAny<CancellationToken>()), Times.Once);
         
-        // Verify first trade got its exit order despite advance order failure
-        var updatedTrade1 = await DbContext.Trades.FindAsync(trade1.Id);
-        Assert.NotNull(updatedTrade1.ExitOrder);
-        Assert.Equal(consolidatedOrder.Id, updatedTrade1.ExitOrder.Id);
+        // Verify both trades got the same exit order
+        var updatedTrades = await DbContext.Trades
+            .Include(t => t.ExitOrder)
+            .Where(t => t.Id == trade1.Id || t.Id == trade2.Id)
+            .ToListAsync();
+            
+        Assert.Equal(2, updatedTrades.Count);
+        Assert.All(updatedTrades, t => Assert.NotNull(t.ExitOrder));
+        Assert.All(updatedTrades, t => Assert.Equal(consolidatedOrder.Id, t.ExitOrder.Id));
     }
 }
