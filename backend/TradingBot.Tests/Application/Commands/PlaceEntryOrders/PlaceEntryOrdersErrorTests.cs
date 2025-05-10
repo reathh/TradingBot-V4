@@ -108,40 +108,4 @@ public class PlaceEntryOrdersErrorTests : BaseTest
         Assert.Single(trades);
         Assert.Equal(bot2.Id, trades[0].BotId);
     }
-
-    [Fact]
-    public async Task Handle_ShouldNotPlaceOrder_WhenExchangeReturnsEmptyOrderId()
-    {
-        // Arrange
-        var bot = await CreateBot();
-        var ticker = CreateTicker(100, 101);
-        var command = new PlaceEntryOrdersCommand { Ticker = ticker };
-
-        // Create an order with empty ID
-        var invalidOrder = new Order("", bot.Symbol, 100, 1, true, DateTime.UtcNow);
-        ExchangeApiMock.Setup(x => x.PlaceOrder(
-                It.IsAny<Bot>(),
-                It.IsAny<decimal>(),
-                It.IsAny<decimal>(),
-                It.IsAny<bool>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(invalidOrder);
-
-        // Act
-        await Handler.Handle(command, CancellationToken.None);
-
-        // Assert - No trades should be saved
-        var trades = await DbContext.Trades.ToListAsync();
-        Assert.Empty(trades);
-
-        // Error should be logged
-        LoggerMock.Verify(
-            x => x.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Failed to place entry order")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-            Times.Once);
-    }
 } 

@@ -222,4 +222,4 @@ public class PlaceEntryOrdersQuantityCalculationTests : BaseTest
             It.Is<bool>(b => b == bot.IsLong),
             It.IsAny<CancellationToken>()), Times.Once);
     }
-} 
+}
