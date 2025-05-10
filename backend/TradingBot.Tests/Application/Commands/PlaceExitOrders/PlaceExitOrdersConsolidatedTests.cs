@@ -51,16 +51,16 @@ public class PlaceExitOrdersConsolidatedTests : PlaceExitOrdersTestBase
         Assert.Equal(3, updatedTrades.Count);
         
         // All trades should reference the same exit order
-        var exitOrderId = updatedTrades.First().ExitOrder?.Id;
-        Assert.NotNull(exitOrderId);
+        Assert.NotNull(updatedTrades.First().ExitOrder);
+        var exitOrderId = updatedTrades.First().ExitOrder!.Id;
         
         foreach (var trade in updatedTrades)
         {
             Assert.NotNull(trade.ExitOrder);
-            Assert.Equal(exitOrderId, trade.ExitOrder.Id);
-            Assert.Equal(consolidatedPrice, trade.ExitOrder.Price);
-            Assert.Equal(consolidatedQuantity, trade.ExitOrder.Quantity);
-            Assert.False(trade.ExitOrder.IsBuy); // Selling for long positions
+            Assert.Equal(exitOrderId, trade.ExitOrder!.Id);
+            Assert.Equal(consolidatedPrice, trade.ExitOrder!.Price);
+            Assert.Equal(consolidatedQuantity, trade.ExitOrder!.Quantity);
+            Assert.False(trade.ExitOrder!.IsBuy); // Selling for long positions
         }
     }
     
@@ -104,16 +104,16 @@ public class PlaceExitOrdersConsolidatedTests : PlaceExitOrdersTestBase
         Assert.Equal(3, updatedTrades.Count);
         
         // All trades should reference the same exit order
-        var exitOrderId = updatedTrades.First().ExitOrder?.Id;
-        Assert.NotNull(exitOrderId);
+        Assert.NotNull(updatedTrades.First().ExitOrder);
+        var exitOrderId = updatedTrades.First().ExitOrder!.Id;
         
         foreach (var trade in updatedTrades)
         {
             Assert.NotNull(trade.ExitOrder);
-            Assert.Equal(exitOrderId, trade.ExitOrder.Id);
-            Assert.Equal(consolidatedPrice, trade.ExitOrder.Price);
-            Assert.Equal(consolidatedQuantity, trade.ExitOrder.Quantity);
-            Assert.True(trade.ExitOrder.IsBuy); // Buying for short positions
+            Assert.Equal(exitOrderId, trade.ExitOrder!.Id);
+            Assert.Equal(consolidatedPrice, trade.ExitOrder!.Price);
+            Assert.Equal(consolidatedQuantity, trade.ExitOrder!.Quantity);
+            Assert.True(trade.ExitOrder!.IsBuy); // Buying for short positions
         }
     }
     
@@ -171,15 +171,15 @@ public class PlaceExitOrdersConsolidatedTests : PlaceExitOrdersTestBase
         Assert.Equal(3, updatedTrades.Count);
         
         // All trades should reference the same exit order with the correct total quantity
-        var exitOrderId = updatedTrades.First().ExitOrder?.Id;
-        Assert.NotNull(exitOrderId);
+        Assert.NotNull(updatedTrades.First().ExitOrder);
+        var exitOrderId = updatedTrades.First().ExitOrder!.Id;
         
         foreach (var trade in updatedTrades)
         {
             Assert.NotNull(trade.ExitOrder);
-            Assert.Equal(exitOrderId, trade.ExitOrder.Id);
-            Assert.Equal(consolidatedPrice, trade.ExitOrder.Price);
-            Assert.Equal(consolidatedQuantity, trade.ExitOrder.Quantity);
+            Assert.Equal(exitOrderId, trade.ExitOrder!.Id);
+            Assert.Equal(consolidatedPrice, trade.ExitOrder!.Price);
+            Assert.Equal(consolidatedQuantity, trade.ExitOrder!.Quantity);
         }
     }
     

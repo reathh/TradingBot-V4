@@ -176,7 +176,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                     }
                     catch (Exception ex) {
                         _logger.LogError(ex, "Failed to place exit order for bot {BotId}", bot.Id);
-                        return (Order: null, Trades: item.AssociatedTrades, Success: false);
+                        return (Order: null!, Trades: item.AssociatedTrades, Success: false);
                     }
                 })
             );
