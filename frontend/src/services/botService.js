@@ -30,34 +30,5 @@ export default {
         return apiClient.get( '/trades', {
             params: { page, pageSize, period, botId }
         } );
-    },
-
-    /**
-     * @deprecated Use getTrades() instead
-     */
-    getBotProfits ( { page = 1, pageSize = 10, period = 'month', botId = null } = {} )
-    {
-        console.warn( 'getBotProfits is deprecated. Use getTrades instead.' );
-        return this.getTrades( { page, pageSize, period, botId } );
-    },
-
-    /**
-     * Calculate bot profit from order data
-     * @param {Object} order - Order data with entry and exit prices
-     * @returns {Number} - Calculated profit
-     */
-    calculateProfit ( order )
-    {
-        if ( !order || !order.entryPrice || order.exitPrice == null )
-        {
-            return 0;
-        }
-
-        // Calculate profit: (exit price - entry price) * quantity - fees
-        const profit =
-            ( order.exitPrice - order.entryPrice ) * order.quantity -
-            ( order.entryFee + order.exitFee );
-
-        return parseFloat( profit.toFixed( 2 ) );
     }
 };

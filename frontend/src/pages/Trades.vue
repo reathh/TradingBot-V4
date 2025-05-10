@@ -109,8 +109,3 @@ onMounted(() => {
 });
 </script>
 
-<style>
-.trade-detail-container {
-  padding: 16px;
-}
-</style>

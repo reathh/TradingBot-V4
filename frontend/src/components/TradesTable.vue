@@ -17,7 +17,7 @@
         <td>{{ row.symbol }}</td>
         <td>{{ formatCurrency(row.entryPrice) }}</td>
         <td>{{ formatCurrency(row.exitPrice) }}</td>
-        <td>{{ row.quantity ? row.quantity.toFixed(4) : '0.0000' }}</td>
+        <td>{{ formatNumber(row.quantity) }}</td>
         <td>{{ formatCurrency(row.entryFee + row.exitFee) }}</td>
         <td class="text-right" :class="getProfitClass(row.profit)">
           {{ formatCurrency(row.profit) }}
@@ -36,97 +36,21 @@
       </template>
     </PagedTable>
 
-    <!-- Trade Details Modal -->
-    <el-dialog
-      title="Trade Details"
+    <!-- Using the new TradeDetails component -->
+    <TradeDetails
       v-model="showDetailsModal"
-      width="600px"
-    >
-      <div v-if="selectedTrade" class="trade-detail-container">
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <strong>Trade ID:</strong> {{ selectedTrade.id }}
-          </div>
-          <div class="col-md-6">
-            <strong>Symbol:</strong> {{ selectedTrade.symbol }}
-          </div>
-        </div>
-
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <strong>Direction:</strong>
-            <span :class="selectedTrade.isLong ? 'text-success' : 'text-danger'">
-              {{ selectedTrade.isLong ? 'Buy' : 'Sell' }}
-            </span>
-          </div>
-          <div class="col-md-6">
-            <strong>Profit:</strong>
-            <span :class="selectedTrade.profit > 0 ? 'text-success' : 'text-danger'">
-              {{ formatCurrency(selectedTrade.profit) }}
-            </span>
-          </div>
-        </div>
-
-        <h5 class="mt-4">Entry Details</h5>
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <strong>Price:</strong> {{ formatCurrency(selectedTrade.entryPrice) }}
-          </div>
-          <div class="col-md-6">
-            <strong>Average Fill:</strong> {{ formatCurrency(selectedTrade.entryAvgFill || selectedTrade.entryPrice) }}
-          </div>
-        </div>
-
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <strong>Quantity:</strong> {{ selectedTrade.quantity?.toFixed(4) ?? 'N/A' }}
-          </div>
-          <div class="col-md-6">
-            <strong>Fee:</strong> {{ selectedTrade.entryFee?.toFixed(4) ?? 'N/A' }}
-          </div>
-        </div>
-
-        <div class="row mb-3">
-          <div class="col-md-12">
-            <strong>Entry Time:</strong> {{ formatDate(selectedTrade.entryTime) }}
-          </div>
-        </div>
-
-        <h5 class="mt-4">Exit Details</h5>
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <strong>Price:</strong> {{ formatCurrency(selectedTrade.exitPrice) }}
-          </div>
-          <div class="col-md-6">
-            <strong>Average Fill:</strong> {{ formatCurrency(selectedTrade.exitAvgFill || selectedTrade.exitPrice) }}
-          </div>
-        </div>
-
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <strong>Fee:</strong> {{ selectedTrade.exitFee?.toFixed(4) ?? 'N/A' }}
-          </div>
-          <div class="col-md-6">
-            <strong>Status:</strong> {{ selectedTrade.isCompleted ? 'Completed' : 'Open' }}
-          </div>
-        </div>
-
-        <div class="row mb-3">
-          <div class="col-md-12">
-            <strong>Exit Time:</strong> {{ formatDate(selectedTrade.exitTime) }}
-          </div>
-        </div>
-      </div>
-    </el-dialog>
+      :trade="selectedTrade"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, defineProps, defineEmits, watch } from "vue";
-import { ElDialog } from "element-plus";
 import BaseButton from "@/components/BaseButton.vue";
 import PagedTable from "@/components/PagedTable.vue";
+import TradeDetails from "@/components/TradeDetails.vue";
 import apiClient from "@/services/api";
+import { formatCurrency, formatNumber, getProfitClass } from "@/util/formatters";
 
 const props = defineProps({
   botId: {
@@ -171,25 +95,6 @@ const tableColumns = [
   { key: 'profit', label: 'PROFIT', align: 'right' },
   { key: 'actions', label: 'ACTIONS', align: 'center' }
 ];
-
-// Format currency with $ symbol and 2 decimal places
-const formatCurrency = (value) => {
-  if (value === undefined || value === null) return 'N/A';
-  return `$${parseFloat(value).toFixed(2)}`;
-};
-
-// Get CSS class based on profit value
-const getProfitClass = (profit) => {
-  if (!profit) return '';
-  return profit > 0 ? 'text-success' : 'text-danger';
-};
-
-// Format date helper
-function formatDate(dateString) {
-  if (!dateString) return 'N/A';
-  const date = new Date(dateString);
-  return date.toLocaleString();
-}
 
 // View trade details
 function viewTradeDetails(trade) {
@@ -260,9 +165,10 @@ onMounted(() => fetchTradeData());
   color: #fd5d93 !important;
 }
 
-.trade-detail-container {
+/* This style is now in TradeDetails component */
+/* .trade-detail-container {
   padding: 16px;
-}
+} */
 
 .opacity-5 {
   opacity: 0.5;

@@ -398,12 +398,6 @@ async function toggleBotStatus(bot) {
 
 // Trade related functions moved to Trades.vue page
 
-function formatDate(dateString) {
-  if (!dateString) return 'N/A';
-  const date = new Date(dateString);
-  return date.toLocaleString();
-}
-
 // Helper function to ensure decimal separator is a dot
 function formatNumberInput(event, field) {
   // Get the input value

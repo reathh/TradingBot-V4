@@ -17,7 +17,7 @@
         <td>{{ row.ticker || row.symbol }}</td>
         <td>{{ formatCurrency(row.entryPrice) }}</td>
         <td>{{ formatCurrency(row.exitPrice) }}</td>
-        <td>{{ row.quantity ? row.quantity.toFixed(4) : '0.0000' }}</td>
+        <td>{{ formatNumber(row.quantity) }}</td>
         <td>{{ formatCurrency(row.entryFee + row.exitFee) }}</td>
         <td class="text-right" :class="getProfitClass(row.profit)">
           {{ formatCurrency(row.profit) }}
@@ -96,6 +96,7 @@ import { ElTag } from "element-plus";
 import BaseButton from "@/components/BaseButton.vue";
 import PagedTable from "@/components/PagedTable.vue";
 import botService from "@/services/botService";
+import { formatCurrency, formatNumber, getProfitClass } from "@/util/formatters";
 
 const props = defineProps({
   showViewButton: { type: Boolean, default: true },
@@ -131,18 +132,6 @@ const tableColumns = [
   { key: 'profit', label: 'PROFIT', align: 'right' },
   { key: 'actions', label: 'ACTIONS', align: 'right' }
 ];
-
-// Format currency with $ symbol and 2 decimal places
-const formatCurrency = (value) => {
-  if (value === undefined || value === null) return 'N/A';
-  return `$${parseFloat(value).toFixed(2)}`;
-};
-
-// Get CSS class based on profit value
-const getProfitClass = (profit) => {
-  if (!profit) return '';
-  return profit > 0 ? 'text-success' : 'text-danger';
-};
 
 // Fetch bot data with pagination
 const fetchBotData = async (params) => {
