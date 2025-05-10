@@ -168,7 +168,7 @@ public class TickerUpdateService(
         }
     }
 
-    private async Task UnsubscribeFromSymbolAsync(string symbol)
+    private Task UnsubscribeFromSymbolAsync(string symbol)
     {
         Logger.LogInformation("Unsubscribing from ticker updates for {Symbol}", symbol);
 
@@ -200,5 +200,6 @@ public class TickerUpdateService(
         {
             Logger.LogError(ex, "Error unsubscribing from ticker updates for {Symbol}", symbol);
         }
+        return Task.CompletedTask;
     }
 } 
