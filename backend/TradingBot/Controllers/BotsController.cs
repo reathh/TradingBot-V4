@@ -48,7 +48,7 @@ namespace TradingBot.Controllers
                 Page = page,
                 PageSize = pageSize,
                 TotalPages = totalPages,
-                TotalCount = totalCount,
+                TotalItems = totalCount,
                 Items = bots
             };
 

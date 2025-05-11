@@ -1,9 +1,9 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using TradingBot.Data;
 using TradingBot.Models;
 
@@ -56,7 +56,7 @@ namespace TradingBot.Controllers
             if (!string.IsNullOrWhiteSpace(searchQuery))
             {
                 searchQuery = searchQuery.ToLower();
-                query = query.Where(o => 
+                query = query.Where(o =>
                     o.Id.ToLower().Contains(searchQuery) ||
                     o.Symbol.ToLower().Contains(searchQuery));
             }
@@ -104,7 +104,7 @@ namespace TradingBot.Controllers
 
             // Count total items for pagination
             var totalCount = await query.CountAsync();
-            
+
             // Apply pagination
             var orders = await query
                 .Skip((page - 1) * pageSize)
@@ -132,7 +132,7 @@ namespace TradingBot.Controllers
             {
                 Page = page,
                 PageSize = pageSize,
-                TotalCount = totalCount,
+                TotalItems = totalCount,
                 TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
                 Items = orderDtos
             };
@@ -181,4 +181,4 @@ namespace TradingBot.Controllers
         public DateTime CreatedAt { get; set; }
         public DateTime LastUpdated { get; set; }
     }
-} 
+}

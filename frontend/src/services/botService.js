@@ -5,18 +5,6 @@ import apiClient from './api';
  */
 export default {
     /**
-     * Get bot performance chart data for the specified time period
-     * @param {string} period - The time period (day, week, month, year)
-     * @returns {Promise} Promise with bot performance chart data
-     */
-    getBotPerformance ( period = 'month' )
-    {
-        return apiClient.get( '/dashboard/bot-profits-chart', {
-            params: { period }
-        } );
-    },
-
-    /**
      * Get detailed trading history with profit calculations
      * @param {Object} options - Options for the request
      * @param {number} options.page - Page number to fetch (starting from 1)
@@ -25,10 +13,27 @@ export default {
      * @param {number} options.botId - Optional bot ID to filter results by bot
      * @returns {Promise} Promise with trading history
      */
-    getTrades ( { page = 1, pageSize = 10, period = 'month', botId = null } = {} )
-    {
-        return apiClient.get( '/trades', {
+    getTrades({ page = 1, pageSize = 10, period = 'month', botId = null } = {}) {
+        return apiClient.get('/trades', {
             params: { page, pageSize, period, botId }
-        } );
+        });
+    },
+
+    /**
+     * Get aggregated profit data for tables or charts
+     * @param {string} interval - Time interval (Minute, Hour, Day, Week, Month, Year)
+     * @param {number} botId - Optional bot ID to filter results
+     * @param {number} page - Page number to fetch
+     * @param {number} pageSize - Number of items per page
+     * @returns {Promise} Promise with aggregated profit data
+     */
+    getAggregatedProfits(interval = 'Day', botId = null, page = 1, pageSize = 1000) {
+        let url = '/trades/profit-data?interval=' + interval + '&page=' + page + '&pageSize=' + pageSize;
+        
+        if (botId) {
+            url += '&botId=' + botId;
+        }
+        
+        return apiClient.get(url);
     }
 };

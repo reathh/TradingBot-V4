@@ -4,35 +4,26 @@
       <Card type="chart">
         <template #header>
           <div class="row">
-            <div class="col-sm-6">
+            <div class="col-md-6 col-sm-12">
               <h5 class="card-category">Trading Analytics</h5>
               <h2 class="card-title">Bot Profit Performance</h2>
             </div>
-            <div class="col-sm-6 d-flex d-sm-block">
-              <div
-                class="btn-group btn-group-toggle float-right"
-                data-toggle="buttons"
+            <div class="col-md-6 col-sm-12 d-flex justify-content-md-end justify-content-sm-start align-items-center">
+              <el-select
+                v-model="selectedInterval"
+                class="select-primary"
+                size="large"
+                placeholder="Select Interval"
+                @change="fetchBotProfitData"
               >
-                <label
-                  v-for="(period, index) in timePeriods"
-                  :key="period.value"
-                  class="btn btn-sm btn-primary btn-simple"
-                  :class="{ active: selectedPeriodIndex === index }"
-                  :id="index"
-                >
-                  <input
-                    type="radio"
-                    @click="changePeriod(index)"
-                    name="periods"
-                    autocomplete="off"
-                    :checked="selectedPeriodIndex === index"
-                  />
-                  <span class="d-none d-sm-block">{{ period.label }}</span>
-                  <span class="d-block d-sm-none">
-                    <i :class="period.icon"></i>
-                  </span>
-                </label>
-              </div>
+                <el-option
+                  v-for="interval in timeIntervals"
+                  :key="interval.value"
+                  :label="interval.label"
+                  :value="interval.value"
+                  class="select-primary"
+                />
+              </el-select>
             </div>
           </div>
         </template>
@@ -138,7 +129,7 @@
         </template>
         <div class="table-responsive">
           <TradesTable 
-            :period="timePeriods[selectedPeriodIndex].value"
+            :period="selectedInterval"
           />
         </div>
       </Card>
@@ -150,7 +141,7 @@
         </template>
         <div class="table-responsive">
           <OrdersTable 
-            :period="timePeriods[selectedPeriodIndex].value"
+            :period="selectedInterval"
           />
         </div>
       </Card>
@@ -167,6 +158,9 @@ import {
   onBeforeUnmount,
   inject,
 } from "vue";
+import { ElSelect, ElOption } from "element-plus";
+import "element-plus/es/components/select/style/css";
+import "element-plus/es/components/option/style/css";
 import LineChart from "@/components/Charts/LineChart.vue";
 import BarChart from "@/components/Charts/BarChart.vue";
 import * as chartConfigs from "@/components/Charts/config";
@@ -372,34 +366,51 @@ const blueBarChartData = ref({
 const blueBarChartExtraOptions = ref(chartConfigs.barChartOptions);
 const blueBarChartGradientStops = ref([1, 0.4, 0]);
 
-// Time period selectors for bot profit chart
-const timePeriods = [
-  { label: 'Day', value: 'day', icon: 'tim-icons icon-calendar-60' },
-  { label: 'Week', value: 'week', icon: 'tim-icons icon-chart-pie-36' },
-  { label: 'Month', value: 'month', icon: 'tim-icons icon-chart-bar-32' },
-  { label: 'Year', value: 'year', icon: 'tim-icons icon-money-coins' },
+// Time intervals for profit chart
+const timeIntervals = [
+  { label: 'Minutely', value: 'Minute' },
+  { label: 'Hourly', value: 'Hour' },
+  { label: 'Daily', value: 'Day' },
+  { label: 'Weekly', value: 'Week' },
+  { label: 'Monthly', value: 'Month' },
+  { label: 'Yearly', value: 'Year' },
 ];
-const selectedPeriodIndex = ref(2); // Month selected by default
+const selectedInterval = ref('Day'); // Default to daily interval
 
-// Change time period for profit chart
-const changePeriod = (index) => {
-  selectedPeriodIndex.value = index;
-  fetchBotProfitData(timePeriods[index].value);
-};
-
-// Fetch bot profit data based on time period
-const fetchBotProfitData = async (period) => {
+// Fetch bot profit data based on time interval
+const fetchBotProfitData = async () => {
   try {
-    const response = await botService.getBotPerformance(period);
-
-    if (response && response.data) {
-      // Use the data directly from the backend
+    const response = await botService.getAggregatedProfits(selectedInterval.value);
+    
+    if (response && response.data && response.data.items) {
+      // Transform aggregated data for chart format
+      const profitData = response.data.items;
+      
+      // Sort the data by period start to ensure chronological order
+      profitData.sort((a, b) => new Date(a.periodStart) - new Date(b.periodStart));
+      
+      // Extract labels and data points
+      const labels = profitData.map(item => {
+        // Format the label based on interval
+        switch (selectedInterval.value) {
+          case 'Minute': return new Date(item.periodStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          case 'Hour': return new Date(item.periodStart).toLocaleTimeString([], { hour: '2-digit' }) + ':00';
+          case 'Day': return new Date(item.periodStart).toLocaleDateString([], { day: 'numeric' });
+          case 'Week': return 'W' + Math.ceil(new Date(item.periodStart).getDate() / 7);
+          case 'Month': return new Date(item.periodStart).toLocaleDateString([], { month: 'short' });
+          case 'Year': return new Date(item.periodStart).getFullYear().toString();
+          default: return item.timePeriod;
+        }
+      });
+      
+      const data = profitData.map(item => item.totalProfit);
+      
       performanceChartData.value = {
-        labels: response.data.labels,
+        labels: labels,
         datasets: [
           {
             label: "Bot Profit",
-            data: response.data.data,
+            data: data,
             borderColor: "#41B883",
             backgroundColor: "rgba(65, 184, 131, 0.1)",
             borderWidth: 3,
@@ -417,8 +428,8 @@ const fetchBotProfitData = async (period) => {
 };
 
 onMounted(() => {
-  // Initialize bot profit data
-  fetchBotProfitData(timePeriods[selectedPeriodIndex.value].value);
+  // Initialize bot profit data with selected interval
+  fetchBotProfitData();
 });
 </script>
 <style lang="scss" scoped>
@@ -521,5 +532,29 @@ onMounted(() => {
       height: 100%;
     }
   }
+}
+
+.el-select {
+  width: 200px;
+  margin-right: 20px;
+  
+  @media (max-width: 768px) {
+    width: 100%;
+    margin-right: 0;
+    margin-top: 10px;
+  }
+}
+
+:deep(.el-select__popper) {
+  width: 100% !important;
+  max-width: 300px;
+  
+  @media (max-width: 768px) {
+    max-width: 100%;
+  }
+}
+
+:deep(.el-select-dropdown__item) {
+  padding: 0 20px;
 }
 </style>

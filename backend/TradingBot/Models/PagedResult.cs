@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace TradingBot.Models;
 
 /// <summary>
@@ -24,10 +26,10 @@ public class PagedResult<T>
     /// <summary>
     /// Total number of items across all pages
     /// </summary>
-    public int TotalCount { get; set; }
+    public int TotalItems { get; set; }
     
     /// <summary>
     /// Collection of items for the current page
     /// </summary>
-    public List<T> Items { get; set; } = [];
+    public required IEnumerable<T> Items { get; set; }
 } 
