@@ -9,8 +9,6 @@ using MediatR;
 public abstract class BaseCommandHandler<TRequest>(ILogger logger) : IRequestHandler<TRequest, Result>
     where TRequest : IRequest<Result>
 {
-    private readonly ILogger _logger = logger;
-
     /// <summary>
     /// Main handle method that provides exception handling
     /// </summary>
@@ -22,7 +20,7 @@ public abstract class BaseCommandHandler<TRequest>(ILogger logger) : IRequestHan
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error handling command {CommandType}: {Message}",
+            logger.LogError(ex, "Error handling command {CommandType}: {Message}",
                 typeof(TRequest).Name, ex.Message);
 
             throw;
@@ -43,8 +41,6 @@ public abstract class BaseCommandHandler<TRequest>(ILogger logger) : IRequestHan
 public abstract class BaseCommandHandler<TRequest, TResponse>(ILogger logger) : IRequestHandler<TRequest, Result<TResponse>>
     where TRequest : IRequest<Result<TResponse>>
 {
-    private readonly ILogger _logger = logger;
-
     /// <summary>
     /// Main handle method that provides exception handling
     /// </summary>
@@ -56,7 +52,7 @@ public abstract class BaseCommandHandler<TRequest, TResponse>(ILogger logger) : 
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error handling command {CommandType}: {Message}",
+            logger.LogError(ex, "Error handling command {CommandType}: {Message}",
                 typeof(TRequest).Name, ex.Message);
             return $"Error handling {typeof(TRequest).Name}: {ex.Message}";
         }

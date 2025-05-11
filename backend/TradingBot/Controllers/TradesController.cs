@@ -9,8 +9,6 @@ namespace TradingBot.Controllers
     [Route("api/[controller]")]
     public class TradesController(TradingBotDbContext context) : ControllerBase
     {
-        private readonly TradingBotDbContext _context = context;
-
         // GET: api/Trades
         [HttpGet]
         public async Task<ActionResult<PagedResult<TradeDto>>> GetTrades(
@@ -23,7 +21,7 @@ namespace TradingBot.Controllers
             if (page < 1) page = 1;
             if (pageSize < 1 || pageSize > 100) pageSize = 10;
 
-            var query = _context.Trades
+            var query = context.Trades
                 .Include(t => t.EntryOrder)
                 .Include(t => t.ExitOrder)
                 .Include(t => t.Bot)
@@ -81,7 +79,7 @@ namespace TradingBot.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<TradeDto>> GetTrade(int id)
         {
-            var trade = await _context.Trades
+            var trade = await context.Trades
                 .Include(t => t.EntryOrder)
                 .Include(t => t.ExitOrder)
                 .Include(t => t.Bot)
@@ -142,7 +140,7 @@ namespace TradingBot.Controllers
             }
 
             // Get trades within the date range
-            var query = _context.Trades
+            var query = context.Trades
                 .Include(t => t.EntryOrder)
                 .Include(t => t.ExitOrder)
                 .Include(t => t.Bot)

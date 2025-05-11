@@ -9,8 +9,6 @@ namespace TradingBot.Controllers
     [Route("api/[controller]")]
     public class BotsController(TradingBotDbContext context) : ControllerBase
     {
-        private readonly TradingBotDbContext _context = context;
-
         // GET: api/Bots
         [HttpGet]
         public async Task<ActionResult<PagedResult<Bot>>> GetBots(
@@ -21,7 +19,7 @@ namespace TradingBot.Controllers
             if (page < 1) page = 1;
             if (pageSize < 1 || pageSize > 100) pageSize = 10;
 
-            var query = _context.Bots.AsQueryable();
+            var query = context.Bots.AsQueryable();
 
             // Apply search filter if provided
             if (!string.IsNullOrWhiteSpace(search))
@@ -59,7 +57,7 @@ namespace TradingBot.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Bot>> GetBot(int id)
         {
-            var bot = await _context.Bots.FindAsync(id);
+            var bot = await context.Bots.FindAsync(id);
 
             if (bot == null)
             {
@@ -78,11 +76,11 @@ namespace TradingBot.Controllers
                 return BadRequest();
             }
 
-            _context.Entry(bot).State = EntityState.Modified;
+            context.Entry(bot).State = EntityState.Modified;
 
             try
             {
-                await _context.SaveChangesAsync();
+                await context.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException) when (!BotExists(id))
             {
@@ -96,8 +94,8 @@ namespace TradingBot.Controllers
         [HttpPost]
         public async Task<ActionResult<Bot>> CreateBot(Bot bot)
         {
-            _context.Bots.Add(bot);
-            await _context.SaveChangesAsync();
+            context.Bots.Add(bot);
+            await context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetBot), new { id = bot.Id }, bot);
         }
@@ -106,14 +104,14 @@ namespace TradingBot.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteBot(int id)
         {
-            var bot = await _context.Bots.FindAsync(id);
+            var bot = await context.Bots.FindAsync(id);
             if (bot == null)
             {
                 return NotFound();
             }
 
-            _context.Bots.Remove(bot);
-            await _context.SaveChangesAsync();
+            context.Bots.Remove(bot);
+            await context.SaveChangesAsync();
 
             return NoContent();
         }
@@ -122,21 +120,21 @@ namespace TradingBot.Controllers
         [HttpPost("{id}/toggle")]
         public async Task<IActionResult> ToggleBotStatus(int id)
         {
-            var bot = await _context.Bots.FindAsync(id);
+            var bot = await context.Bots.FindAsync(id);
             if (bot == null)
             {
                 return NotFound();
             }
 
             bot.Enabled = !bot.Enabled;
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
             return NoContent();
         }
 
         private bool BotExists(int id)
         {
-            return _context.Bots.Any(e => e.Id == id);
+            return context.Bots.Any(e => e.Id == id);
         }
     }
 

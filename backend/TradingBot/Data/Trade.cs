@@ -13,7 +13,6 @@ namespace TradingBot.Data
         public Order EntryOrder { get; set; } = null!;
         public Order? ExitOrder { get; set; }
         public string? ExitOrderId { get; set; }
-        public decimal? Profit { get; set; }
 
         // Navigation property to Bot
         public int BotId { get; set; }

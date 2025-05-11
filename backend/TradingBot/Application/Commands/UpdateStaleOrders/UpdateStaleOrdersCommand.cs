@@ -17,18 +17,13 @@ public class UpdateStaleOrdersCommandHandler(
     TimeProvider timeProvider,
     ILogger<UpdateStaleOrdersCommandHandler> logger) : BaseCommandHandler<UpdateStaleOrdersCommand, int>(logger)
 {
-    private readonly TradingBotDbContext _dbContext = dbContext;
-    private readonly IExchangeApiRepository _exchangeApiRepository = exchangeApiRepository;
-    private readonly TimeProvider _timeProvider = timeProvider;
-    private readonly ILogger<UpdateStaleOrdersCommandHandler> _logger = logger;
-
     protected override async Task<Result<int>> HandleCore(UpdateStaleOrdersCommand request, CancellationToken cancellationToken)
     {
-        var currentTime = _timeProvider.GetUtcNow().DateTime;
+        var currentTime = timeProvider.GetUtcNow().DateTime;
         var cutoffTime = currentTime - request.StaleThreshold;
 
         // Get all bots that have orders that need updating
-        var botsWithStaleOrders = await _dbContext.Bots
+        var botsWithStaleOrders = await dbContext.Bots
             .Where(b => b.Trades.Any(t => 
                 (t.EntryOrder != null && !t.EntryOrder.Closed && t.EntryOrder.LastUpdated < cutoffTime) || 
                 (t.ExitOrder != null && !t.ExitOrder.Closed && t.ExitOrder.LastUpdated < cutoffTime)))
@@ -40,11 +35,11 @@ public class UpdateStaleOrdersCommandHandler(
             
         if (botsWithStaleOrders.Count == 0)
         {
-            _logger.LogInformation("No bots with stale orders found");
+            logger.LogInformation("No bots with stale orders found");
             return Result<int>.SuccessWith(0);
         }
 
-        _logger.LogInformation("Found {BotCount} bots with stale orders", botsWithStaleOrders.Count);
+        logger.LogInformation("Found {BotCount} bots with stale orders", botsWithStaleOrders.Count);
         int updatedCount = 0;
 
         foreach (var bot in botsWithStaleOrders)
@@ -52,7 +47,7 @@ public class UpdateStaleOrdersCommandHandler(
             try
             {
                 // Create exchange API once per bot to avoid multiple connections
-                var exchangeApi = _exchangeApiRepository.GetExchangeApi(bot);
+                var exchangeApi = exchangeApiRepository.GetExchangeApi(bot);
                 
                 // Get all stale orders for this bot
                 var staleOrders = bot.Trades
@@ -60,7 +55,7 @@ public class UpdateStaleOrdersCommandHandler(
                     .Where(o => o != null && !o.Closed && o.LastUpdated < cutoffTime)
                     .ToList();
                 
-                _logger.LogInformation("Processing {OrderCount} stale orders for bot {BotId} ({BotName})", 
+                logger.LogInformation("Processing {OrderCount} stale orders for bot {BotId} ({BotName})", 
                     staleOrders.Count, bot.Id, bot.Name);
                 
                 foreach (var order in staleOrders)
@@ -81,7 +76,7 @@ public class UpdateStaleOrdersCommandHandler(
                             order.AverageFillPrice = updatedOrder.AverageFillPrice;
                         }
 
-                        _logger.LogInformation(
+                        logger.LogInformation(
                             "Updated order {OrderId}: Filled {QuantityFilled}/{Quantity}, Closed: {Closed}, Canceled: {Canceled}",
                             order.Id, order.QuantityFilled, order.Quantity, order.Closed, order.Canceled);
 
@@ -89,7 +84,7 @@ public class UpdateStaleOrdersCommandHandler(
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Failed to get status for order {OrderId} from the exchange", order!.Id);
+                        logger.LogError(ex, "Failed to get status for order {OrderId} from the exchange", order!.Id);
 
                         // Just update the timestamp so we don't continuously try to update the same failing order
                         order.LastUpdated = currentTime;
@@ -98,12 +93,12 @@ public class UpdateStaleOrdersCommandHandler(
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to process stale orders for bot {BotId}", bot.Id);
+                logger.LogError(ex, "Failed to process stale orders for bot {BotId}", bot.Id);
             }
         }
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
-        _logger.LogInformation("Successfully updated {UpdatedCount} stale orders", updatedCount);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Successfully updated {UpdatedCount} stale orders", updatedCount);
 
         return Result<int>.SuccessWith(updatedCount);
     }

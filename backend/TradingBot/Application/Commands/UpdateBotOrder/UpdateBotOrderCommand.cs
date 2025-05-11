@@ -14,22 +14,18 @@ public class UpdateBotOrderCommandHandler(
     ILogger<UpdateBotOrderCommandHandler> logger,
     TimeProvider timeProvider) : BaseCommandHandler<UpdateBotOrderCommand>(logger)
 {
-    private readonly TradingBotDbContext _dbContext = dbContext;
-    private readonly ILogger<UpdateBotOrderCommandHandler> _logger = logger;
-    private readonly TimeProvider _timeProvider = timeProvider;
-
     protected override async Task<Result> HandleCore(UpdateBotOrderCommand request, CancellationToken cancellationToken)
     {
         var orderUpdate = request.OrderUpdate;
 
         // Find the order in the database
-        var order = await _dbContext.Orders.FirstOrDefaultAsync(
+        var order = await dbContext.Orders.FirstOrDefaultAsync(
             o => o.Id == orderUpdate.Id,
             cancellationToken);
 
         if (order == null)
         {
-            _logger.LogWarning("Order update received for unknown order ID: {OrderId}", orderUpdate.Id);
+            logger.LogWarning("Order update received for unknown order ID: {OrderId}", orderUpdate.Id);
             return $"Order with ID {orderUpdate.Id} not found";
         }
 
@@ -37,16 +33,16 @@ public class UpdateBotOrderCommandHandler(
         order.QuantityFilled = orderUpdate.QuantityFilled;
         order.Closed = orderUpdate.Closed;
         order.Canceled = orderUpdate.Canceled;
-        order.LastUpdated = _timeProvider.GetUtcNow().DateTime;
+        order.LastUpdated = timeProvider.GetUtcNow().DateTime;
 
         if (orderUpdate.AverageFillPrice.HasValue)
         {
             order.AverageFillPrice = orderUpdate.AverageFillPrice;
         }
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await dbContext.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Updated order {OrderId}: Filled {QuantityFilled}/{Quantity}, Closed: {Closed}",
+        logger.LogInformation("Updated order {OrderId}: Filled {QuantityFilled}/{Quantity}, Closed: {Closed}",
             order.Id, order.QuantityFilled, order.Quantity, order.Closed);
 
         return Result.Success;
