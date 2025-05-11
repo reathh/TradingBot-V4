@@ -36,16 +36,12 @@ public class BackgroundJobProcessor(IServiceProvider serviceProvider, ILogger<Ba
 
             try
             {
-                // Check if the request returns a Result or Result<T>
-                if (IsResultCommand(request))
+                var response = await mediator.Send(request);
+
+                // If the response implements IResult, check for success
+                if (response is Application.Common.IResult { Succeeded: false } result)
                 {
-                    // Handle commands that return a Result
-                    await HandleResultCommand(mediator, request);
-                }
-                else
-                {
-                    // For commands returning void or other non-Result types
-                    await mediator.Send(request);
+                    logger.LogError("Command {RequestType} failed: {Errors}", typeof(TRequest).Name, string.Join(", ", result.Errors));
                 }
             }
             catch (Exception ex)
@@ -58,64 +54,6 @@ public class BackgroundJobProcessor(IServiceProvider serviceProvider, ILogger<Ba
         _newJobEvent.Set();
 
         logger.LogDebug("Enqueued job of type {RequestType}, queue size: {QueueSize}", requestType.Name, queue.Count);
-    }
-
-    private static bool IsResultCommand<TRequest>(TRequest request)
-    {
-        if (request == null)
-            return false;
-
-        var requestType = request.GetType();
-        var interfaces = requestType.GetInterfaces();
-
-        return interfaces.Any(i => i.IsGenericType &&
-                                   i.GetGenericTypeDefinition() == typeof(IRequest<>) &&
-                                   (i
-                                        .GetGenericArguments()[0] ==
-                                    typeof(Result) ||
-                                    (i
-                                         .GetGenericArguments()[0].IsGenericType &&
-                                     i
-                                         .GetGenericArguments()[0]
-                                         .GetGenericTypeDefinition() ==
-                                     typeof(Result<>))));
-    }
-
-    private async Task HandleResultCommand<TRequest>(IMediator mediator, TRequest request) where TRequest : IRequest<Result>
-    {
-        // Use reflection to safely call Send and get the result
-        var requestType = request.GetType();
-        var sendMethod = typeof(IMediator).GetMethod("Send", [requestType, typeof(CancellationToken)]);
-
-        if (sendMethod != null)
-        {
-            if (sendMethod.Invoke(mediator, [request, CancellationToken.None]) is Task task)
-            {
-                await task;
-
-                // Get the result from the Task using reflection
-                var resultProperty = task
-                    .GetType()
-                    .GetProperty("Result");
-
-                if (resultProperty != null)
-                {
-                    var result = resultProperty.GetValue(task);
-
-                    switch (result)
-                    {
-                        case Result { Succeeded: false } resultObj:
-                            logger.LogError("Command {RequestType} failed: {Errors}", typeof(TRequest).Name, string.Join(", ", resultObj.Errors));
-
-                            break;
-                        case Application.Common.IResult { Succeeded: false }:
-                            logger.LogError("Command {RequestType} failed", typeof(TRequest).Name);
-
-                            break;
-                    }
-                }
-            }
-        }
     }
 
     public Task StartAsync(CancellationToken cancellationToken)

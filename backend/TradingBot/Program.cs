@@ -3,6 +3,7 @@ using TradingBot.Data;
 using TradingBot.Services;
 using TradingBot.Application.Commands.VerifyBotBalance;
 using System.Text.Json.Serialization;
+using System.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,9 +52,14 @@ builder.Services.Scan(scan => scan
 // Register hosted services as IHostedService
 builder.Services.Scan(scan => scan
     .FromAssemblyOf<Program>()
-    .AddClasses(classes => classes.AssignableTo<IHostedService>())
+    .AddClasses(classes => classes.AssignableTo<IHostedService>().Where(c => c != typeof(BackgroundJobProcessor)))
     .AsImplementedInterfaces()
     .WithSingletonLifetime());
+
+// Explicitly register BackgroundJobProcessor so that a single instance is used for
+// both IBackgroundJobProcessor and IHostedService
+builder.Services.AddSingleton<IBackgroundJobProcessor, BackgroundJobProcessor>();
+builder.Services.AddHostedService(provider => (BackgroundJobProcessor)provider.GetRequiredService<IBackgroundJobProcessor>());
 
 // Configure JSON serialization to handle circular references
 builder
