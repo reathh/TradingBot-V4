@@ -65,24 +65,20 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Run migrations in production
-if (!app.Environment.IsDevelopment())
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<TradingBotDbContext>();
-    dbContext.Database.Migrate();
-}
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-
-    // Seed database with test data
-    using var scope = app.Services.CreateScope();
-
-    var dbContext = scope.ServiceProvider.GetRequiredService<TradingBotDbContext>();
-    DataSeeder.SeedDatabase(dbContext);
+    
+    if (!app.Environment.IsDevelopment())
+    {
+        dbContext.Database.Migrate();
+    }
+    else
+    {
+        app.MapOpenApi();
+        
+        DataSeeder.SeedDatabase(dbContext);
+    }
 }
 
 // Use CORS middleware
