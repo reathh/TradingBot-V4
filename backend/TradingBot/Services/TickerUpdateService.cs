@@ -12,25 +12,20 @@ namespace TradingBot.Services;
 /// </summary>
 public class TickerUpdateService(
     IServiceProvider serviceProvider,
-    ILogger<TickerUpdateService> logger) : ScheduledBackgroundService(serviceProvider, logger, TimeSpan.FromMinutes(5), "Ticker update service")
+    ILogger<TickerUpdateService> logger) : ScheduledBackgroundService(serviceProvider, logger, TimeSpan.FromMinutes(1), "Ticker update service")
 {
-    private readonly BinanceSocketClient _socketClient = new BinanceSocketClient();
+    private readonly BinanceSocketClient _socketClient = new();
     private readonly Dictionary<string, CancellationTokenSource> _subscriptions = [];
     private readonly Lock _lock = new();
 
     protected override async Task OnStartAsync(CancellationToken cancellationToken)
     {
         Logger.LogInformation("Initializing ticker subscriptions...");
-        
-        // Initial subscription to active symbols when service starts
         await SubscribeToActiveSymbolsAsync(cancellationToken);
     }
 
     protected internal override async Task ExecuteScheduledWorkAsync(CancellationToken cancellationToken)
-    {
-        // Periodically check for new symbols to subscribe to
-        await SubscribeToActiveSymbolsAsync(cancellationToken);
-    }
+        => await SubscribeToActiveSymbolsAsync(cancellationToken);
 
     protected override async Task OnStopAsync(CancellationToken cancellationToken)
     {
