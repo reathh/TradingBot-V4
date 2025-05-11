@@ -65,6 +65,14 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
+// Run migrations in production
+if (!app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<TradingBotDbContext>();
+    dbContext.Database.Migrate();
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
