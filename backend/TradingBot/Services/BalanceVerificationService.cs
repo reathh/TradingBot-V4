@@ -102,6 +102,23 @@ public class BalanceVerificationService(
         }
 
         // Create a ticker with the mid-price
-        return Task.FromResult<TickerDto?>(new TickerDto(bot.Symbol, DateTime.UtcNow, lastPrice, lastPrice, lastPrice));
+        return Task.FromResult<TickerDto?>(new TickerDto(
+            bot.Symbol,
+            DateTime.UtcNow,
+            lastPrice, // Bid
+            lastPrice, // Ask
+            lastPrice, // LastPrice
+            lastPrice, // OpenPrice
+            lastPrice, // HighPrice
+            lastPrice, // LowPrice
+            0, // Volume
+            0, // QuoteVolume
+            0, // WeightedAveragePrice
+            0, // PriceChange
+            0, // PriceChangePercent
+            0, // TotalTrades
+            DateTime.UtcNow, // OpenTime
+            DateTime.UtcNow // CloseTime
+        ));
     }
 }

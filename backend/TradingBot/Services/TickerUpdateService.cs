@@ -107,7 +107,24 @@ public class TickerUpdateService(IServiceProvider serviceProvider, ILogger<Ticke
     {
         try
         {
-            var tickerDto = new TickerDto(symbol, DateTime.UtcNow, tickData.BestBidPrice, tickData.BestAskPrice, tickData.LastPrice);
+            var tickerDto = new TickerDto(
+                symbol,
+                DateTime.UtcNow,
+                tickData.BestBidPrice,
+                tickData.BestAskPrice,
+                tickData.LastPrice,
+                tickData.OpenPrice,
+                tickData.HighPrice,
+                tickData.LowPrice,
+                tickData.Volume,
+                tickData.QuoteVolume,
+                tickData.WeightedAveragePrice,
+                tickData.PriceChange,
+                tickData.PriceChangePercent,
+                tickData.TotalTrades,
+                tickData.OpenTime,
+                tickData.CloseTime
+            );
             Logger.LogDebug("Received ticker update for {Symbol}: Bid={Bid}, Ask={Ask}, Last={Last}", symbol, tickerDto.Bid, tickerDto.Ask, tickerDto.LastPrice);
 
             bool shouldSave = false;

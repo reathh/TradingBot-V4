@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TradingBot.Data;
@@ -11,9 +12,11 @@ using TradingBot.Data;
 namespace TradingBot.Data.Migrations
 {
     [DbContext(typeof(TradingBotDbContext))]
-    partial class TradingBotDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250511184828_AddTickerFullProps")]
+    partial class AddTickerFullProps
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -159,6 +162,9 @@ namespace TradingBot.Data.Migrations
                     b.Property<DateTime>("CloseTime")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<long>("FirstTradeId")
+                        .HasColumnType("bigint");
+
                     b.Property<decimal>("HighPrice")
                         .HasPrecision(18, 8)
                         .HasColumnType("numeric(18,8)");
@@ -166,6 +172,9 @@ namespace TradingBot.Data.Migrations
                     b.Property<decimal>("LastPrice")
                         .HasPrecision(18, 8)
                         .HasColumnType("numeric(18,8)");
+
+                    b.Property<long>("LastTradeId")
+                        .HasColumnType("bigint");
 
                     b.Property<decimal>("LowPrice")
                         .HasPrecision(18, 8)
