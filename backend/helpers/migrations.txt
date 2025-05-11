@@ -1,4 +1,4 @@
-dotnet ef migrations add Initial -p TradingBot.Infrastructure -s TradingBot -o Data/Migrations
+dotnet ef migrations add -p TradingBot Initial -o Data/Migrations
 
 dotnet ef database update -p TradingBot.Infrastructure -s TradingBot
 

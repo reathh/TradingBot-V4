@@ -6,7 +6,7 @@ namespace TradingBot.Application.Commands.SaveTicker;
 
 public class SaveTickerCommand : IRequest<Result>
 {
-    public required TickerDto TickerDto { get; set; }
+    public required TickerDto TickerDto { get; init; }
 
     public class SaveTickerCommandHandler(
         TradingBotDbContext dbContext,
@@ -35,7 +35,7 @@ public class SaveTickerCommand : IRequest<Result>
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error saving ticker data");
-                return Result.Failure(new[] { "Failed to save ticker data: " + ex.Message });
+                return Result.Failure(["Failed to save ticker data: " + ex.Message]);
             }
         }
     }

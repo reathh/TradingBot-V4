@@ -164,7 +164,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                     !bot.IsLong,
                     cancellationToken);
 
-                orderTasks.Add((orderTask, new List<Trade> { trade }));
+                orderTasks.Add((orderTask, [trade]));
             }
 
             // Execute all orders in parallel
