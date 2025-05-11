@@ -4,16 +4,17 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using TradingBot.Data;
 using TradingBot.Application.Commands.SaveTicker;
+using TradingBot.Application.Commands.PlaceEntryOrders;
+using TradingBot.Application.Commands.PlaceExitOrders;
 
 namespace TradingBot.Services;
 
-using Application.Commands.NewTicker;
 using Models;
 
 /// <summary>
 /// Background service that subscribes to Binance ticker updates and dispatches NewTickerCommand
 /// </summary>
-public class TickerUpdateService(IServiceProvider serviceProvider, ILogger<TickerUpdateService> logger)
+public class TickerUpdateService(IServiceProvider serviceProvider, ILogger<TickerUpdateService> logger, IBackgroundJobProcessor backgroundJobProcessor)
     : ScheduledBackgroundService(serviceProvider, logger, TimeSpan.FromMinutes(1), "Ticker update service")
 {
     private readonly BinanceSocketClient _socketClient = new();
@@ -25,7 +26,6 @@ public class TickerUpdateService(IServiceProvider serviceProvider, ILogger<Ticke
     {
         Logger.LogInformation("Initializing ticker subscriptions...");
 
-        // await SubscribeToActiveSymbolsAsync(cancellationToken);
         return Task.CompletedTask;
     }
 
@@ -132,8 +132,8 @@ public class TickerUpdateService(IServiceProvider serviceProvider, ILogger<Ticke
                 await mediator.Send(saveCommand);
             }
 
-            var command = new NewTickerCommand { Ticker = tickerDto };
-            await mediator.Send(command);
+            backgroundJobProcessor.Enqueue(new PlaceEntryOrdersCommand { Ticker = tickerDto });
+            backgroundJobProcessor.Enqueue(new PlaceExitOrdersCommand { Ticker = tickerDto });
         }
         catch (Exception ex)
         {
