@@ -3,7 +3,6 @@
     <PagedTable
       :columns="tableColumns"
       :fetch-data="fetchOrderData"
-      :server-side="true"
       thead-classes="text-primary"
     >
       <template #row="{ row }">
