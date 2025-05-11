@@ -2,14 +2,8 @@
   <div class="card-body">
     <PagedTable
       :columns="tableColumns"
-      :data="pagedResult.items"
-      :page="currentPage"
-      :total-pages="pagedResult.totalPages"
-      :total-count="pagedResult.totalCount"
-      :searchable="true"
-      :sortable="true"
-      :server-side="true"
       :fetch-data="fetchTradeData"
+      :server-side="true"
       thead-classes="text-primary"
     >
       <template #row="{ row }">
@@ -69,22 +63,11 @@ const props = defineProps({
 
 const emit = defineEmits(['update:loading']);
 
-// Data states
 const isLoading = ref(false);
-const pagedResult = ref({
-  page: 1,
-  pageSize: 10,
-  totalPages: 0,
-  totalCount: 0,
-  items: []
-});
-
-const currentPage = ref(1);
 const error = ref(null);
 const selectedTrade = ref(null);
 const showDetailsModal = ref(false);
 
-// Table columns - matching structure with BotTable
 const tableColumns = [
   { key: 'id', label: 'ID' },
   { key: 'symbol', label: 'TICKER' },
@@ -96,22 +79,19 @@ const tableColumns = [
   { key: 'actions', label: 'ACTIONS', align: 'center' }
 ];
 
-// View trade details
 function viewTradeDetails(trade) {
   selectedTrade.value = trade;
   showDetailsModal.value = true;
 }
 
-// Fetch trade data with pagination
 const fetchTradeData = async (params) => {
   isLoading.value = true;
   emit('update:loading', true);
-  
   try {
     const response = await apiClient.get('trades', {
       params: {
-        page: params?.page || currentPage.value,
-        pageSize: params?.pageSize || pagedResult.value.pageSize || 10,
+        page: params?.page || 1,
+        pageSize: params?.pageSize || 10,
         botId: props.botId || undefined,
         period: props.period,
         searchQuery: params?.searchQuery || props.searchQuery || undefined,
@@ -119,41 +99,31 @@ const fetchTradeData = async (params) => {
         sortDirection: params?.sortDirection
       }
     });
-    
-    // Update local state with response data
-    pagedResult.value = response.data;
-    
-    // Sync the current page and page size
-    if (params && params.page) {
-      currentPage.value = params.page || currentPage.value;
-    }
+    return {
+      items: response.data.items,
+      totalCount: response.data.totalCount
+    };
   } catch (e) {
     error.value = e;
     console.error('Error fetching trade data:', e);
+    return { items: [], totalCount: 0 };
   } finally {
     isLoading.value = false;
     emit('update:loading', false);
   }
 };
 
-// Watch for prop changes
 watch(() => props.botId, () => {
-  currentPage.value = 1; // Reset to first page on filter change
-  fetchTradeData();
+  // No need to manage currentPage, PagedTable will handle
 });
 
 watch(() => props.period, () => {
-  currentPage.value = 1; // Reset to first page on filter change
-  fetchTradeData();
+  // No need to manage currentPage, PagedTable will handle
 });
 
 watch(() => props.searchQuery, () => {
-  currentPage.value = 1; // Reset to first page on filter change
-  fetchTradeData();
+  // No need to manage currentPage, PagedTable will handle
 });
-
-// Fetch data on mount
-onMounted(() => fetchTradeData());
 </script>
 
 <style>

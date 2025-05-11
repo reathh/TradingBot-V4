@@ -2,14 +2,8 @@
   <div class="card-body">
     <PagedTable
       :columns="tableColumns"
-      :data="pagedResult.items"
-      :page="currentPage"
-      :total-pages="pagedResult.totalPages"
-      :total-count="pagedResult.totalCount"
-      :searchable="true"
-      :sortable="true"
-      :server-side="true"
       :fetch-data="fetchBotData"
+      :server-side="true"
       thead-classes="text-primary"
     >
       <template #row="{ row }">
@@ -75,19 +69,8 @@ const props = defineProps({
 
 const emit = defineEmits(['toggle-status', 'edit', 'delete']);
 
-// Data states
-const pagedResult = ref({
-  page: 1,
-  pageSize: 10,
-  totalPages: 0,
-  totalCount: 0,
-  items: []
-});
-
-const currentPage = ref(1);
 const error = ref(null);
 
-// Table columns for bots (not trades)
 const tableColumns = [
   { key: 'id', label: 'ID' },
   { key: 'name', label: 'NAME' },
@@ -99,34 +82,27 @@ const tableColumns = [
   { key: 'actions', label: 'ACTIONS', align: 'right' }
 ];
 
-// Fetch bot data with pagination
 const fetchBotData = async (params) => {
   try {
     const response = await apiClient.get('/bots', {
       params: {
-        page: params?.page || currentPage.value,
+        page: params?.page || 1,
         pageSize: params?.pageSize || 10,
         searchQuery: params?.searchQuery || undefined,
         sortKey: params?.sortKey,
         sortDirection: params?.sortDirection
       }
     });
-
-    // Update local state with response data
-    pagedResult.value = response.data;
-
-    // Sync the current page and page size
-    if (params) {
-      currentPage.value = params.page || currentPage.value;
-    }
+    return {
+      items: response.data.items,
+      totalCount: response.data.totalCount
+    };
   } catch (e) {
     error.value = e;
     console.error('Error fetching bots data:', e);
+    return { items: [], totalCount: 0 };
   }
 };
-
-// Fetch data on mount
-onMounted(() => fetchBotData());
 </script>
 
 <style>

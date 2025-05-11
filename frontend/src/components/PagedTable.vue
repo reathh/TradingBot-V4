@@ -70,8 +70,8 @@
     <div class="d-flex justify-content-between align-items-center mt-3">
       <div>
         <slot name="footer-info">
-          <span v-if="effectiveTotalCount > 0">
-            Showing {{ displayedEntryStart }} to {{ displayedEntryEnd }} of {{ effectiveTotalCount }} entries
+          <span v-if="totalCount > 0">
+            Showing {{ displayedEntryStart }} to {{ displayedEntryEnd }} of {{ totalCount }} entries
           </span>
           <span v-else>
             No entries found
@@ -81,7 +81,7 @@
       <BasePagination
         v-model="localCurrentPage" 
         :per-page="localPageSize"
-        :total="effectiveTotalCount"
+        :total="totalCount"
         @update:modelValue="handlePageChange"
       />
     </div>
@@ -89,171 +89,72 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import BaseTable from './BaseTable.vue';
 import BasePagination from './BasePagination.vue';
 import { Search } from '@element-plus/icons-vue';
 
 const props = defineProps({
-  // Data and columns
   columns: { type: Array, required: true },
-  data: { type: Array, required: true },
-  
-  // Pagination from backend (for server-side pagination)
-  page: { type: Number, default: 1 },
-  pageSize: { type: Number, default: 5 },
-  totalPages: { type: Number, default: 0 },
-  totalCount: { type: Number, default: 0 },
-  
-  // Local options
+  fetchData: { type: Function, required: true },
   searchable: { type: Boolean, default: true },
   searchPlaceholder: { type: String, default: 'Search records' },
   sortable: { type: Boolean, default: true },
   pageSizeOptions: { type: Array, default: () => [5, 10, 25, 50] },
-  defaultPageSize: { type: Number, default: 10 },
+  defaultPageSize: { type: Number, default: 5 },
   theadClasses: { type: String, default: 'text-primary' },
   showPageSize: { type: Boolean, default: true },
-  
-  // Server-side options
   serverSide: { type: Boolean, default: false },
-  fetchData: { type: Function, default: null },
-  
-  // Loading state
   isLoading: { type: Boolean, default: false }
 });
 
-const emit = defineEmits([
-  'update:page', 
-  'update:pageSize', 
-  'search', 
-  'sort'
-]);
+const emit = defineEmits(['update:page', 'update:pageSize', 'search', 'sort']);
 
 // Local state
 const localSearchQuery = ref('');
-const localCurrentPage = ref(props.page);
-const localPageSize = ref(props.pageSize || props.defaultPageSize);
+const localCurrentPage = ref(1);
+const localPageSize = ref(props.defaultPageSize);
 const localSortKey = ref('');
 const localSortDirection = ref('asc');
 const internalLoading = ref(false);
+const items = ref([]);
+const totalCount = ref(0);
 
-// Sync with props
-watch(() => props.page, (newVal) => {
-  localCurrentPage.value = newVal;
-});
-
-watch(() => props.pageSize, (newVal) => {
-  if (newVal) localPageSize.value = newVal;
-}, { immediate: true });
-
-// Computed effective loading state
 const effectiveLoading = computed(() => {
   return props.fetchData ? internalLoading.value : props.isLoading;
 });
 
-// Handle pagination events
+// Fetch data from parent fetchData
+async function loadData({ page = localCurrentPage.value, pageSize = localPageSize.value, sortKey = localSortKey.value, sortDirection = localSortDirection.value } = {}) {
+  internalLoading.value = true;
+  try {
+    const result = await props.fetchData({
+      page,
+      pageSize,
+      searchQuery: localSearchQuery.value,
+      sortKey,
+      sortDirection
+    });
+    items.value = result.items;
+    totalCount.value = result.totalCount;
+  } finally {
+    internalLoading.value = false;
+  }
+}
+
+// Pagination events
 async function handlePageChange(page) {
   localCurrentPage.value = page;
-  
-  if (props.serverSide) {
-    if (props.fetchData) {
-      internalLoading.value = true;
-      try {
-        await props.fetchData({
-          page,
-          pageSize: localPageSize.value,
-          sortKey: localSortKey.value,
-          sortDirection: localSortDirection.value
-        });
-      } finally {
-        internalLoading.value = false;
-      }
-    } else {
-      emit('update:page', page);
-    }
-  }
+  await loadData({ page });
 }
 
 async function handlePageSizeChange(pageSize) {
   localPageSize.value = pageSize;
-  localCurrentPage.value = 1; // Reset to first page
-  
-  if (props.serverSide) {
-    if (props.fetchData) {
-      internalLoading.value = true;
-      try {
-        await props.fetchData({
-          page: 1,
-          pageSize,
-          sortKey: localSortKey.value,
-          sortDirection: localSortDirection.value
-        });
-      } finally {
-        internalLoading.value = false;
-      }
-    } else {
-      emit('update:pageSize', pageSize);
-    }
-  }
+  localCurrentPage.value = 1;
+  await loadData({ page: 1, pageSize });
 }
 
-// If server-side, we use the provided data directly
-// If client-side, we filter, sort, and paginate the data locally
-const filteredData = computed(() => {
-  if (props.serverSide) return props.data;
-  
-  if (!props.searchable || !localSearchQuery.value.trim()) return props.data;
-  const query = localSearchQuery.value.toLowerCase();
-  return props.data.filter(item => {
-    return props.columns.some(col => {
-      const key = col.key || col.prop;
-      const val = item[key];
-      return val && String(val).toLowerCase().includes(query);
-    });
-  });
-});
-
-// Sorting (client-side only)
-const sortedData = computed(() => {
-  if (props.serverSide) return filteredData.value;
-  
-  if (!props.sortable || !localSortKey.value) return filteredData.value;
-  return [...filteredData.value].sort((a, b) => {
-    let valueA = a[localSortKey.value];
-    let valueB = b[localSortKey.value];
-    if (typeof valueA === 'string') valueA = valueA.toLowerCase();
-    if (typeof valueB === 'string') valueB = valueB.toLowerCase();
-    if (valueA === valueB) return 0;
-    const result = valueA < valueB ? -1 : 1;
-    return localSortDirection.value === 'asc' ? result : -result;
-  });
-});
-
-// Pagination (client-side only)
-const displayedData = computed(() => {
-  if (props.serverSide) return props.data;
-  
-  const start = (localCurrentPage.value - 1) * localPageSize.value;
-  const end = start + localPageSize.value;
-  return sortedData.value.slice(start, end);
-});
-
-// Calculate display values
-const effectiveTotalCount = computed(() => 
-  props.serverSide ? props.totalCount : filteredData.value.length
-);
-
-const displayedEntryStart = computed(() => {
-  if (effectiveTotalCount.value === 0) return 0;
-  return (localCurrentPage.value - 1) * localPageSize.value + 1;
-});
-
-const displayedEntryEnd = computed(() => {
-  const end = localCurrentPage.value * localPageSize.value;
-  return Math.min(end, effectiveTotalCount.value);
-});
-
-// Sorting functions
+// Sorting (server-side only)
 function sortBy(key) {
   if (props.serverSide) {
     if (props.fetchData) {
@@ -263,22 +164,17 @@ function sortBy(key) {
         localSortKey.value = key;
         localSortDirection.value = 'asc';
       }
-      
-      internalLoading.value = true;
-      props.fetchData({
+      loadData({
         page: localCurrentPage.value,
         pageSize: localPageSize.value,
         sortKey: localSortKey.value,
         sortDirection: localSortDirection.value
-      }).finally(() => {
-        internalLoading.value = false;
       });
     } else {
       emit('sort', { key, direction: localSortDirection.value === 'asc' ? 'desc' : 'asc' });
     }
     return;
   }
-  
   if (localSortKey.value === key) {
     localSortDirection.value = localSortDirection.value === 'asc' ? 'desc' : 'asc';
   } else {
@@ -291,4 +187,60 @@ function getSortIcon(key) {
   if (localSortKey.value !== key) return 'icon-minimal-down opacity-5';
   return localSortDirection.value === 'asc' ? 'icon-minimal-up' : 'icon-minimal-down';
 }
+
+// Filtering (client-side only)
+const filteredData = computed(() => {
+  if (props.serverSide) return items.value;
+  if (!props.searchable || !localSearchQuery.value.trim()) return items.value;
+  const query = localSearchQuery.value.toLowerCase();
+  return items.value.filter(item => {
+    return props.columns.some(col => {
+      const key = col.key || col.prop;
+      const val = item[key];
+      return val && String(val).toLowerCase().includes(query);
+    });
+  });
+});
+
+const sortedData = computed(() => {
+  if (props.serverSide) return filteredData.value;
+  if (!props.sortable || !localSortKey.value) return filteredData.value;
+  return [...filteredData.value].sort((a, b) => {
+    let valueA = a[localSortKey.value];
+    let valueB = b[localSortKey.value];
+    if (typeof valueA === 'string') valueA = valueA.toLowerCase();
+    if (typeof valueB === 'string') valueB = valueB.toLowerCase();
+    if (valueA === valueB) return 0;
+    const result = valueA < valueB ? -1 : 1;
+    return localSortDirection.value === 'asc' ? result : -result;
+  });
+});
+
+const displayedData = computed(() => {
+  if (props.serverSide) return items.value;
+  const start = (localCurrentPage.value - 1) * localPageSize.value;
+  const end = start + localPageSize.value;
+  return sortedData.value.slice(start, end);
+});
+
+const displayedEntryStart = computed(() => {
+  if (totalCount.value === 0) return 0;
+  return (localCurrentPage.value - 1) * localPageSize.value + 1;
+});
+
+const displayedEntryEnd = computed(() => {
+  const end = localCurrentPage.value * localPageSize.value;
+  return Math.min(end, totalCount.value);
+});
+
+// Watch for search query changes
+watch(localSearchQuery, () => {
+  localCurrentPage.value = 1;
+  loadData({ page: 1 });
+});
+
+// Initial load
+onMounted(() => {
+  loadData();
+});
 </script> 

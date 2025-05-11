@@ -2,14 +2,8 @@
   <div class="card-body">
     <PagedTable
       :columns="tableColumns"
-      :data="pagedResult.items"
-      :page="currentPage"
-      :total-pages="pagedResult.totalPages"
-      :total-count="pagedResult.totalCount"
-      :searchable="true"
-      :sortable="true"
-      :server-side="true"
       :fetch-data="fetchOrderData"
+      :server-side="true"
       thead-classes="text-primary"
     >
       <template #row="{ row }">
@@ -140,22 +134,11 @@ const props = defineProps({
 
 const emit = defineEmits(['update:loading']);
 
-// Data states
 const isLoading = ref(false);
-const pagedResult = ref({
-  page: 1,
-  pageSize: 10,
-  totalPages: 0,
-  totalCount: 0,
-  items: []
-});
-
-const currentPage = ref(1);
 const error = ref(null);
 const selectedOrder = ref(null);
 const showDetailsModal = ref(false);
 
-// Table columns
 const tableColumns = [
   { key: 'id', label: 'ID' },
   { key: 'symbol', label: 'SYMBOL' },
@@ -168,13 +151,11 @@ const tableColumns = [
   { key: 'actions', label: 'ACTIONS', align: 'center' }
 ];
 
-// View order details
 function viewOrderDetails(order) {
   selectedOrder.value = order;
   showDetailsModal.value = true;
 }
 
-// Helper function to get order status
 function getStatusLabel(order) {
   if (order.canceled) return 'Canceled';
   if (order.closed) return 'Closed';
@@ -183,7 +164,6 @@ function getStatusLabel(order) {
   return 'Open';
 }
 
-// Helper function to get status type
 function getStatusType(order) {
   if (order.canceled) return 'danger';
   if (order.closed) return 'info';
@@ -192,15 +172,13 @@ function getStatusType(order) {
   return 'primary';
 }
 
-// Fetch order data with pagination
 const fetchOrderData = async (params) => {
   isLoading.value = true;
   emit('update:loading', true);
-  
   try {
     const response = await apiClient.get('orders', {
       params: {
-        page: params?.page || currentPage.value,
+        page: params?.page || 1,
         pageSize: params?.pageSize || 10,
         botId: props.botId || undefined,
         period: props.period,
@@ -209,41 +187,31 @@ const fetchOrderData = async (params) => {
         sortDirection: params?.sortDirection
       }
     });
-    
-    // Update local state with response data
-    pagedResult.value = response.data;
-    
-    // Sync the current page and page size
-    if (params && params.page) {
-      currentPage.value = params.page || currentPage.value;
-    }
+    return {
+      items: response.data.items,
+      totalCount: response.data.totalCount
+    };
   } catch (e) {
     error.value = e;
     console.error('Error fetching order data:', e);
+    return { items: [], totalCount: 0 };
   } finally {
     isLoading.value = false;
     emit('update:loading', false);
   }
 };
 
-// Watch for prop changes
 watch(() => props.botId, () => {
-  currentPage.value = 1; // Reset to first page on filter change
-  fetchOrderData();
+  // No need to manage currentPage, PagedTable will handle
 });
 
 watch(() => props.period, () => {
-  currentPage.value = 1; // Reset to first page on filter change
-  fetchOrderData();
+  // No need to manage currentPage, PagedTable will handle
 });
 
 watch(() => props.searchQuery, () => {
-  currentPage.value = 1; // Reset to first page on filter change
-  fetchOrderData();
+  // No need to manage currentPage, PagedTable will handle
 });
-
-// Fetch data on mount
-onMounted(() => fetchOrderData());
 </script>
 
 <style>

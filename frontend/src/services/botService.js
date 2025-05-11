@@ -27,13 +27,14 @@ export default {
      * @param {number} pageSize - Number of items per page
      * @returns {Promise} Promise with aggregated profit data
      */
-    getAggregatedProfits(interval = 'Day', botId = null, page = 1, pageSize = 1000) {
-        let url = '/trades/profit-data?interval=' + interval + '&page=' + page + '&pageSize=' + pageSize;
-        
-        if (botId) {
-            url += '&botId=' + botId;
-        }
-        
-        return apiClient.get(url);
+    getAggregatedProfits(interval = 'Day', botId = null, page = 1, pageSize = 50) {
+        return apiClient.get('/trades/profit-data', {
+            params: {
+                interval,
+                page,
+                pageSize,
+                botId: botId || undefined
+            }
+        });
     }
 };
