@@ -89,7 +89,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, defineExpose } from 'vue';
 import BaseTable from './BaseTable.vue';
 import BasePagination from './BasePagination.vue';
 import { Search } from '@element-plus/icons-vue';
@@ -242,5 +242,9 @@ watch(localSearchQuery, () => {
 // Initial load
 onMounted(() => {
   loadData();
+});
+
+defineExpose({
+  refresh: loadData
 });
 </script> 

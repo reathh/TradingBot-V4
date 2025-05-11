@@ -18,10 +18,11 @@ public class TickerUpdateService(
     private readonly Dictionary<string, CancellationTokenSource> _subscriptions = [];
     private readonly Lock _lock = new();
 
-    protected override async Task OnStartAsync(CancellationToken cancellationToken)
+    protected override Task OnStartAsync(CancellationToken cancellationToken)
     {
         Logger.LogInformation("Initializing ticker subscriptions...");
-        await SubscribeToActiveSymbolsAsync(cancellationToken);
+        // await SubscribeToActiveSymbolsAsync(cancellationToken);
+        return Task.CompletedTask;
     }
 
     protected internal override async Task ExecuteScheduledWorkAsync(CancellationToken cancellationToken)
@@ -113,14 +114,12 @@ public class TickerUpdateService(
                 symbol, tickerDto.Bid, tickerDto.Ask, tickerDto.LastPrice);
 
             // Process the ticker with a new command
-            using var scope = ServiceProvider.CreateScope();
-            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-            
-            // Send the command asynchronously
             _ = Task.Run(async () => 
             {
                 try
                 {
+                    using var scope = ServiceProvider.CreateScope();
+                    var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
                     var command = new NewTickerCommand { TickerDto = tickerDto };
                     await mediator.Send(command);
                 }

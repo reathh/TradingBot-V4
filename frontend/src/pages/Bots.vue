@@ -12,6 +12,7 @@
 
           <div>
             <BotTable
+              ref="botTableRef"
               :showViewButton="true"
               :showRefreshButton="false"
               :showToggleStatusButton="true"
@@ -207,6 +208,9 @@ const currentBot = ref({...defaultBot});
 // Notification composable
 const { notify } = useNotifications();
 
+// Reference to the BotTable instance
+const botTableRef = ref(null);
+
 // Fetch bots with pagination and search
 async function fetchBots(params) {
   try {
@@ -250,7 +254,9 @@ async function createBot() {
     });
     showCreateModal.value = false;
     // Refresh the bots list through the BotTable component
-    // which handles its own data fetching
+    if (botTableRef.value && botTableRef.value.refresh) {
+      botTableRef.value.refresh();
+    }
   } catch (error) {
     console.error('Error creating bot:', error);
     notify({

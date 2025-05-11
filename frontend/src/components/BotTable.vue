@@ -1,6 +1,7 @@
 <template>
   <div class="card-body">
     <PagedTable
+      ref="pagedTableRef"
       :columns="tableColumns"
       :fetch-data="fetchBotData"
       thead-classes="text-primary"
@@ -49,7 +50,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, defineProps, defineEmits } from "vue";
+import { ref, onMounted, defineProps, defineEmits, defineExpose } from "vue";
 import { ElTag } from "element-plus";
 import BaseButton from "@/components/BaseButton.vue";
 import PagedTable from "@/components/PagedTable.vue";
@@ -102,6 +103,17 @@ const fetchBotData = async (params) => {
     return { items: [], totalCount: 0 };
   }
 };
+
+// Reference to the PagedTable instance
+const pagedTableRef = ref(null);
+
+defineExpose({
+  refresh: () => {
+    if (pagedTableRef.value && pagedTableRef.value.refresh) {
+      pagedTableRef.value.refresh();
+    }
+  }
+});
 </script>
 
 <style>
