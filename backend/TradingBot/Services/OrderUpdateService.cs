@@ -13,8 +13,6 @@ public class OrderUpdateService(
     IExchangeApiRepository exchangeApiRepository,
     ILogger<OrderUpdateService> logger) : ScheduledBackgroundService(serviceProvider, logger, TimeSpan.FromMinutes(5), "Order update service")
 {
-    private readonly IExchangeApiRepository _exchangeApiRepository = exchangeApiRepository;
-
     protected override async Task OnStartAsync(CancellationToken cancellationToken)
     {
         // Create scope specifically for startup
@@ -32,7 +30,7 @@ public class OrderUpdateService(
         foreach (var bot in enabledBots)
         {
             // Get the appropriate exchange API for this bot
-            var exchangeApi = _exchangeApiRepository.GetExchangeApi(bot);
+            var exchangeApi = exchangeApiRepository.GetExchangeApi(bot);
 
             await exchangeApi.SubscribeToOrderUpdates(
                 callback: async orderUpdate => await ProcessOrderUpdate(orderUpdate, cancellationToken),
@@ -45,7 +43,7 @@ public class OrderUpdateService(
 
     // This service just needs to stay alive after subscribing to order updates
     // The actual work happens in the callbacks
-    protected internal override Task ExecuteScheduledWorkAsync(CancellationToken cancellationToken)
+    protected internal override Task ExecuteScheduledWork(CancellationToken cancellationToken)
     {
         // No periodic work needed, just keep service alive
         return Task.CompletedTask;

@@ -7,6 +7,8 @@ using TradingBot.Services;
 
 namespace TradingBot.Application.Commands.PlaceExitOrders;
 
+using Models;
+
 public class PlaceExitOrdersCommand : IRequest<Result>
 {
     public required TickerDto Ticker { get; set; }

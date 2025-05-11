@@ -5,6 +5,8 @@ using TradingBot.Data;
 
 namespace TradingBot.Tests.Application.Commands.PlaceExitOrders;
 
+using Models;
+
 /// <summary>
 /// Base class for all PlaceExitOrders command tests
 /// </summary>

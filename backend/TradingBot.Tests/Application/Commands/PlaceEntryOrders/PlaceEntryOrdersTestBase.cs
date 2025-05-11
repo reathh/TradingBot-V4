@@ -8,6 +8,8 @@ using TradingBot.Services;
 
 namespace TradingBot.Tests.Application.Commands.PlaceEntryOrders;
 
+using Models;
+
 /// <summary>
 /// Base class for entry order tests providing common functionality
 /// </summary>

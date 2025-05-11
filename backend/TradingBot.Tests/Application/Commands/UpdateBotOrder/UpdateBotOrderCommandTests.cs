@@ -1,10 +1,10 @@
+namespace TradingBot.Tests.Application.Commands.UpdateBotOrder;
+
+using Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using TradingBot.Application.Commands.UpdateBotOrder;
-using TradingBot.Data;
-
-namespace TradingBot.Tests;
 
 public class UpdateBotOrderCommandTests : BaseTest
 {

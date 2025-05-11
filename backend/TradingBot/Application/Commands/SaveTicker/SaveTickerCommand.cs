@@ -4,6 +4,8 @@ using TradingBot.Data;
 
 namespace TradingBot.Application.Commands.SaveTicker;
 
+using Models;
+
 public class SaveTickerCommand : IRequest<Result>
 {
     public required TickerDto TickerDto { get; init; }

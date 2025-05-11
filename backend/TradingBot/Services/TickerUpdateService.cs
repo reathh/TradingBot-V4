@@ -7,12 +7,14 @@ using TradingBot.Data;
 
 namespace TradingBot.Services;
 
+using Application.Commands.NewTicker;
+using Models;
+
 /// <summary>
 /// Background service that subscribes to Binance ticker updates and dispatches NewTickerCommand
 /// </summary>
-public class TickerUpdateService(
-    IServiceProvider serviceProvider,
-    ILogger<TickerUpdateService> logger) : ScheduledBackgroundService(serviceProvider, logger, TimeSpan.FromMinutes(1), "Ticker update service")
+public class TickerUpdateService(IServiceProvider serviceProvider, ILogger<TickerUpdateService> logger)
+    : ScheduledBackgroundService(serviceProvider, logger, TimeSpan.FromMinutes(1), "Ticker update service")
 {
     private readonly BinanceSocketClient _socketClient = new();
     private readonly Dictionary<string, CancellationTokenSource> _subscriptions = [];
@@ -21,12 +23,13 @@ public class TickerUpdateService(
     protected override Task OnStartAsync(CancellationToken cancellationToken)
     {
         Logger.LogInformation("Initializing ticker subscriptions...");
+
         // await SubscribeToActiveSymbolsAsync(cancellationToken);
         return Task.CompletedTask;
     }
 
-    protected internal override async Task ExecuteScheduledWorkAsync(CancellationToken cancellationToken)
-        => await SubscribeToActiveSymbolsAsync(cancellationToken);
+    protected internal override async Task ExecuteScheduledWork(CancellationToken cancellationToken)
+        => await SubscribeToActiveSymbols(cancellationToken);
 
     protected override async Task OnStopAsync(CancellationToken cancellationToken)
     {
@@ -34,20 +37,22 @@ public class TickerUpdateService(
         await UnsubscribeAllAsync();
     }
 
-    private async Task SubscribeToActiveSymbolsAsync(CancellationToken cancellationToken)
+    private async Task SubscribeToActiveSymbols(CancellationToken cancellationToken)
     {
         using var scope = ServiceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<TradingBotDbContext>();
 
         // Get the list of already subscribed symbols
         List<string> alreadySubscribed;
+
         lock (_lock)
         {
             alreadySubscribed = _subscriptions.Keys.ToList();
         }
 
         // Query only for enabled symbols that are not already subscribed
-        var symbolsToSubscribe = await dbContext.Bots
+        var symbolsToSubscribe = await dbContext
+            .Bots
             .Where(b => b.Enabled && !alreadySubscribed.Contains(b.Symbol))
             .Select(b => b.Symbol)
             .Distinct()
@@ -57,11 +62,11 @@ public class TickerUpdateService(
 
         foreach (var symbol in symbolsToSubscribe)
         {
-            await SubscribeToSymbolAsync(symbol, cancellationToken);
+            await SubscribeToSymbol(symbol, cancellationToken);
         }
     }
 
-    private async Task SubscribeToSymbolAsync(string symbol, CancellationToken cancellationToken)
+    private async Task SubscribeToSymbol(string symbol, CancellationToken cancellationToken)
     {
         Logger.LogInformation("Subscribing to ticker updates for {Symbol}", symbol);
 
@@ -69,7 +74,7 @@ public class TickerUpdateService(
         {
             // Create a token source for this subscription
             var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            
+
             // Subscribe to ticker updates
             var subscriptionResult = await _socketClient.SpotApi.ExchangeData.SubscribeToTickerUpdatesAsync(
                 symbol,
@@ -78,8 +83,8 @@ public class TickerUpdateService(
 
             if (!subscriptionResult.Success)
             {
-                Logger.LogError("Failed to subscribe to ticker updates for {Symbol}: {Error}", 
-                    symbol, subscriptionResult.Error?.Message);
+                Logger.LogError("Failed to subscribe to ticker updates for {Symbol}: {Error}", symbol, subscriptionResult.Error?.Message);
+
                 return;
             }
 
@@ -97,37 +102,29 @@ public class TickerUpdateService(
         }
     }
 
-    private void HandleTickerUpdate(string symbol, IBinanceTick tickData)
+    private async void HandleTickerUpdate(string symbol, IBinanceTick tickData)
     {
         try
         {
             // Create ticker from Binance data
-            var tickerDto = new TickerDto(
-                symbol,
-                DateTime.UtcNow,
-                tickData.BestBidPrice,
-                tickData.BestAskPrice,
-                tickData.LastPrice);
+            var tickerDto = new TickerDto(symbol, DateTime.UtcNow, tickData.BestBidPrice, tickData.BestAskPrice, tickData.LastPrice);
 
             // Log ticker update
-            Logger.LogDebug("Received ticker update for {Symbol}: Bid={Bid}, Ask={Ask}, Last={Last}", 
-                symbol, tickerDto.Bid, tickerDto.Ask, tickerDto.LastPrice);
+            Logger.LogDebug("Received ticker update for {Symbol}: Bid={Bid}, Ask={Ask}, Last={Last}",
+                symbol,
+                tickerDto.Bid,
+                tickerDto.Ask,
+                tickerDto.LastPrice);
 
-            // Process the ticker with a new command
-            _ = Task.Run(async () => 
+            using var scope = ServiceProvider.CreateScope();
+            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+
+            var command = new NewTickerCommand
             {
-                try
-                {
-                    using var scope = ServiceProvider.CreateScope();
-                    var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-                    var command = new NewTickerCommand { TickerDto = tickerDto };
-                    await mediator.Send(command);
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogError(ex, "Error processing ticker update for {Symbol}", symbol);
-                }
-            });
+                Ticker = tickerDto
+            };
+
+            await mediator.Send(command);
         }
         catch (Exception ex)
         {
@@ -169,15 +166,12 @@ public class TickerUpdateService(
 
         try
         {
-            CancellationTokenSource? tokenSource = null;
+            CancellationTokenSource? tokenSource;
 
             // Get and remove the subscription
             lock (_lock)
             {
-                if (_subscriptions.TryGetValue(symbol, out tokenSource))
-                {
-                    _subscriptions.Remove(symbol);
-                }
+                _subscriptions.Remove(symbol, out tokenSource);
             }
 
             // Cancel the token and dispose
@@ -195,6 +189,7 @@ public class TickerUpdateService(
         {
             Logger.LogError(ex, "Error unsubscribing from ticker updates for {Symbol}", symbol);
         }
+
         return Task.CompletedTask;
     }
-} 
+}

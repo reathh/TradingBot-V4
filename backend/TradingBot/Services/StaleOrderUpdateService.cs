@@ -9,7 +9,7 @@ public class StaleOrderUpdateService(
     IServiceProvider serviceProvider,
     ILogger<StaleOrderUpdateService> logger) : ScheduledBackgroundService(serviceProvider, logger, TimeSpan.FromMinutes(10), "Stale order update service")
 {
-    protected internal override async Task ExecuteScheduledWorkAsync(CancellationToken cancellationToken)
+    protected internal override async Task ExecuteScheduledWork(CancellationToken cancellationToken)
     {
         using var scope = ServiceProvider.CreateScope();
         Logger.LogDebug("Running stale order update check");

@@ -13,7 +13,7 @@ public class VerifyBotBalanceCommand : IRequest<Result>
     public class VerifyBotBalanceCommandHandler(
         TradingBotDbContext dbContext,
         IExchangeApiRepository exchangeApiRepository,
-        ILogger<VerifyBotBalanceCommand.VerifyBotBalanceCommandHandler> logger) : BaseCommandHandler<VerifyBotBalanceCommand>(logger)
+        ILogger<VerifyBotBalanceCommandHandler> logger) : BaseCommandHandler<VerifyBotBalanceCommand>(logger)
     {
         private readonly TradingBotDbContext _dbContext = dbContext;
         private readonly IExchangeApiRepository _exchangeApiRepository = exchangeApiRepository;

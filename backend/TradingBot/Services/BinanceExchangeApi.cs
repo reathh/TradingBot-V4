@@ -12,8 +12,6 @@ public class BinanceExchangeApi(
     TimeProvider timeProvider,
     ILogger<BinanceExchangeApi> logger) : IExchangeApi
 {
-    private readonly TimeProvider _timeProvider = timeProvider;
-    private readonly ILogger<BinanceExchangeApi> _logger = logger;
     private readonly Dictionary<string, List<Func<OrderUpdate, Task>>> _orderCallbacks = [];
     private readonly Dictionary<string, bool> _userDataSubscribed = [];
     private readonly BinanceRestClient _restClient = new(options =>
@@ -47,7 +45,7 @@ public class BinanceExchangeApi(
             order.Data.Price,
             order.Data.Quantity,
             order.Data.Side == OrderSide.Buy,
-            _timeProvider.GetUtcNow().DateTime);
+            timeProvider.GetUtcNow().DateTime);
     }
 
     public async Task SubscribeToOrderUpdates(Func<OrderUpdate, Task> callback, Bot bot, CancellationToken cancellationToken = default)
@@ -76,7 +74,7 @@ public class BinanceExchangeApi(
         }
 
         var listenKey = response.Data;
-        _logger.LogInformation("Started user data stream with listen key {ListenKey}", listenKey);
+        logger.LogInformation("Started user data stream with listen key {ListenKey}", listenKey);
 
         // Subscribe to user data updates
         var subscriptionResult = await _socketClient.SpotApi.Account.SubscribeToUserDataUpdatesAsync(
@@ -86,7 +84,7 @@ public class BinanceExchangeApi(
                 if (data.Data is BinanceStreamOrderUpdate orderUpdate)
                 {
                     var update = MapBinanceOrderToOrderUpdate(orderUpdate);
-                    _logger.LogTrace("Order update received: {@OrderUpdate}", update);
+                    logger.LogTrace("Order update received: {@OrderUpdate}", update);
 
                     if (_orderCallbacks.ContainsKey(key))
                     {
@@ -113,11 +111,11 @@ public class BinanceExchangeApi(
                 {
                     await Task.Delay(TimeSpan.FromMinutes(30), cancellationToken);
                     await _restClient.SpotApi.Account.KeepAliveUserStreamAsync(listenKey, cancellationToken);
-                    _logger.LogDebug("Refreshed listen key {ListenKey}", listenKey);
+                    logger.LogDebug("Refreshed listen key {ListenKey}", listenKey);
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
-                    _logger.LogError(ex, "Error refreshing listen key {ListenKey}", listenKey);
+                    logger.LogError(ex, "Error refreshing listen key {ListenKey}", listenKey);
                 }
             }
         }, cancellationToken);
@@ -188,7 +186,7 @@ public class BinanceExchangeApi(
 
         if (assetBalance == null)
         {
-            _logger.LogWarning("Asset {Asset} not found in account balances", asset);
+            logger.LogWarning("Asset {Asset} not found in account balances", asset);
             return 0;
         }
 

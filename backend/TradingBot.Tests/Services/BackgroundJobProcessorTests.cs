@@ -1,11 +1,11 @@
+namespace TradingBot.Tests.Services;
+
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 using TradingBot.Application.Common;
 using TradingBot.Services;
-
-namespace TradingBot.Tests;
 
 // Test command classes implementing both IRequest and IRequest<Result>
 public class TestCommand : IRequest, IRequest<Result>

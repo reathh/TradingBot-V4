@@ -32,7 +32,7 @@ public abstract class ScheduledBackgroundService(
 
                 try
                 {
-                    await ExecuteScheduledWorkAsync(stoppingToken);
+                    await ExecuteScheduledWork(stoppingToken);
                 }
                 catch (Exception ex)
                 {
@@ -60,7 +60,7 @@ public abstract class ScheduledBackgroundService(
     /// <summary>
     /// Override to execute work at each scheduled interval
     /// </summary>
-    protected internal abstract Task ExecuteScheduledWorkAsync(CancellationToken cancellationToken);
+    protected internal abstract Task ExecuteScheduledWork(CancellationToken cancellationToken);
 
     /// <summary>
     /// Override to perform any setup operations when the service starts

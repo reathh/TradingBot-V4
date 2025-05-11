@@ -4,6 +4,8 @@ using TradingBot.Data;
 
 namespace TradingBot.Services;
 
+using Models;
+
 /// <summary>
 /// Background service that verifies the correct balance on exchanges for all bots
 /// </summary>
@@ -15,7 +17,7 @@ public class BalanceVerificationService(
     private readonly IExchangeApiRepository _exchangeApiRepository = exchangeApiRepository;
     private readonly IServiceProvider _serviceProvider = serviceProvider;
 
-    protected internal override async Task ExecuteScheduledWorkAsync(CancellationToken cancellationToken)
+    protected internal override async Task ExecuteScheduledWork(CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<TradingBotDbContext>();

@@ -1,10 +1,10 @@
+namespace TradingBot.Tests.Application.Commands.PlaceExitOrders;
+
+using Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using TradingBot.Application.Commands.PlaceExitOrders;
-using TradingBot.Data;
-
-namespace TradingBot.Tests;
 
 public class PlaceExitOrdersCommandTests : BaseTest
 {

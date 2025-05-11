@@ -7,6 +7,8 @@ using TradingBot.Services;
 
 namespace TradingBot.Tests;
 
+using Models;
+
 public abstract class BaseTest
 {
     protected readonly Mock<IExchangeApi> ExchangeApiMock;

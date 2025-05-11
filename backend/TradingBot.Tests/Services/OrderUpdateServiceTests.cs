@@ -1,12 +1,12 @@
+namespace TradingBot.Tests.Services;
+
+using Data;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 using TradingBot.Application.Commands.UpdateBotOrder;
-using TradingBot.Data;
 using TradingBot.Services;
-
-namespace TradingBot.Tests;
 
 public class OrderUpdateServiceTests : BaseTest, IDisposable
 {

@@ -10,8 +10,6 @@ public class BinanceExchangeApiRepository(
     ILoggerFactory loggerFactory) : IExchangeApiRepository
 {
     private readonly Dictionary<string, IExchangeApi> _apiInstances = [];
-    private readonly TimeProvider _timeProvider = timeProvider;
-    private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private readonly Lock _lock = new();
 
     /// <summary>
@@ -29,11 +27,11 @@ public class BinanceExchangeApiRepository(
             if (!_apiInstances.TryGetValue(key, out var api))
             {
                 // Create new instance if it doesn't exist
-                var logger = _loggerFactory.CreateLogger<BinanceExchangeApi>();
+                var logger = loggerFactory.CreateLogger<BinanceExchangeApi>();
                 api = new BinanceExchangeApi(
                     bot.PublicKey,
                     bot.PrivateKey,
-                    _timeProvider,
+                    timeProvider,
                     logger);
 
                 _apiInstances[key] = api;

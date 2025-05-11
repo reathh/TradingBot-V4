@@ -1,13 +1,13 @@
+namespace TradingBot.Tests.Services;
+
+using Data;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 using TradingBot.Application.Commands.VerifyBotBalance;
 using TradingBot.Application.Common;
-using TradingBot.Data;
 using TradingBot.Services;
-
-namespace TradingBot.Tests;
 
 public class BalanceVerificationServiceTests : BaseTest, IDisposable
 {
@@ -68,7 +68,7 @@ public class BalanceVerificationServiceTests : BaseTest, IDisposable
             .ReturnsAsync(Result.Success);
 
         // Act
-        await _balanceVerificationService.ExecuteScheduledWorkAsync(CancellationToken.None);
+        await _balanceVerificationService.ExecuteScheduledWork(CancellationToken.None);
 
         // Assert - verify that command was sent for each enabled bot (2), but not for disabled bot
         _mockMediator.Verify(

@@ -1,11 +1,11 @@
+namespace TradingBot.Tests.Application.Commands.UpdateStaleOrders;
+
+using Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using TradingBot.Application.Commands.UpdateStaleOrders;
-using TradingBot.Data;
 using TradingBot.Services;
-
-namespace TradingBot.Tests;
 
 public class UpdateStaleOrdersCommandTests : BaseTest
 {

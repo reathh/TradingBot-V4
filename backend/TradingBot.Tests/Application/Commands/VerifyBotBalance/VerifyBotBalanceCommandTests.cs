@@ -1,10 +1,10 @@
+namespace TradingBot.Tests.Application.Commands.VerifyBotBalance;
+
+using Data;
 using Microsoft.Extensions.Logging;
 using Moq;
 using TradingBot.Application.Commands.VerifyBotBalance;
-using TradingBot.Data;
 using TradingBot.Services;
-
-namespace TradingBot.Tests;
 
 public class VerifyBotBalanceCommandTests : BaseTest
 {

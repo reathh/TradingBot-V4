@@ -8,32 +8,30 @@ public class BackgroundJobProcessor(IServiceProvider serviceProvider, ILogger<Ba
 {
     // Dictionary of type-specific job queues
     private readonly ConcurrentDictionary<Type, ConcurrentQueue<Func<Task>>> _typeSpecificQueues = new();
-    
+
     // Dictionary of type-specific semaphores to ensure only one job of a type runs at a time
     private readonly ConcurrentDictionary<Type, SemaphoreSlim> _typeSpecificSemaphores = new();
-    
+
     // Global semaphore to limit overall concurrency
     private readonly SemaphoreSlim _globalSemaphore = new(Environment.ProcessorCount);
-    
+
     private readonly CancellationTokenSource _cancellationTokenSource = new();
-    private readonly IServiceProvider _serviceProvider = serviceProvider;
-    private readonly ILogger<BackgroundJobProcessor> _logger = logger;
     private readonly AutoResetEvent _newJobEvent = new(false);
 
     public void Enqueue<TRequest>(TRequest request) where TRequest : IRequest<Result>
     {
         var requestType = typeof(TRequest);
-        
+
         // Get or create the queue for this request type
         var queue = _typeSpecificQueues.GetOrAdd(requestType, _ => new ConcurrentQueue<Func<Task>>());
-        
+
         // Get or create the semaphore for this request type
         _typeSpecificSemaphores.GetOrAdd(requestType, _ => new SemaphoreSlim(1, 1));
 
         // Enqueue the job
         queue.Enqueue(async () =>
         {
-            using var scope = _serviceProvider.CreateScope();
+            using var scope = serviceProvider.CreateScope();
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
             try
@@ -52,66 +50,68 @@ public class BackgroundJobProcessor(IServiceProvider serviceProvider, ILogger<Ba
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing background job for command {RequestType}",
-                    typeof(TRequest).Name);
+                logger.LogError(ex, "Error processing background job for command {RequestType}", typeof(TRequest).Name);
             }
         });
 
         // Signal that a new job is available
         _newJobEvent.Set();
-        
-        _logger.LogDebug("Enqueued job of type {RequestType}, queue size: {QueueSize}", 
-            requestType.Name, queue.Count);
+
+        logger.LogDebug("Enqueued job of type {RequestType}, queue size: {QueueSize}", requestType.Name, queue.Count);
     }
 
     private static bool IsResultCommand<TRequest>(TRequest request)
     {
-        if (request == null) return false;
+        if (request == null)
+            return false;
 
         var requestType = request.GetType();
         var interfaces = requestType.GetInterfaces();
 
-        return interfaces.Any(i =>
-            i.IsGenericType &&
-            i.GetGenericTypeDefinition() == typeof(IRequest<>) &&
-            (
-                i.GetGenericArguments()[0] == typeof(Result) ||
-                (i.GetGenericArguments()[0].IsGenericType &&
-                i.GetGenericArguments()[0].GetGenericTypeDefinition() == typeof(Result<>))
-            ));
+        return interfaces.Any(i => i.IsGenericType &&
+                                   i.GetGenericTypeDefinition() == typeof(IRequest<>) &&
+                                   (i
+                                        .GetGenericArguments()[0] ==
+                                    typeof(Result) ||
+                                    (i
+                                         .GetGenericArguments()[0].IsGenericType &&
+                                     i
+                                         .GetGenericArguments()[0]
+                                         .GetGenericTypeDefinition() ==
+                                     typeof(Result<>))));
     }
 
     private async Task HandleResultCommand<TRequest>(IMediator mediator, TRequest request) where TRequest : IRequest<Result>
     {
-        if (request == null) return;
-
         // Use reflection to safely call Send and get the result
         var requestType = request.GetType();
         var sendMethod = typeof(IMediator).GetMethod("Send", [requestType, typeof(CancellationToken)]);
 
         if (sendMethod != null)
         {
-            var task = sendMethod.Invoke(mediator, [request, CancellationToken.None]) as Task;
-            if (task != null)
+            if (sendMethod.Invoke(mediator, [request, CancellationToken.None]) is Task task)
             {
                 await task;
 
                 // Get the result from the Task using reflection
-                var resultProperty = task.GetType().GetProperty("Result");
+                var resultProperty = task
+                    .GetType()
+                    .GetProperty("Result");
+
                 if (resultProperty != null)
                 {
                     var result = resultProperty.GetValue(task);
 
-                    // Check if the result is a Result type
-                    if (result is Result resultObj && !resultObj.Succeeded)
+                    switch (result)
                     {
-                        _logger.LogError("Command {RequestType} failed: {Errors}",
-                            typeof(TRequest).Name,
-                            string.Join(", ", resultObj.Errors));
-                    }
-                    else if (result is Application.Common.IResult iresult && !iresult.Succeeded)
-                    {
-                        _logger.LogError("Command {RequestType} failed", typeof(TRequest).Name);
+                        case Result { Succeeded: false } resultObj:
+                            logger.LogError("Command {RequestType} failed: {Errors}", typeof(TRequest).Name, string.Join(", ", resultObj.Errors));
+
+                            break;
+                        case Application.Common.IResult { Succeeded: false }:
+                            logger.LogError("Command {RequestType} failed", typeof(TRequest).Name);
+
+                            break;
                     }
                 }
             }
@@ -121,14 +121,16 @@ public class BackgroundJobProcessor(IServiceProvider serviceProvider, ILogger<Ba
     public Task StartAsync(CancellationToken cancellationToken)
     {
         Task.Run(() => ProcessJobsAsync(_cancellationTokenSource.Token), cancellationToken);
-        _logger.LogInformation("Background job processor started");
+        logger.LogInformation("Background job processor started");
+
         return Task.CompletedTask;
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
         _cancellationTokenSource.Cancel();
-        _logger.LogInformation("Background job processor stopping");
+        logger.LogInformation("Background job processor stopping");
+
         return Task.CompletedTask;
     }
 
@@ -137,53 +139,52 @@ public class BackgroundJobProcessor(IServiceProvider serviceProvider, ILogger<Ba
         while (!cancellationToken.IsCancellationRequested)
         {
             bool jobsProcessed = false;
-            
+
             // Process all queue types
             foreach (var queueEntry in _typeSpecificQueues)
             {
                 var requestType = queueEntry.Key;
                 var queue = queueEntry.Value;
-                
+
                 // Skip empty queues
                 if (queue.IsEmpty)
                     continue;
-                
+
                 jobsProcessed = true;
-                
+
                 // Get the type-specific semaphore
                 if (_typeSpecificSemaphores.TryGetValue(requestType, out var typeSemaphore))
                 {
                     // Try to acquire the type-specific semaphore without blocking
-                    if (typeSemaphore.Wait(0))
+                    if (await typeSemaphore.WaitAsync(0, cancellationToken))
                     {
                         try
                         {
                             // Only proceed if we can acquire the global semaphore
                             await _globalSemaphore.WaitAsync(cancellationToken);
-                            
+
                             // Dequeue and process a job for this type
                             if (queue.TryDequeue(out var job))
                             {
-                                _logger.LogDebug("Processing job of type {RequestType}, remaining: {RemainingJobs}", 
-                                    requestType.Name, queue.Count);
-                                    
+                                logger.LogDebug("Processing job of type {RequestType}, remaining: {RemainingJobs}", requestType.Name, queue.Count);
+
                                 _ = Task.Run(async () =>
-                                {
-                                    try
                                     {
-                                        await job();
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        _logger.LogError(ex, "Error in background job processing for {RequestType}", 
-                                            requestType.Name);
-                                    }
-                                    finally
-                                    {
-                                        _globalSemaphore.Release();
-                                        typeSemaphore.Release();
-                                    }
-                                }, cancellationToken);
+                                        try
+                                        {
+                                            await job();
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            logger.LogError(ex, "Error in background job processing for {RequestType}", requestType.Name);
+                                        }
+                                        finally
+                                        {
+                                            _globalSemaphore.Release();
+                                            typeSemaphore.Release();
+                                        }
+                                    },
+                                    cancellationToken);
                             }
                             else
                             {
@@ -196,12 +197,13 @@ public class BackgroundJobProcessor(IServiceProvider serviceProvider, ILogger<Ba
                         {
                             // Release the type semaphore if we get canceled while waiting for global semaphore
                             typeSemaphore.Release();
+
                             throw;
                         }
                     }
                 }
             }
-            
+
             // If no jobs were processed, wait for signal or timeout
             if (!jobsProcessed)
             {
@@ -209,13 +211,15 @@ public class BackgroundJobProcessor(IServiceProvider serviceProvider, ILogger<Ba
                 await Task.Run(() => _newJobEvent.WaitOne(100), cancellationToken);
             }
         }
-        
+
         // Dispose all semaphores
         _globalSemaphore.Dispose();
+
         foreach (var semaphore in _typeSpecificSemaphores.Values)
         {
             semaphore.Dispose();
         }
+
         _newJobEvent.Dispose();
     }
 }

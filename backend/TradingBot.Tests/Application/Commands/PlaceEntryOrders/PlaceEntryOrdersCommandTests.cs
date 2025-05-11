@@ -1,10 +1,10 @@
+namespace TradingBot.Tests.Application.Commands.PlaceEntryOrders;
+
+using Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using TradingBot.Application.Commands.PlaceEntryOrders;
-using TradingBot.Data;
-
-namespace TradingBot.Tests;
 
 public class PlaceEntryOrdersCommandTests : BaseTest
 {

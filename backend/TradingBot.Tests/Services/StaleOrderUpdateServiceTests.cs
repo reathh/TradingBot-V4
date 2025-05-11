@@ -1,3 +1,5 @@
+namespace TradingBot.Tests.Services;
+
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -5,8 +7,6 @@ using Moq;
 using TradingBot.Application.Commands.UpdateStaleOrders;
 using TradingBot.Application.Common;
 using TradingBot.Services;
-
-namespace TradingBot.Tests;
 
 public class StaleOrderUpdateServiceTests : BaseTest, IDisposable
 {

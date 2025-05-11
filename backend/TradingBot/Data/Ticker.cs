@@ -1,5 +1,7 @@
 namespace TradingBot.Data
 {
+    using Models;
+
     public class Ticker
     {
         public int Id { get; set; }

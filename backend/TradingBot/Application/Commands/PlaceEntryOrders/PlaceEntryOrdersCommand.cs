@@ -6,6 +6,8 @@ using TradingBot.Services;
 
 namespace TradingBot.Application.Commands.PlaceEntryOrders;
 
+using Models;
+
 // Note: File name is PlaceOpeningOrdersCommand.cs but class is PlaceEntryOrdersCommand
 public class PlaceEntryOrdersCommand : IRequest<Result>
 {
