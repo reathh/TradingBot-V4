@@ -38,23 +38,24 @@ public class TickerUpdateService(
         using var scope = ServiceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<TradingBotDbContext>();
 
-        // Get all unique symbols from enabled bots
-        var activeSymbols = await dbContext.Bots
-            .Where(b => b.Enabled)
+        // Get the list of already subscribed symbols
+        List<string> alreadySubscribed;
+        lock (_lock)
+        {
+            alreadySubscribed = _subscriptions.Keys.ToList();
+        }
+
+        // Query only for enabled symbols that are not already subscribed
+        var symbolsToSubscribe = await dbContext.Bots
+            .Where(b => b.Enabled && !alreadySubscribed.Contains(b.Symbol))
             .Select(b => b.Symbol)
             .Distinct()
             .ToListAsync(cancellationToken);
 
-        Logger.LogInformation("Found {SymbolCount} active symbols to monitor", activeSymbols.Count);
+        Logger.LogInformation("Found {SymbolCount} new symbols to subscribe to", symbolsToSubscribe.Count);
 
-        foreach (var symbol in activeSymbols)
+        foreach (var symbol in symbolsToSubscribe)
         {
-            // Skip if already subscribed
-            lock (_lock)
-            {
-                if (_subscriptions.ContainsKey(symbol)) continue;
-            }
-
             await SubscribeToSymbolAsync(symbol, cancellationToken);
         }
     }
