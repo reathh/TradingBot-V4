@@ -8,7 +8,7 @@ using Models;
 
 public class SaveTickerCommand : IRequest<Result>
 {
-    public required TickerDto TickerDto { get; init; }
+    public required TickerDto Ticker { get; init; }
 
     public class SaveTickerCommandHandler(
         TradingBotDbContext dbContext,
@@ -21,7 +21,7 @@ public class SaveTickerCommand : IRequest<Result>
         {
             try
             {
-                var tickerDto = request.TickerDto;
+                var tickerDto = request.Ticker;
                 _logger.LogDebug("Saving ticker data for {Symbol}: Bid={Bid}, Ask={Ask}, Last={Last}", 
                     tickerDto.Symbol, tickerDto.Bid, tickerDto.Ask, tickerDto.LastPrice);
 

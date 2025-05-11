@@ -2,8 +2,8 @@ using Binance.Net.Clients;
 using Binance.Net.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using TradingBot.Application;
 using TradingBot.Data;
+using TradingBot.Application.Commands.SaveTicker;
 
 namespace TradingBot.Services;
 
@@ -19,6 +19,7 @@ public class TickerUpdateService(IServiceProvider serviceProvider, ILogger<Ticke
     private readonly BinanceSocketClient _socketClient = new();
     private readonly Dictionary<string, CancellationTokenSource> _subscriptions = [];
     private readonly Lock _lock = new();
+    private readonly Dictionary<string, TickerDto> _lastTickers = new();
 
     protected override Task OnStartAsync(CancellationToken cancellationToken)
     {
@@ -106,24 +107,32 @@ public class TickerUpdateService(IServiceProvider serviceProvider, ILogger<Ticke
     {
         try
         {
-            // Create ticker from Binance data
             var tickerDto = new TickerDto(symbol, DateTime.UtcNow, tickData.BestBidPrice, tickData.BestAskPrice, tickData.LastPrice);
+            Logger.LogDebug("Received ticker update for {Symbol}: Bid={Bid}, Ask={Ask}, Last={Last}", symbol, tickerDto.Bid, tickerDto.Ask, tickerDto.LastPrice);
 
-            // Log ticker update
-            Logger.LogDebug("Received ticker update for {Symbol}: Bid={Bid}, Ask={Ask}, Last={Last}",
-                symbol,
-                tickerDto.Bid,
-                tickerDto.Ask,
-                tickerDto.LastPrice);
+            bool shouldSave = false;
+            lock (_lock)
+            {
+                if (!_lastTickers.TryGetValue(symbol, out var lastTicker) ||
+                    lastTicker.Bid != tickerDto.Bid ||
+                    lastTicker.Ask != tickerDto.Ask ||
+                    lastTicker.LastPrice != tickerDto.LastPrice)
+                {
+                    shouldSave = true;
+                    _lastTickers[symbol] = tickerDto;
+                }
+            }
 
             using var scope = ServiceProvider.CreateScope();
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-            var command = new NewTickerCommand
+            if (shouldSave)
             {
-                Ticker = tickerDto
-            };
+                var saveCommand = new SaveTickerCommand { Ticker = tickerDto };
+                await mediator.Send(saveCommand);
+            }
 
+            var command = new NewTickerCommand { Ticker = tickerDto };
             await mediator.Send(command);
         }
         catch (Exception ex)
@@ -180,10 +189,6 @@ public class TickerUpdateService(IServiceProvider serviceProvider, ILogger<Ticke
                 tokenSource.Cancel();
                 tokenSource.Dispose();
             }
-
-            // Instead of calling UnsubscribeAllAsync on SpotApi.ExchangeData, use the subscription
-            // we need to track which subscription ID was for this symbol and then unsubscribe
-            // For now, just use the client-level unsubscribe all since we don't track subscription IDs
         }
         catch (Exception ex)
         {
