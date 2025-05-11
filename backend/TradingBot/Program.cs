@@ -22,6 +22,14 @@ if (builder.Environment.IsDevelopment())
     builder.Services.AddDbContext<TradingBotDbContext>(options =>
         options.UseInMemoryDatabase("TradingBot"));
 }
+else if (builder.Environment.IsEnvironment("Staging"))
+{
+    var sqliteConnectionString = builder.Configuration.GetConnectionString("SqliteConnection") 
+        ?? "Data Source=tradingbot.db";
+        
+    builder.Services.AddDbContext<TradingBotDbContext>(options =>
+        options.UseSqlite(sqliteConnectionString));
+}
 else
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
