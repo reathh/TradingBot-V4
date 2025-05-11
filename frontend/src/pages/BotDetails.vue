@@ -183,6 +183,12 @@
           </div>
           <TradesTable :botId="bot.id" />
         </card>
+        <card class="mt-4">
+          <div slot="header">
+            <span class="card-title">Orders</span>
+          </div>
+          <OrdersTable :botId="bot.id" />
+        </card>
       </div>
     </div>
   </div>
@@ -204,6 +210,7 @@ import BaseButton from "@/components/BaseButton.vue";
 import { useNotifications } from "@/components/Notifications/NotificationPlugin";
 import apiClient from "@/services/api";
 import TradesTable from '@/components/TradesTable.vue';
+import OrdersTable from '@/components/OrdersTable.vue';
 
 const route = useRoute();
 const router = useRouter();

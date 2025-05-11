@@ -15,6 +15,7 @@ import Pricing from "@/pages/Pricing.vue";
 import Bots from "@/pages/Bots.vue";
 import BotDetails from "@/pages/BotDetails.vue";
 import Trades from "@/pages/Trades.vue";
+import Orders from "@/pages/Orders.vue";
 
 // Tables
 import RegularTables from "@/pages/Tables/RegularTables.vue";
@@ -54,6 +55,12 @@ const routes = [
         path: "trades",
         name: "Trades",
         component: Trades,
+        meta: { requiresAuth: true },
+      },
+      {
+        path: "orders",
+        name: "Orders",
+        component: Orders,
         meta: { requiresAuth: true },
       },
       {

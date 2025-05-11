@@ -73,6 +73,11 @@ const menuItems = ref([
     path: "/trades",
   },
   {
+    name: "Orders",
+    icon: "tim-icons icon-cart",
+    path: "/orders",
+  },
+  {
     name: "Pages",
     icon: "tim-icons icon-image-02",
     children: [

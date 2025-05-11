@@ -143,6 +143,18 @@
         </div>
       </Card>
     </div>
+    <div class="col-lg-12">
+      <Card class="card">
+        <template #header>
+          <h5 class="card-title mb-0">Active Orders</h5>
+        </template>
+        <div class="table-responsive">
+          <OrdersTable 
+            :period="timePeriods[selectedPeriodIndex].value"
+          />
+        </div>
+      </Card>
+    </div>
     <div class="col-lg-12"><CountryMapCard></CountryMapCard></div>
   </div>
 </template>
@@ -169,6 +181,7 @@ import Card from "@/components/Cards/Card.vue";
 import config from "@/config";
 import { useRoute } from "vue-router";
 import botService from "@/services/botService";
+import OrdersTable from '@/components/OrdersTable.vue';
 
 const route = useRoute();
 
