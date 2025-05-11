@@ -9,33 +9,31 @@ var builder = WebApplication.CreateBuilder(args);
 // Add CORS services
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins("http://localhost:5001")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
+    options.AddPolicy("AllowFrontend",
+        policy =>
+        {
+            policy
+                .WithOrigins("http://localhost:5001")
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
 });
 
 if (builder.Environment.IsDevelopment())
 {
-    builder.Services.AddDbContext<TradingBotDbContext>(options =>
-        options.UseInMemoryDatabase("TradingBot"));
+    builder.Services.AddDbContext<TradingBotDbContext>(options => options.UseInMemoryDatabase("TradingBot"));
 }
 else if (builder.Environment.IsEnvironment("Staging"))
 {
-    var sqliteConnectionString = builder.Configuration.GetConnectionString("SqliteConnection") 
-        ?? "Data Source=tradingbot.db";
-        
-    builder.Services.AddDbContext<TradingBotDbContext>(options =>
-        options.UseSqlite(sqliteConnectionString));
+    var sqliteConnectionString = builder.Configuration.GetConnectionString("SqliteConnection") ?? "Data Source=tradingbot.db";
+
+    builder.Services.AddDbContext<TradingBotDbContext>(options => options.UseSqlite(sqliteConnectionString));
 }
 else
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-    builder.Services.AddDbContext<TradingBotDbContext>(options =>
-        options.UseNpgsql(connectionString));
+    builder.Services.AddDbContext<TradingBotDbContext>(options => options.UseNpgsql(connectionString));
 }
 
 // Register TimeProvider as a singleton
@@ -64,11 +62,10 @@ builder.Services.Scan(scan => scan
     .WithSingletonLifetime());
 
 // Configure JSON serialization to handle circular references
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-    });
+builder
+    .Services
+    .AddControllers()
+    .AddJsonOptions(options => { options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles; });
 
 builder.Services.AddOpenApi();
 
@@ -80,11 +77,10 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
     // Seed database with test data
-    using (var scope = app.Services.CreateScope())
-    {
-        var dbContext = scope.ServiceProvider.GetRequiredService<TradingBotDbContext>();
-        DataSeeder.SeedDatabase(dbContext);
-    }
+    using var scope = app.Services.CreateScope();
+
+    var dbContext = scope.ServiceProvider.GetRequiredService<TradingBotDbContext>();
+    DataSeeder.SeedDatabase(dbContext);
 }
 
 // Use CORS middleware
