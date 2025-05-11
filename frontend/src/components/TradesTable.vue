@@ -111,7 +111,7 @@ const fetchTradeData = async (params) => {
     const response = await apiClient.get('trades', {
       params: {
         page: params?.page || currentPage.value,
-        pageSize: params?.pageSize || 10,
+        pageSize: params?.pageSize || pagedResult.value.pageSize || 10,
         botId: props.botId || undefined,
         period: props.period,
         searchQuery: params?.searchQuery || props.searchQuery || undefined,

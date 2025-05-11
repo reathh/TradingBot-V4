@@ -70,7 +70,12 @@
     <div class="d-flex justify-content-between align-items-center mt-3">
       <div>
         <slot name="footer-info">
-          Showing {{ displayedEntryStart }} to {{ displayedEntryEnd }} of {{ effectiveTotalCount }} entries
+          <span v-if="effectiveTotalCount > 0">
+            Showing {{ displayedEntryStart }} to {{ displayedEntryEnd }} of {{ effectiveTotalCount }} entries
+          </span>
+          <span v-else>
+            No entries found
+          </span>
         </slot>
       </div>
       <BasePagination
@@ -139,7 +144,7 @@ watch(() => props.page, (newVal) => {
 
 watch(() => props.pageSize, (newVal) => {
   if (newVal) localPageSize.value = newVal;
-});
+}, { immediate: true });
 
 // Computed effective loading state
 const effectiveLoading = computed(() => {
@@ -245,7 +250,7 @@ const displayedEntryStart = computed(() => {
 
 const displayedEntryEnd = computed(() => {
   const end = localCurrentPage.value * localPageSize.value;
-  return end > effectiveTotalCount.value ? effectiveTotalCount.value : end;
+  return Math.min(end, effectiveTotalCount.value);
 });
 
 // Sorting functions
