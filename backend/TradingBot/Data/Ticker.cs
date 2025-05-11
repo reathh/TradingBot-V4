@@ -1,5 +1,3 @@
-using System;
-
 namespace TradingBot.Data
 {
     public class Ticker

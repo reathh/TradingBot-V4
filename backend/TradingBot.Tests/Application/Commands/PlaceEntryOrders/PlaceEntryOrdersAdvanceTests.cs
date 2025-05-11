@@ -1,9 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Moq;
 using TradingBot.Application.Commands.PlaceEntryOrders;
 using TradingBot.Data;
-using TradingBot.Services;
 
 namespace TradingBot.Tests.Application.Commands.PlaceEntryOrders;
 

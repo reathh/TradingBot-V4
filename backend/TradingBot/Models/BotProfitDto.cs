@@ -1,5 +1,3 @@
-using System;
-
 namespace TradingBot.Models
 {
     public record BotProfitDto
