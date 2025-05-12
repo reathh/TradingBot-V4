@@ -26,6 +26,7 @@ public class PlaceEntryOrdersPriceBoundaryTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -46,6 +47,7 @@ public class PlaceEntryOrdersPriceBoundaryTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -66,6 +68,7 @@ public class PlaceEntryOrdersPriceBoundaryTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -84,6 +87,7 @@ public class PlaceEntryOrdersPriceBoundaryTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedOrder);
 
@@ -96,6 +100,7 @@ public class PlaceEntryOrdersPriceBoundaryTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -114,6 +119,7 @@ public class PlaceEntryOrdersPriceBoundaryTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedOrder);
 
@@ -126,6 +132,7 @@ public class PlaceEntryOrdersPriceBoundaryTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 } 

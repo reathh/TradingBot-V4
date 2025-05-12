@@ -11,7 +11,7 @@ using Models;
 // Note: File name is PlaceOpeningOrdersCommand.cs but class is PlaceEntryOrdersCommand
 public class PlaceEntryOrdersCommand : IRequest<Result>
 {
-    public required TickerDto Ticker { get; set; }
+    public required TickerDto Ticker { get; init; }
 
     public class PlaceEntryOrdersCommandHandler(
         TradingBotDbContext dbContext,
@@ -111,6 +111,7 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                         orderPrice,
                         orderQuantity,
                         bot.IsLong,
+                        bot.EntryOrderType,
                         cancellationToken));
                 }
 
@@ -140,6 +141,7 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                     currentPrice,
                     quantity,
                     bot.IsLong,
+                    bot.EntryOrderType,
                     cancellationToken);
 
                 var trade = new Trade(order);

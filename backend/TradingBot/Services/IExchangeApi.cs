@@ -4,7 +4,7 @@ namespace TradingBot.Services;
 
 public interface IExchangeApi
 {
-    Task<Order> PlaceOrder(Bot bot, decimal price, decimal quantity, bool isBuy, CancellationToken cancellationToken);
+    Task<Order> PlaceOrder(Bot bot, decimal price, decimal quantity, bool isBuy, OrderType orderType, CancellationToken cancellationToken);
 
     /// <summary>
     /// Subscribes to real-time order updates from the exchange

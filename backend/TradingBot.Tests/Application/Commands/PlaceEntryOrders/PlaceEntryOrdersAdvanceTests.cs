@@ -33,6 +33,7 @@ public class PlaceEntryOrdersAdvanceTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(orders[0])
             .ReturnsAsync(orders[1])
@@ -47,6 +48,7 @@ public class PlaceEntryOrdersAdvanceTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Exactly(3));
 
         var savedTrades = await DbContext.Trades.ToListAsync();
@@ -77,6 +79,7 @@ public class PlaceEntryOrdersAdvanceTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(orders[0])
             .ReturnsAsync(orders[1])
@@ -91,6 +94,7 @@ public class PlaceEntryOrdersAdvanceTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Exactly(3));
 
         var savedTrades = await DbContext.Trades.ToListAsync();
@@ -111,6 +115,7 @@ public class PlaceEntryOrdersAdvanceTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(firstOrder);
 
@@ -129,6 +134,7 @@ public class PlaceEntryOrdersAdvanceTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 } 

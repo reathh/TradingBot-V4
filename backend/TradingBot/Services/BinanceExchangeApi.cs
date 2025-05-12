@@ -24,11 +24,11 @@ public class BinanceExchangeApi(
         options.ApiCredentials = new ApiCredentials(publicKey, privateKey);
     });
 
-    public async Task<Order> PlaceOrder(Bot bot, decimal price, decimal quantity, bool isBuy, CancellationToken cancellationToken)
+    public async Task<Order> PlaceOrder(Bot bot, decimal price, decimal quantity, bool isBuy, OrderType orderType, CancellationToken cancellationToken)
     {
         var side = isBuy ? OrderSide.Buy : OrderSide.Sell;
-        var orderType = SpotOrderType.Limit;
-        var timeInForce = TimeInForce.GoodTillCanceled;
+        var spotOrderType = MapOrderType(orderType);
+        TimeInForce? timeInForce = spotOrderType == SpotOrderType.Market ? null : TimeInForce.GoodTillCanceled;
 
         WebCallResult<Binance.Net.Objects.Models.Spot.BinancePlacedOrder> orderResult;
 
@@ -37,9 +37,9 @@ public class BinanceExchangeApi(
             orderResult = await _restClient.SpotApi.Trading.PlaceOrderAsync(
                 symbol: bot.Symbol,
                 side: side,
-                type: orderType,
+                type: spotOrderType,
                 quantity: quantity,
-                price: price,
+                price: spotOrderType == SpotOrderType.Market ? null : price,
                 timeInForce: timeInForce,
                 ct: cancellationToken);
         }
@@ -48,9 +48,9 @@ public class BinanceExchangeApi(
             orderResult = await _restClient.SpotApi.Trading.PlaceMarginOrderAsync(
                 symbol: bot.Symbol,
                 side: side,
-                type: orderType,
+                type: spotOrderType,
                 quantity: quantity,
-                price: price,
+                price: spotOrderType == SpotOrderType.Market ? null : price,
                 timeInForce: timeInForce,
                 ct: cancellationToken);
         }
@@ -68,6 +68,17 @@ public class BinanceExchangeApi(
             data.Quantity,
             data.Side == OrderSide.Buy,
             timeProvider.GetUtcNow().DateTime);
+    }
+
+    private static SpotOrderType MapOrderType(OrderType orderType)
+    {
+        return orderType switch
+        {
+            OrderType.LimitMaker => SpotOrderType.LimitMaker,
+            OrderType.Limit => SpotOrderType.Limit,
+            OrderType.Market => SpotOrderType.Market,
+            _ => throw new ArgumentOutOfRangeException(nameof(orderType), orderType, null)
+        };
     }
 
     public async Task SubscribeToOrderUpdates(Func<OrderUpdate, Task> callback, Bot bot, CancellationToken cancellationToken = default)

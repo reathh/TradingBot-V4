@@ -141,6 +141,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                     targetExitPrice,
                     exitQuantity,
                     !bot.IsLong,
+                    bot.ExitOrderType,
                     cancellationToken);
 
                 orderTasks.Add((orderTask, consolidatedTrades.ToList()));
@@ -158,6 +159,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                     exitPrice,
                     trade.EntryOrder.QuantityFilled,
                     !bot.IsLong,
+                    bot.ExitOrderType,
                     cancellationToken);
 
                 orderTasks.Add((orderTask, [trade]));

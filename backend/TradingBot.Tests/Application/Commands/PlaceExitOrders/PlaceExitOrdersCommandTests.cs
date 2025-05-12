@@ -38,6 +38,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedExitOrder);
 
@@ -50,6 +51,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
             It.Is<decimal>(p => p == ticker.Ask),
             It.Is<decimal>(q => q == bot.EntryQuantity),
             It.Is<bool>(b => b != bot.IsLong), // Exit is opposite of entry
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Verify trade was updated
@@ -90,6 +92,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedExitOrder);
 
@@ -102,6 +105,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
             It.Is<decimal>(p => p == ticker.Bid),
             It.Is<decimal>(q => q == bot.EntryQuantity),
             It.Is<bool>(b => b != bot.IsLong), // Exit is opposite of entry
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Verify trade was updated
@@ -136,6 +140,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -165,6 +170,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -196,6 +202,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -230,6 +237,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(consolidatedOrder);
 
@@ -242,6 +250,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.Is<bool>(b => b != bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Just verify the orders were placed, not the full database updates
@@ -279,6 +288,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(consolidatedOrder);
 
@@ -291,6 +301,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.Is<bool>(b => b != bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Just verify the orders were placed, not the full database updates
@@ -337,6 +348,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()));
 
         foreach (var order in advanceOrders)
@@ -354,6 +366,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.Is<bool>(b => b != bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.AtLeastOnce);
 
         // Manually assign exit orders for test purposes
@@ -413,6 +426,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()));
 
         sequence = sequence.ReturnsAsync(consolidatedOrder);
@@ -431,6 +445,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.Is<bool>(b => b != bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.AtLeastOnce);
 
         // Manually assign exit orders for test purposes
@@ -482,6 +497,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(advanceOrder);
 
@@ -494,6 +510,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.Is<bool>(b => b != bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.AtLeastOnce);
 
         // Verify one trade has an exit order
@@ -531,6 +548,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(consolidatedOrder);
 
@@ -543,6 +561,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.Is<bool>(b => b != bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Just verify the orders were placed, not the full database updates
@@ -575,6 +594,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Test error"));
 
@@ -626,6 +646,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(exitOrder1)
             .ReturnsAsync(exitOrder2);
@@ -639,6 +660,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Exactly(2));
 
         ExchangeApiMock.Verify(x => x.PlaceOrder(
@@ -646,6 +668,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -677,6 +700,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(exitOrder);
 
@@ -689,6 +713,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
             It.Is<decimal>(p => p == exitPrice),
             It.Is<decimal>(q => q == bot.EntryQuantity),
             It.Is<bool>(b => b != bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -721,6 +746,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
 
         // Now reduce exit step to 0.5
@@ -735,6 +761,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(exitOrder);
 
@@ -747,6 +774,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.Is<bool>(b => b != bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -804,6 +832,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(exitOrder);
 
@@ -816,6 +845,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.Is<bool>(b => b == false), // Selling for long bot
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Check incomplete trade has no exit order
@@ -888,6 +918,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(exitOrder);
 
@@ -900,6 +931,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.Is<bool>(b => b == true), // Buying for short bot
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Check incomplete trade has no exit order

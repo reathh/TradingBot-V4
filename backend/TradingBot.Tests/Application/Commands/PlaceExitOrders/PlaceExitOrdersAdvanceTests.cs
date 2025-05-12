@@ -55,6 +55,7 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             It.Is<decimal>(p => p == 100.8m),
             It.Is<decimal>(q => q == 2m),
             It.Is<bool>(b => b != bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
             
         // Second order for the highest entry price
@@ -63,6 +64,7 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             It.Is<decimal>(p => p == 101.0m),
             It.Is<decimal>(q => q == 1m),
             It.Is<bool>(b => b != bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
         
         // Verify all trades have exit orders (advance orders)
@@ -124,6 +126,7 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             It.Is<decimal>(p => p == 101.1m), // Current price
             It.Is<decimal>(q => q == 3m),     // Total quantity for all 3 trades
             It.Is<bool>(b => b != bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
         
         // Verify no other orders were placed
@@ -132,6 +135,7 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Exactly(1));
         
         // Verify all trades have the same exit order
@@ -206,6 +210,7 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             It.Is<decimal>(p => p == 99.2m), // Consolidated exit at current price
             It.Is<decimal>(q => q == 2m),    // For 2 trades (entries 97m and 98m)
             It.Is<bool>(b => b != bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
             
         // Then, the ONE advance order for entry 99m
@@ -214,6 +219,7 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             It.Is<decimal>(p => p == 100m),  // Advance exit for entry 99m
             It.Is<decimal>(q => q == 1m),
             It.Is<bool>(b => b != bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
         
         // Verify no other orders were placed (exactly 2 orders total)
@@ -222,6 +228,7 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Exactly(2));
         
         // Verify which trades have exit orders
@@ -280,6 +287,7 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             It.Is<decimal>(p => p == 100.8m),
             It.Is<decimal>(q => q == 2m),
             It.Is<bool>(b => b != bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
         
         // Verify only eligible trades have exit orders
@@ -345,6 +353,7 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             It.Is<decimal>(p => p == 100.5m),
             It.Is<decimal>(q => q == 2m),
             It.Is<bool>(b => b != bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
             
         // Second order for the lower entry price
@@ -353,6 +362,7 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             It.Is<decimal>(p => p == 100.0m),
             It.Is<decimal>(q => q == 1m),
             It.Is<bool>(b => b != bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
         
         // Verify all trades have exit orders (advance orders)

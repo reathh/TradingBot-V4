@@ -211,6 +211,7 @@ public class PlaceExitOrdersConsolidatedTests : PlaceExitOrdersTestBase
             It.Is<decimal>(p => p == consolidatedPrice),
             It.Is<decimal>(q => q == consolidatedQuantity),
             It.Is<bool>(b => b != bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
         
         // Verify only eligible trade has an exit order
@@ -265,6 +266,7 @@ public class PlaceExitOrdersConsolidatedTests : PlaceExitOrdersTestBase
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
             
         ExchangeApiMock.Verify(x => x.PlaceOrder(
@@ -272,6 +274,7 @@ public class PlaceExitOrdersConsolidatedTests : PlaceExitOrdersTestBase
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
             
         // No order for disabled bot
@@ -280,6 +283,61 @@ public class PlaceExitOrdersConsolidatedTests : PlaceExitOrdersTestBase
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldPlaceExitOrders_ForMultipleBots_ThatMeetCriteria_WithCorrectOrderType()
+    {
+        // Arrange
+        var bot1 = await CreateTestBot(exitStep: 1.0m, entryQuantity: 1m, isLong: true);
+        var bot2 = await CreateTestBot(exitStep: 1.0m, entryQuantity: 2m, isLong: true);
+        
+        // Create a disabled bot
+        var disabledBot = await CreateTestBot(exitStep: 1.0m, entryQuantity: 3m, isLong: true);
+        disabledBot.Enabled = false;
+        await DbContext.SaveChangesAsync();
+        
+        // Create trades for each bot
+        await CreateCompletedTrade(bot1, 100m);
+        await CreateCompletedTrade(bot2, 100m);
+        await CreateCompletedTrade(disabledBot, 100m);
+        
+        // Create ticker with price that reaches exit step
+        var ticker = CreateTestTicker(100.5m, 101m);
+        var command = new PlaceExitOrdersCommand { Ticker = ticker };
+        
+        // Setup exit orders for each bot
+        SetupExitOrderSequence(bot1, (101m, 1m), (101m, 2m));
+        
+        // Act
+        await Handle(command, CancellationToken.None);
+        
+        // Assert - orders placed only for enabled bots
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.Is<Bot>(b => b.Id == bot1.Id),
+            It.IsAny<decimal>(),
+            It.IsAny<decimal>(),
+            It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+            
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.Is<Bot>(b => b.Id == bot2.Id),
+            It.IsAny<decimal>(),
+            It.IsAny<decimal>(),
+            It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+            
+        // No order for disabled bot
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.Is<Bot>(b => b.Id == disabledBot.Id),
+            It.IsAny<decimal>(),
+            It.IsAny<decimal>(),
+            It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 }

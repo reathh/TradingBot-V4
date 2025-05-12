@@ -97,6 +97,7 @@ public abstract class PlaceExitOrdersTestBase : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(order);
     }
@@ -111,6 +112,7 @@ public abstract class PlaceExitOrdersTestBase : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()));
 
         foreach (var (price, quantity) in orders)
@@ -136,6 +138,7 @@ public abstract class PlaceExitOrdersTestBase : BaseTest
             It.Is<decimal>(p => p == expectedPrice),
             It.Is<decimal>(q => q == expectedQuantity),
             It.Is<bool>(b => b != bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), timesValue);
     }
 
@@ -149,6 +152,7 @@ public abstract class PlaceExitOrdersTestBase : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 }

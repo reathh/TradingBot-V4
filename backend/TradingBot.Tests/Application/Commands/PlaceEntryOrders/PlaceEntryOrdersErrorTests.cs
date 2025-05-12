@@ -23,6 +23,7 @@ public class PlaceEntryOrdersErrorTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Test exception"));
 
@@ -45,6 +46,7 @@ public class PlaceEntryOrdersErrorTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Test exception"));
 
@@ -67,6 +69,7 @@ public class PlaceEntryOrdersErrorTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Test exception"));
 
@@ -77,6 +80,7 @@ public class PlaceEntryOrdersErrorTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(order2);
 

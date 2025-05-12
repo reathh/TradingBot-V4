@@ -24,6 +24,7 @@ public class PlaceEntryOrdersBasicTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedOrder);
 
@@ -36,6 +37,7 @@ public class PlaceEntryOrdersBasicTests : BaseTest
             It.Is<decimal>(p => p == (bot.IsLong ? ticker.Bid : ticker.Ask)),
             It.Is<decimal>(q => q == bot.EntryQuantity),
             It.Is<bool>(b => b == bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         var savedTrade = await DbContext.Trades.FirstOrDefaultAsync();
@@ -64,6 +66,7 @@ public class PlaceEntryOrdersBasicTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 } 

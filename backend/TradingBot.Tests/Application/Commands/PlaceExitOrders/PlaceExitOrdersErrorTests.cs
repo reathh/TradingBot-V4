@@ -30,6 +30,7 @@ public class PlaceExitOrdersErrorTests : PlaceExitOrdersTestBase
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(testException);
         
@@ -66,6 +67,7 @@ public class PlaceExitOrdersErrorTests : PlaceExitOrdersTestBase
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(testException);
         
@@ -108,6 +110,7 @@ public class PlaceExitOrdersErrorTests : PlaceExitOrdersTestBase
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(testException);
         
@@ -118,6 +121,7 @@ public class PlaceExitOrdersErrorTests : PlaceExitOrdersTestBase
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(successOrder);
         
@@ -143,6 +147,7 @@ public class PlaceExitOrdersErrorTests : PlaceExitOrdersTestBase
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
     
@@ -168,6 +173,7 @@ public class PlaceExitOrdersErrorTests : PlaceExitOrdersTestBase
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
     
@@ -195,6 +201,7 @@ public class PlaceExitOrdersErrorTests : PlaceExitOrdersTestBase
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
     
@@ -225,6 +232,7 @@ public class PlaceExitOrdersErrorTests : PlaceExitOrdersTestBase
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()));
             
         mockSequence = mockSequence.ReturnsAsync(consolidatedOrder);
@@ -254,6 +262,7 @@ public class PlaceExitOrdersErrorTests : PlaceExitOrdersTestBase
             It.Is<decimal>(p => p == 101.1m),
             It.Is<decimal>(q => q == 2.0m), // Both trades are consolidated in a single order
             It.Is<bool>(b => b != bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
         
         // Verify both trades got the same exit order

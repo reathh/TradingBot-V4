@@ -22,6 +22,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedOrder);
 
@@ -34,6 +35,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.Is<decimal>(p => p == (bot.IsLong ? ticker.Bid : ticker.Ask)),
             It.Is<decimal>(q => q == bot.EntryQuantity),
             It.Is<bool>(b => b == bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         var savedTrade = await DbContext.Trades.FirstOrDefaultAsync();
@@ -62,6 +64,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -82,6 +85,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -102,6 +106,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -122,6 +127,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -148,6 +154,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(orders[0])
             .ReturnsAsync(orders[1])
@@ -162,6 +169,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Exactly(3));
 
         var savedTrades = await DbContext.Trades.ToListAsync();
@@ -190,6 +198,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(additionalOrders[0])
             .ReturnsAsync(additionalOrders[1]);
@@ -203,6 +212,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.Is<decimal>(p => p == 96),  // First order at price 96
             It.Is<decimal>(q => q == 2),   // For 2 units
             It.Is<bool>(b => b == bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         ExchangeApiMock.Verify(x => x.PlaceOrder(
@@ -210,6 +220,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.Is<decimal>(p => p == 95),  // Second order at price 95
             It.Is<decimal>(q => q == 1),   // For 1 unit (entryQuantity)
             It.Is<bool>(b => b == bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Check that we now have 5 trades total
@@ -241,6 +252,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(orders[0])
             .ReturnsAsync(orders[1])
@@ -255,6 +267,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Exactly(3));
 
         var savedTrades = await DbContext.Trades.ToListAsync();
@@ -283,6 +296,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(additionalOrders[0])
             .ReturnsAsync(additionalOrders[1]);
@@ -296,6 +310,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.Is<decimal>(p => p == 106),  // First order at price 106
             It.Is<decimal>(q => q == 3),    // For 3 units
             It.Is<bool>(b => b == bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         ExchangeApiMock.Verify(x => x.PlaceOrder(
@@ -303,6 +318,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.Is<decimal>(p => p == 107),  // Second order at price 107
             It.Is<decimal>(q => q == 1),    // For 1 unit (entryQuantity)
             It.Is<bool>(b => b == bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Check that we now have 5 trades total
@@ -327,6 +343,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(firstOrder);
 
@@ -339,6 +356,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.Is<decimal>(p => p == 101),
             It.Is<decimal>(q => q == 1),
             It.Is<bool>(b => b == bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Clear mock for next test
@@ -356,6 +374,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(secondOrder);
 
@@ -368,6 +387,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.Is<decimal>(p => p == 106),
             It.Is<decimal>(q => q == 5),
             It.Is<bool>(b => b == bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Clear mock for next test
@@ -384,6 +404,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync((Order)null!);
 
@@ -396,6 +417,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
 
         // Clear mock for next test
@@ -414,6 +436,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(fourthOrder);
 
@@ -426,6 +449,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.Is<decimal>(p => p == 111),
             It.Is<decimal>(q => q == 5),
             It.Is<bool>(b => b == bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -446,6 +470,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(firstOrder);
 
@@ -458,6 +483,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.Is<decimal>(p => p == 100),
             It.Is<decimal>(q => q == 1),
             It.Is<bool>(b => b == bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Clear mock for next test
@@ -475,6 +501,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(secondOrder);
 
@@ -487,6 +514,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.Is<decimal>(p => p == 95),
             It.Is<decimal>(q => q == 5),
             It.Is<bool>(b => b == bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Clear mock for next test
@@ -503,6 +531,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync((Order)null!);
 
@@ -515,6 +544,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
 
         // Clear mock for next test
@@ -533,6 +563,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(fourthOrder);
 
@@ -545,6 +576,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.Is<decimal>(p => p == 91),
             It.Is<decimal>(q => q == 4),
             It.Is<bool>(b => b == bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -561,6 +593,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Test error"));
 
@@ -599,6 +632,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(order1)
             .ReturnsAsync(order2);
@@ -612,6 +646,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Exactly(2));
 
         var savedTrades = await DbContext.Trades.ToListAsync();
@@ -632,6 +667,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(firstOrder);
 
@@ -650,6 +686,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -668,6 +705,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedOrder);
 
@@ -680,6 +718,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -698,6 +737,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedOrder);
 
@@ -710,6 +750,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -739,6 +780,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -768,6 +810,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -788,6 +831,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(firstOrder);
 
@@ -800,6 +844,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.Is<decimal>(p => p == 100),
             It.Is<decimal>(q => q == 1),
             It.Is<bool>(b => b == bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Clear mock for next test
@@ -817,6 +862,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(secondOrder);
 
@@ -829,6 +875,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.Is<decimal>(p => p == 97),
             It.Is<decimal>(q => q == 3),
             It.Is<bool>(b => b == bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Now change the bot's entryStep and entryQuantity
@@ -855,6 +902,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(thirdOrder);
 
@@ -867,6 +915,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.Is<decimal>(p => p == 93),
             It.Is<decimal>(q => q == 8), // Correct quantity based on calculations
             It.Is<bool>(b => b == bot.IsLong),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Clear mock for next test
@@ -883,6 +932,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
                 It.IsAny<decimal>(),
                 It.IsAny<decimal>(),
                 It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync((Order)null!);
 
@@ -895,6 +945,7 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.IsAny<decimal>(),
             It.IsAny<decimal>(),
             It.IsAny<bool>(),
+            It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 }
