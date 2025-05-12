@@ -18,12 +18,13 @@ public class VerifyBalancesCommand : IRequest<Result>
 
         protected override async Task<Result> HandleCore(VerifyBalancesCommand request, CancellationToken cancellationToken)
         {
-            var bots = await dbContext.Bots
+            var bots = await dbContext
+                .Bots
                 .Where(b => b.Enabled)
                 .Include(b => b.Trades)
-                    .ThenInclude(t => t.EntryOrder)
+                .ThenInclude(t => t.EntryOrder)
                 .Include(b => b.Trades)
-                    .ThenInclude(t => t.ExitOrder)
+                .ThenInclude(t => t.ExitOrder)
                 .ToListAsync(cancellationToken);
 
             logger.LogDebug("Verifying balances for {BotCount} enabled bots", bots.Count);
@@ -36,36 +37,36 @@ public class VerifyBalancesCommand : IRequest<Result>
                 var symbol = bot.Symbol;
                 var baseCurrency = CurrencyUtilities.ExtractBaseCurrency(symbol);
                 decimal expectedBalance = CalculateExpectedBalance(bot);
-                decimal actualBalance = 0;
                 int attemptCount = 0;
-                bool success = false;
 
                 while (attemptCount < _maxRetries)
                 {
                     attemptCount++;
-                    logger.LogInformation("Attempt {Attempt}/{MaxRetries} to verify balance for bot {BotId}",
-                        attemptCount, _maxRetries, bot.Id);
+                    logger.LogInformation("Attempt {Attempt}/{MaxRetries} to verify balance for bot {BotId}", attemptCount, _maxRetries, bot.Id);
 
                     try
                     {
-                        actualBalance = await exchangeApi.GetBalance(baseCurrency, bot, cancellationToken);
+                        var actualBalance = await exchangeApi.GetBalance(baseCurrency, bot, cancellationToken);
+
                         if (actualBalance == expectedBalance)
                         {
-                            logger.LogInformation("Balance verification succeeded for bot {BotId}. Balance: {Balance}",
-                                bot.Id, actualBalance);
-                            success = true;
+                            logger.LogInformation("Balance verification succeeded for bot {BotId}. Balance: {Balance}", bot.Id, actualBalance);
+
                             break;
                         }
+
                         if (attemptCount < _maxRetries)
                         {
                             logger.LogWarning("Balance mismatch for bot {BotId}. Expected: {Expected}, Actual: {Actual}. Will retry.",
-                                bot.Id, expectedBalance, actualBalance);
+                                bot.Id,
+                                expectedBalance,
+                                actualBalance);
+
                             await Task.Delay(_delayBetweenChecks, cancellationToken);
                         }
                         else
                         {
-                            logger.LogCritical("Balance verification failed for bot {BotId} after {MaxRetries} attempts. Bot disabled.",
-                                bot.Id, _maxRetries);
+                            logger.LogCritical("Balance verification failed for bot {BotId} after {MaxRetries} attempts. Bot disabled.", bot.Id, _maxRetries);
                             bot.Enabled = false;
                             await dbContext.SaveChangesAsync(cancellationToken);
                             errors.Add($"Balance verification failed for bot {bot.Id}: Expected {expectedBalance}, Actual {actualBalance}");
@@ -74,6 +75,7 @@ public class VerifyBalancesCommand : IRequest<Result>
                     catch (Exception ex)
                     {
                         logger.LogError(ex, "Error verifying balance for bot {BotId} on attempt {Attempt}", bot.Id, attemptCount);
+
                         if (attemptCount >= _maxRetries)
                         {
                             logger.LogCritical("Balance verification failed for bot {BotId} due to exceptions. Bot disabled.", bot.Id);
@@ -81,6 +83,7 @@ public class VerifyBalancesCommand : IRequest<Result>
                             await dbContext.SaveChangesAsync(cancellationToken);
                             errors.Add($"Balance verification failed for bot {bot.Id}: {ex.Message}");
                         }
+
                         await Task.Delay(_delayBetweenChecks, cancellationToken);
                     }
                 }
@@ -92,6 +95,7 @@ public class VerifyBalancesCommand : IRequest<Result>
         private static decimal CalculateExpectedBalance(Bot bot)
         {
             decimal expectedBalance = bot.StartingBaseAmount;
+
             foreach (var trade in bot.Trades)
             {
                 if (trade.EntryOrder.IsBuy)
@@ -103,6 +107,7 @@ public class VerifyBalancesCommand : IRequest<Result>
                     expectedBalance -= trade.EntryOrder.QuantityFilled;
                 }
             }
+
             foreach (var trade in bot.Trades.Where(t => t.ExitOrder != null))
             {
                 if (trade.ExitOrder!.IsBuy)
@@ -114,6 +119,7 @@ public class VerifyBalancesCommand : IRequest<Result>
                     expectedBalance -= trade.ExitOrder.QuantityFilled;
                 }
             }
+
             return expectedBalance;
         }
     }
