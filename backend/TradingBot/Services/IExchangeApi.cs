@@ -31,4 +31,12 @@ public interface IExchangeApi
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>The current balance of the asset</returns>
     Task<decimal> GetBalance(string asset, Bot bot, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets the current ticker/quote for the specified symbol
+    /// </summary>
+    /// <param name="symbol">The trading pair symbol (e.g. BTCUSDT)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Ticker information or null if unavailable</returns>
+    Task<Models.TickerDto?> GetTicker(string symbol, CancellationToken cancellationToken = default);
 }

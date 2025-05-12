@@ -77,11 +77,10 @@ public class VerifyBotBalanceCommandTests : BaseTest
             .Setup(api => api.GetBalance(It.IsAny<string>(), bot, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedBalance);
 
-        // Create command with current price
+        // Create command
         var command = new VerifyBotBalanceCommand
         {
-            Bot = bot,
-            CurrentPrice = 95m
+            Bot = bot
         };
 
         // Act
@@ -139,11 +138,10 @@ public class VerifyBotBalanceCommandTests : BaseTest
             .Setup(api => api.GetBalance(It.IsAny<string>(), bot, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedBalance);
 
-        // Create command with current price
+        // Create command
         var command = new VerifyBotBalanceCommand
         {
-            Bot = bot,
-            CurrentPrice = 105m
+            Bot = bot
         };
 
         // Act
@@ -193,11 +191,10 @@ public class VerifyBotBalanceCommandTests : BaseTest
                 }
             });
         
-        // Create command with current price
+        // Create command
         var command = new VerifyBotBalanceCommand
         {
-            Bot = bot,
-            CurrentPrice = 95m
+            Bot = bot
         };
 
         // Act
@@ -240,11 +237,10 @@ public class VerifyBotBalanceCommandTests : BaseTest
             .Setup(api => api.GetBalance(It.IsAny<string>(), bot, It.IsAny<CancellationToken>()))
             .ReturnsAsync(5.0m); // Significantly different from expected 10.0
 
-        // Create command with current price
+        // Create command
         var command = new VerifyBotBalanceCommand
         {
-            Bot = bot,
-            CurrentPrice = 95m
+            Bot = bot
         };
 
         // Act

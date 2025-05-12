@@ -226,4 +226,44 @@ public class BinanceExchangeApi(string publicKey, string privateKey, TimeProvide
 
         return assetBalance.Total;
     }
+
+    /// <inheritdoc />
+    public async Task<Models.TickerDto?> GetTicker(string symbol, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var tickerResult = await _restClient.SpotApi.ExchangeData.GetTickerAsync(symbol, cancellationToken);
+
+            if (!tickerResult.Success)
+            {
+                logger.LogWarning("Failed to fetch ticker for {Symbol}: {Error}", symbol, tickerResult.Error?.Message);
+                return null;
+            }
+
+            var t = tickerResult.Data;
+
+            return new Models.TickerDto(
+                symbol,
+                timeProvider.GetUtcNow().UtcDateTime,
+                t.BestBidPrice,
+                t.BestAskPrice,
+                t.LastPrice,
+                t.OpenPrice,
+                t.HighPrice,
+                t.LowPrice,
+                t.Volume,
+                t.QuoteVolume,
+                t.WeightedAveragePrice,
+                t.PriceChange,
+                t.PriceChangePercent,
+                t.TotalTrades,
+                t.OpenTime,
+                t.CloseTime);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving ticker for {Symbol}", symbol);
+            return null;
+        }
+    }
 }

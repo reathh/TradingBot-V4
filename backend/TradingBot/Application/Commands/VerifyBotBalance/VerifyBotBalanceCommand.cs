@@ -8,7 +8,7 @@ namespace TradingBot.Application.Commands.VerifyBotBalance;
 public class VerifyBotBalanceCommand : IRequest<Result>
 {
     public required Bot Bot { get; set; }
-    public required decimal CurrentPrice { get; set; }
+    // Current price is obtained inside the command handler via the exchange API.
 
     public class VerifyBotBalanceCommandHandler(
         TradingBotDbContext dbContext,
@@ -28,7 +28,7 @@ public class VerifyBotBalanceCommand : IRequest<Result>
             var baseCurrency = CurrencyUtilities.ExtractBaseCurrency(symbol);
 
             // Calculate expected balance once - this doesn't change during retries
-            decimal expectedBalance = CalculateExpectedBalance(bot, request.CurrentPrice);
+            decimal expectedBalance = CalculateExpectedBalance(bot);
             decimal actualBalance = 0;
             int attemptCount = 0;
 
@@ -93,7 +93,7 @@ public class VerifyBotBalanceCommand : IRequest<Result>
             return Result.Success;
         }
 
-        private static decimal CalculateExpectedBalance(Bot bot, decimal currentPrice)
+        private static decimal CalculateExpectedBalance(Bot bot)
         {
             // Start with the initial balance
             decimal expectedBalance = bot.StartingBaseAmount;

@@ -11,10 +11,8 @@ using Models;
 /// </summary>
 public class BalanceVerificationService(
     IServiceProvider serviceProvider,
-    IExchangeApiRepository exchangeApiRepository,
     ILogger<BalanceVerificationService> logger) : ScheduledBackgroundService(serviceProvider, logger, TimeSpan.FromMinutes(1), "Balance verification service")
 {
-    private readonly IExchangeApiRepository _exchangeApiRepository = exchangeApiRepository;
     private readonly IServiceProvider _serviceProvider = serviceProvider;
 
     protected internal override async Task ExecuteScheduledWork(CancellationToken cancellationToken)
@@ -40,19 +38,10 @@ public class BalanceVerificationService(
 
     internal async Task VerifyBotBalanceAsync(IServiceScope scope, Bot bot, CancellationToken cancellationToken)
     {
-        // Get current price for the bot's symbol
-        var ticker = await GetCurrentTickerAsync(bot, cancellationToken);
-        if (ticker == null)
-        {
-            Logger.LogWarning("Unable to get current ticker for bot {BotId} symbol {Symbol}", bot.Id, bot.Symbol);
-            return;
-        }
-
         // Create and send the command
         var command = new VerifyBotBalanceCommand
         {
-            Bot = bot,
-            CurrentPrice = ticker.LastPrice
+            Bot = bot
         };
 
         await SendCommandAndLogResult(
@@ -61,64 +50,5 @@ public class BalanceVerificationService(
             cancellationToken,
             successMessage: "", // No success message needed as command handler already logs
             failureMessage: "❌ {Errors}");
-    }
-
-    private Task<TickerDto?> GetCurrentTickerAsync(Bot bot, CancellationToken cancellationToken)
-    {
-        // Try to get the most recent ticker from the database
-        // This assumes we have a Tickers table or other mechanism to store ticker data
-        // This implementation might need to be adjusted based on how ticker data is stored
-
-        // For now, we'll mock this by creating a ticker with the mid-price between min and max price
-        decimal lastPrice;
-        if (bot.MaxPrice.HasValue && bot.MinPrice.HasValue)
-        {
-            lastPrice = (bot.MaxPrice.Value + bot.MinPrice.Value) / 2;
-        }
-        else if (bot.MaxPrice.HasValue)
-        {
-            lastPrice = bot.MaxPrice.Value;
-        }
-        else if (bot.MinPrice.HasValue)
-        {
-            lastPrice = bot.MinPrice.Value;
-        }
-        else
-        {
-            // If no price reference, try to get from the most recent trade
-            var latestTrade = bot.Trades
-                .OrderByDescending(t => t.EntryOrder.CreatedAt)
-                .FirstOrDefault();
-
-            if (latestTrade?.EntryOrder != null)
-            {
-                lastPrice = latestTrade.EntryOrder.Price;
-            }
-            else
-            {
-                // No reference price available
-                return Task.FromResult<TickerDto?>(null);
-            }
-        }
-
-        // Create a ticker with the mid-price
-        return Task.FromResult<TickerDto?>(new TickerDto(
-            bot.Symbol,
-            DateTime.UtcNow,
-            lastPrice, // Bid
-            lastPrice, // Ask
-            lastPrice, // LastPrice
-            lastPrice, // OpenPrice
-            lastPrice, // HighPrice
-            lastPrice, // LowPrice
-            0, // Volume
-            0, // QuoteVolume
-            0, // WeightedAveragePrice
-            0, // PriceChange
-            0, // PriceChangePercent
-            0, // TotalTrades
-            DateTime.UtcNow, // OpenTime
-            DateTime.UtcNow // CloseTime
-        ));
     }
 }
