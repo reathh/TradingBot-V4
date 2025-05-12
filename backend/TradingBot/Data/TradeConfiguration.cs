@@ -8,8 +8,8 @@ namespace TradingBot.Data
         public void Configure(EntityTypeBuilder<Trade> builder)
         {
             builder.HasOne(t => t.EntryOrder)
-                    .WithOne(o => o.EntryTrade)
-                    .HasForeignKey<Order>(o => o.EntryTradeId)
+                    .WithMany()
+                    .HasForeignKey(t => t.EntryOrderId)
                     .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasOne(t => t.ExitOrder)

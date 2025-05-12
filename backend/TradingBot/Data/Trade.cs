@@ -7,14 +7,14 @@ namespace TradingBot.Data
         public Trade(Order entryOrder)
         {
             EntryOrder = entryOrder;
+            EntryOrderId = entryOrder.Id;
         }
 
         public int Id { get; set; }
+        public string EntryOrderId { get; set; } = null!;
         public Order EntryOrder { get; set; } = null!;
-        public Order? ExitOrder { get; set; }
         public string? ExitOrderId { get; set; }
-
-        // Navigation property to Bot
+        public Order? ExitOrder { get; set; }
         public int BotId { get; set; }
         public Bot Bot { get; set; } = null!;
     }

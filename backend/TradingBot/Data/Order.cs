@@ -17,8 +17,6 @@ namespace TradingBot.Data
         public DateTime LastUpdated { get; set; } = createdAt;
 
         #region Navigation Properties
-        public int? EntryTradeId { get; set; }
-        public Trade? EntryTrade { get; set; } = null!;
         public ICollection<Trade> ExitTrades { get; set; } = [];
         #endregion
     }
