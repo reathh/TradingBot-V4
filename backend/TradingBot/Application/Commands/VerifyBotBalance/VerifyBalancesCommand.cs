@@ -18,25 +18,33 @@ public class VerifyBalancesCommand : IRequest<Result>
 
         protected override async Task<Result> HandleCore(VerifyBalancesCommand request, CancellationToken cancellationToken)
         {
-            var bots = await dbContext
+            var botsWithBalances = await dbContext
                 .Bots
                 .Where(b => b.Enabled)
-                .Include(b => b.Trades)
-                .ThenInclude(t => t.EntryOrder)
-                .Include(b => b.Trades)
-                .ThenInclude(t => t.ExitOrder)
+                .Select(b => new
+                {
+                    Bot = b,
+                    ExpectedBalance = b.StartingBaseAmount
+                                    + b.Trades
+                                        .Where(t => t.ExitOrder == null || t.ExitOrder.Status != OrderStatus.Filled)
+                                        .Sum(t => t.EntryOrder.QuantityFilled * (t.EntryOrder.IsBuy ? 1m : -1m))
+                                    - b.Trades
+                                        .Where(t => t.ExitOrder != null && t.ExitOrder.Status != OrderStatus.Filled)
+                                        .Sum(t => t.ExitOrder!.QuantityFilled * (t.ExitOrder!.IsBuy ? 1m : -1m))
+                })
                 .ToListAsync(cancellationToken);
 
-            logger.LogDebug("Verifying balances for {BotCount} enabled bots", bots.Count);
+            logger.LogDebug("Verifying balances for {BotCount} enabled bots", botsWithBalances.Count);
 
             var errors = new List<string>();
 
-            foreach (var bot in bots)
+            foreach (var entry in botsWithBalances)
             {
+                var bot = entry.Bot;
+                var expectedBalance = entry.ExpectedBalance;
                 var exchangeApi = exchangeApiRepository.GetExchangeApi(bot);
                 var symbol = bot.Symbol;
                 var baseCurrency = CurrencyUtilities.ExtractBaseCurrency(symbol);
-                decimal expectedBalance = CalculateExpectedBalance(bot);
                 int attemptCount = 0;
 
                 while (attemptCount < _maxRetries)
@@ -90,37 +98,6 @@ public class VerifyBalancesCommand : IRequest<Result>
             }
 
             return errors.Count == 0 ? Result.Success : Result.Failure(errors);
-        }
-
-        private static decimal CalculateExpectedBalance(Bot bot)
-        {
-            decimal expectedBalance = bot.StartingBaseAmount;
-
-            foreach (var trade in bot.Trades)
-            {
-                if (trade.EntryOrder.IsBuy)
-                {
-                    expectedBalance += trade.EntryOrder.QuantityFilled;
-                }
-                else
-                {
-                    expectedBalance -= trade.EntryOrder.QuantityFilled;
-                }
-            }
-
-            foreach (var trade in bot.Trades.Where(t => t.ExitOrder != null))
-            {
-                if (trade.ExitOrder!.IsBuy)
-                {
-                    expectedBalance += trade.ExitOrder.QuantityFilled;
-                }
-                else
-                {
-                    expectedBalance -= trade.ExitOrder.QuantityFilled;
-                }
-            }
-
-            return expectedBalance;
         }
     }
 }
