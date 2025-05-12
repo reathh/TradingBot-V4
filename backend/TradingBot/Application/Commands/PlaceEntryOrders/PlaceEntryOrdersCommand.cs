@@ -85,7 +85,6 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
 
         private async Task PlaceOrders(Bot bot, TickerDto ticker, decimal quantity, int openTradesCount, CancellationToken cancellationToken)
         {
-            // Get the appropriate exchange API for this bot
             var exchangeApi = exchangeApiRepository.GetExchangeApi(bot);
 
             var currentPrice = bot.IsLong ? ticker.Bid : ticker.Ask;
