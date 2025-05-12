@@ -7,22 +7,12 @@ using CryptoExchange.Net.Objects;
 
 namespace TradingBot.Services;
 
-public class BinanceExchangeApi(
-    string publicKey,
-    string privateKey,
-    TimeProvider timeProvider,
-    ILogger<BinanceExchangeApi> logger) : IExchangeApi
+public class BinanceExchangeApi(string publicKey, string privateKey, TimeProvider timeProvider, ILogger<BinanceExchangeApi> logger) : IExchangeApi
 {
     private readonly Dictionary<string, List<Func<OrderUpdate, Task>>> _orderCallbacks = [];
     private readonly Dictionary<string, bool> _userDataSubscribed = [];
-    private readonly BinanceRestClient _restClient = new(options =>
-    {
-        options.ApiCredentials = new ApiCredentials(publicKey, privateKey);
-    });
-    private readonly BinanceSocketClient _socketClient = new(options =>
-    {
-        options.ApiCredentials = new ApiCredentials(publicKey, privateKey);
-    });
+    private readonly BinanceRestClient _restClient = new(options => { options.ApiCredentials = new ApiCredentials(publicKey, privateKey); });
+    private readonly BinanceSocketClient _socketClient = new(options => { options.ApiCredentials = new ApiCredentials(publicKey, privateKey); });
 
     public async Task<Order> PlaceOrder(Bot bot, decimal price, decimal quantity, bool isBuy, OrderType orderType, CancellationToken cancellationToken)
     {
@@ -34,8 +24,7 @@ public class BinanceExchangeApi(
 
         if (bot.TradingMode == TradingMode.Spot)
         {
-            orderResult = await _restClient.SpotApi.Trading.PlaceOrderAsync(
-                symbol: bot.Symbol,
+            orderResult = await _restClient.SpotApi.Trading.PlaceOrderAsync(symbol: bot.Symbol,
                 side: side,
                 type: spotOrderType,
                 quantity: quantity,
@@ -43,10 +32,9 @@ public class BinanceExchangeApi(
                 timeInForce: timeInForce,
                 ct: cancellationToken);
         }
-        else // TradingMode.Margin
+        else
         {
-            orderResult = await _restClient.SpotApi.Trading.PlaceMarginOrderAsync(
-                symbol: bot.Symbol,
+            orderResult = await _restClient.SpotApi.Trading.PlaceMarginOrderAsync(symbol: bot.Symbol,
                 side: side,
                 type: spotOrderType,
                 quantity: quantity,
@@ -61,13 +49,16 @@ public class BinanceExchangeApi(
         }
 
         var data = orderResult.Data;
-        return new Order(
-            data.Id.ToString(),
+
+        var correctPrice = data.Price != 0 ? data.Price : price;
+
+        return new Order(data.Id.ToString(),
             bot.Symbol,
-            data.Price,
+            correctPrice,
             data.Quantity,
             data.Side == OrderSide.Buy,
-            timeProvider.GetUtcNow().DateTime);
+            timeProvider.GetUtcNow()
+                .DateTime);
     }
 
     private static SpotOrderType MapOrderType(OrderType orderType)
@@ -85,6 +76,7 @@ public class BinanceExchangeApi(
     {
         // Add callback to the list
         string key = $"{bot.PublicKey}:{bot.PrivateKey}";
+
         if (!_orderCallbacks.TryGetValue(key, out List<Func<OrderUpdate, Task>>? value))
         {
             value = [];
@@ -101,6 +93,7 @@ public class BinanceExchangeApi(
 
         // Get listen key for user data stream
         var response = await _restClient.SpotApi.Account.StartUserStreamAsync(cancellationToken);
+
         if (!response.Success)
         {
             throw new Exception($"Could not start user data stream: {response.Error?.Message}");
@@ -110,8 +103,7 @@ public class BinanceExchangeApi(
         logger.LogInformation("Started user data stream with listen key {ListenKey}", listenKey);
 
         // Subscribe to user data updates
-        var subscriptionResult = await _socketClient.SpotApi.Account.SubscribeToUserDataUpdatesAsync(
-            listenKey,
+        var subscriptionResult = await _socketClient.SpotApi.Account.SubscribeToUserDataUpdatesAsync(listenKey,
             data =>
             {
                 if (data.Data is BinanceStreamOrderUpdate orderUpdate)
@@ -137,21 +129,22 @@ public class BinanceExchangeApi(
 
         // Start keep-alive task to maintain the listen key
         _ = Task.Run(async () =>
-        {
-            while (!cancellationToken.IsCancellationRequested)
             {
-                try
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    await Task.Delay(TimeSpan.FromMinutes(30), cancellationToken);
-                    await _restClient.SpotApi.Account.KeepAliveUserStreamAsync(listenKey, cancellationToken);
-                    logger.LogDebug("Refreshed listen key {ListenKey}", listenKey);
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromMinutes(30), cancellationToken);
+                        await _restClient.SpotApi.Account.KeepAliveUserStreamAsync(listenKey, cancellationToken);
+                        logger.LogDebug("Refreshed listen key {ListenKey}", listenKey);
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        logger.LogError(ex, "Error refreshing listen key {ListenKey}", listenKey);
+                    }
                 }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    logger.LogError(ex, "Error refreshing listen key {ListenKey}", listenKey);
-                }
-            }
-        }, cancellationToken);
+            },
+            cancellationToken);
 
         _userDataSubscribed[key] = true;
     }
@@ -173,16 +166,14 @@ public class BinanceExchangeApi(
 
     private static OrderUpdate MapBinanceOrderToOrderUpdate(BinanceStreamOrderUpdate order)
     {
-        return new OrderUpdate(
-            Id: order.Id.ToString(),
+        return new OrderUpdate(Id: order.Id.ToString(),
             Symbol: order.Symbol,
             Price: order.Price,
             Quantity: order.Quantity,
             QuantityFilled: order.QuantityFilled,
             AverageFillPrice: order.QuoteQuantityFilled == 0 ? null : order.QuoteQuantityFilled / order.QuantityFilled,
             IsBuy: order.Side == OrderSide.Buy,
-            Status: MapOrderStatus(order.Status)
-        );
+            Status: MapOrderStatus(order.Status));
     }
 
     public async Task<OrderUpdate> GetOrderStatus(string orderId, Bot bot, CancellationToken cancellationToken = default)
@@ -194,10 +185,7 @@ public class BinanceExchangeApi(
         }
 
         // Query the order status from Binance
-        var orderResult = await _restClient.SpotApi.Trading.GetOrderAsync(
-            symbol: bot.Symbol,
-            orderId: binanceOrderId,
-            ct: cancellationToken);
+        var orderResult = await _restClient.SpotApi.Trading.GetOrderAsync(symbol: bot.Symbol, orderId: binanceOrderId, ct: cancellationToken);
 
         if (!orderResult.Success)
         {
@@ -207,16 +195,14 @@ public class BinanceExchangeApi(
         var order = orderResult.Data;
 
         // Map the Binance order to our OrderUpdate model
-        return new OrderUpdate(
-            Id: order.Id.ToString(),
+        return new OrderUpdate(Id: order.Id.ToString(),
             Symbol: order.Symbol,
             Price: order.Price,
             Quantity: order.Quantity,
             QuantityFilled: order.QuantityFilled,
             AverageFillPrice: order.AverageFillPrice > 0 ? order.AverageFillPrice : null,
             IsBuy: order.Side == OrderSide.Buy,
-            Status: MapOrderStatus(order.Status)
-        );
+            Status: MapOrderStatus(order.Status));
     }
 
     public async Task<decimal> GetBalance(string asset, Bot bot, CancellationToken cancellationToken = default)
@@ -233,6 +219,7 @@ public class BinanceExchangeApi(
         if (assetBalance == null)
         {
             logger.LogWarning("Asset {Asset} not found in account balances", asset);
+
             return 0;
         }
 
