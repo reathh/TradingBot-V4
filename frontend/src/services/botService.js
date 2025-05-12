@@ -23,17 +23,17 @@ export default {
      * Get aggregated profit data for tables or charts
      * @param {string} interval - Time interval (Minute, Hour, Day, Week, Month, Year)
      * @param {number} botId - Optional bot ID to filter results
-     * @param {number} page - Page number to fetch
-     * @param {number} pageSize - Number of items per page
+     * @param {number} startDate - Start date for the range
+     * @param {number} endDate - End date for the range
      * @returns {Promise} Promise with aggregated profit data
      */
-    getAggregatedProfits(interval = 'Day', botId = null, page = 1, pageSize = 50) {
+    getAggregatedProfits(interval = 'Day', botId = null, startDate = null, endDate = null) {
         return apiClient.get('/trades/profit-data', {
             params: {
                 interval,
-                page,
-                pageSize,
-                botId: botId || undefined
+                botId: botId || undefined,
+                startDate: startDate || undefined,
+                endDate: endDate || undefined
             }
         });
     }

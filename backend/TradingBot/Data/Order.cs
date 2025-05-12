@@ -12,6 +12,7 @@ namespace TradingBot.Data
         public decimal? AverageFillPrice { get; set; }
         public decimal Fees { get; set; }
         public OrderStatus Status { get; set; }
+        public bool Closed { get; set; }
         public DateTime LastUpdated { get; set; } = createdAt;
 
         #region Navigation Properties

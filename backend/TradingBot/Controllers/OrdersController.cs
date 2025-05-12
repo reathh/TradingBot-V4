@@ -118,8 +118,7 @@ namespace TradingBot.Controllers
                 QuantityFilled = o.QuantityFilled,
                 IsBuy = o.IsBuy,
                 Fees = o.Fees,
-                Canceled = o.Canceled,
-                Closed = o.Closed,
+                Status = o.Status,
                 CreatedAt = o.CreatedAt,
                 LastUpdated = o.LastUpdated
             }).ToList();
@@ -154,8 +153,7 @@ namespace TradingBot.Controllers
                 QuantityFilled = order.QuantityFilled,
                 IsBuy = order.IsBuy,
                 Fees = order.Fees,
-                Canceled = order.Canceled,
-                Closed = order.Closed,
+                Status = order.Status,
                 CreatedAt = order.CreatedAt,
                 LastUpdated = order.LastUpdated
             };
@@ -172,8 +170,7 @@ namespace TradingBot.Controllers
         public decimal QuantityFilled { get; set; }
         public bool IsBuy { get; set; }
         public decimal Fees { get; set; }
-        public bool Canceled { get; set; }
-        public bool Closed { get; set; }
+        public OrderStatus Status { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime LastUpdated { get; set; }
     }

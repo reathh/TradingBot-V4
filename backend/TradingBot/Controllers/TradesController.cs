@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TradingBot.Data;
 using TradingBot.Models;
+using System.Linq.Expressions;
 
 namespace TradingBot.Controllers
 {
@@ -13,66 +14,59 @@ namespace TradingBot.Controllers
         [HttpGet]
         public async Task<ActionResult<PagedResult<TradeDto>>> GetTrades(
             [FromQuery] int? botId = null,
-            [FromQuery] string? period = "month",
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10)
         {
-            // Validate page parameters
-            if (page < 1) page = 1;
-            if (pageSize < 1 || pageSize > 100) pageSize = 10;
+            // Sanitize paging arguments
+            page = Math.Max(page, 1);
+            pageSize = Math.Clamp(pageSize, 1, 100);
 
-            var query = context.Trades
-                .Include(t => t.EntryOrder)
-                .Include(t => t.ExitOrder)
-                .Include(t => t.Bot)
-                .Where(t => t.ExitOrder != null && t.ExitOrder.Closed && t.ExitOrder.QuantityFilled > 0 && t.EntryOrder != null && t.ExitOrder != null);
+            // Base query – only completed trades (exit filled)
+            var baseQuery = context.Trades
+                .Where(t => t.ExitOrder != null &&
+                            t.ExitOrder.Status == OrderStatus.Filled &&
+                            t.ExitOrder.QuantityFilled > 0);
 
-            // Filter by bot ID if provided
             if (botId.HasValue)
             {
-                query = query.Where(t => t.Bot != null && t.Bot.Id == botId.Value);
+                baseQuery = baseQuery.Where(t => t.BotId == botId.Value);
             }
 
-            query = query.OrderByDescending(t => t.ExitOrder!.CreatedAt);
+            var totalItems = await baseQuery.CountAsync();
 
-            // Get total count for pagination info
-            var totalCount = await query.CountAsync();
-            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-
-            // Apply pagination
-            var trades = await query
+            var items = await baseQuery
+                .OrderByDescending(t => t.ExitOrder!.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Select(t => new TradeDto
+                {
+                    Id = t.Id,
+                    BotId = t.BotId.ToString(),
+                    Symbol = t.EntryOrder.Symbol,
+                    EntryPrice = t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price,
+                    ExitPrice = t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price,
+                    Quantity = t.EntryOrder.Quantity,
+                    QuantityFilled = t.EntryOrder.QuantityFilled,
+                    EntryFee = t.EntryOrder.Fees,
+                    ExitFee = t.ExitOrder.Fees,
+                    IsLong = t.EntryOrder.IsBuy,
+                    Profit = ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                              (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                             (t.EntryOrder.Fees + t.ExitOrder.Fees),
+                    EntryTime = t.EntryOrder.CreatedAt,
+                    ExitTime = t.ExitOrder.CreatedAt,
+                    IsCompleted = true
+                })
                 .ToListAsync();
 
-            var tradeDtos = trades.Select(t => new TradeDto
-            {
-                Id = t.Id,
-                BotId = t.Bot?.Id.ToString() ?? "Unknown",
-                Symbol = t.EntryOrder.Symbol,
-                EntryPrice = t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price,
-                ExitPrice = t.ExitOrder?.AverageFillPrice ?? t.ExitOrder?.Price,
-                Quantity = t.EntryOrder.Quantity,
-                QuantityFilled = t.EntryOrder.QuantityFilled,
-                EntryFee = t.EntryOrder.Fees,
-                ExitFee = t.ExitOrder?.Fees ?? 0,
-                IsLong = t.EntryOrder.IsBuy,
-                Profit = CalculateProfit(t),
-                EntryTime = t.EntryOrder.CreatedAt,
-                ExitTime = t.ExitOrder?.CreatedAt,
-                IsCompleted = t.ExitOrder != null && t.ExitOrder.Closed
-            }).ToList();
-
-            var result = new PagedResult<TradeDto>
+            return new PagedResult<TradeDto>
             {
                 Page = page,
                 PageSize = pageSize,
-                TotalPages = totalPages,
-                TotalItems = totalCount,
-                Items = tradeDtos
+                TotalItems = totalItems,
+                TotalPages = (int)Math.Ceiling(totalItems / (double)pageSize),
+                Items = items
             };
-
-            return result;
         }
 
         // GET: api/Trades/5
@@ -102,179 +96,107 @@ namespace TradingBot.Controllers
                 EntryFee = trade.EntryOrder.Fees,
                 ExitFee = trade.ExitOrder?.Fees ?? 0,
                 IsLong = trade.EntryOrder.IsBuy,
-                Profit = trade.Profit,
+                Profit = trade.ExitOrder is null ? null :
+                    ((trade.ExitOrder.AverageFillPrice ?? trade.ExitOrder.Price) -
+                    (trade.EntryOrder.AverageFillPrice ?? trade.EntryOrder.Price)) * trade.EntryOrder.Quantity -
+                    (trade.EntryOrder.Fees + (trade.ExitOrder?.Fees ?? 0)),
                 EntryTime = trade.EntryOrder.CreatedAt,
                 ExitTime = trade.ExitOrder?.CreatedAt,
-                IsCompleted = trade.ExitOrder != null && trade.ExitOrder.Closed
+                IsCompleted = true
             };
 
             return tradeDto;
         }
 
         [HttpGet("profit-data")]
-        public async Task<ActionResult<PagedResult<BotProfitDto>>> GetAggregatedProfits(
+        public async Task<ActionResult<IEnumerable<BotProfitDto>>> GetAggregatedProfits(
             [FromQuery] TimeInterval interval = TimeInterval.Day,
             [FromQuery] int? botId = null,
             [FromQuery] DateTime? startDate = null,
-            [FromQuery] DateTime? endDate = null,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10)
+            [FromQuery] DateTime? endDate = null)
         {
-            // Default date range if not specified
+            // Default date range
             startDate ??= DateTime.UtcNow.AddMonths(-1);
             endDate ??= DateTime.UtcNow;
 
-            // Set appropriate time range based on interval if not specified
-            if (startDate == DateTime.UtcNow.AddMonths(-1))
-            {
-                startDate = interval switch
-                {
-                    TimeInterval.Minute => DateTime.UtcNow.AddHours(-1),
-                    TimeInterval.Hour => DateTime.UtcNow.AddDays(-1),
-                    TimeInterval.Day => DateTime.UtcNow.AddDays(-7),
-                    TimeInterval.Week => DateTime.UtcNow.AddMonths(-1),
-                    TimeInterval.Month => DateTime.UtcNow.AddMonths(-6),
-                    TimeInterval.Year => DateTime.UtcNow.AddYears(-1),
-                    _ => DateTime.UtcNow.AddMonths(-1)
-                };
-            }
+            var baseQuery = context.Trades
+                .Where(t => t.ExitOrder != null &&
+                            t.ExitOrder.Status == OrderStatus.Filled &&
+                            t.ExitOrder.QuantityFilled > 0 &&
+                            t.ExitOrder.CreatedAt >= startDate &&
+                            t.ExitOrder.CreatedAt <= endDate);
 
-            // Get trades within the date range
-            var query = context.Trades
-                .Include(t => t.EntryOrder)
-                .Include(t => t.ExitOrder)
-                .Include(t => t.Bot)
-                .Where(t => t.ExitOrder != null && t.ExitOrder.Closed && t.ExitOrder.QuantityFilled > 0)
-                .Where(t => t.ExitOrder!.CreatedAt >= startDate && t.ExitOrder.CreatedAt <= endDate);
-
-            // Filter by bot if specified
             if (botId.HasValue)
             {
-                query = query.Where(t => t.Bot.Id == botId.Value);
+                baseQuery = baseQuery.Where(t => t.BotId == botId.Value);
             }
 
-            // Convert to list for in-memory grouping
-            var trades = await query.ToListAsync();
+            Expression<Func<Trade, DateTime>> keySelector;
+            TimeSpan bucket;
 
-            // Group trades by the specified time interval
-            var groupedTrades = trades
-                .GroupBy(t => GetPeriodGroup(t.ExitOrder!.CreatedAt, interval))
+            switch (interval)
+            {
+                case TimeInterval.Minute:
+                    keySelector = t => new DateTime(t.ExitOrder!.CreatedAt.Year, t.ExitOrder.CreatedAt.Month, t.ExitOrder.CreatedAt.Day, t.ExitOrder.CreatedAt.Hour, t.ExitOrder.CreatedAt.Minute, 0, DateTimeKind.Utc);
+                    bucket = TimeSpan.FromMinutes(1);
+                    break;
+                case TimeInterval.Hour:
+                    keySelector = t => new DateTime(t.ExitOrder!.CreatedAt.Year, t.ExitOrder.CreatedAt.Month, t.ExitOrder.CreatedAt.Day, t.ExitOrder.CreatedAt.Hour, 0, 0, DateTimeKind.Utc);
+                    bucket = TimeSpan.FromHours(1);
+                    break;
+                case TimeInterval.Day:
+                    keySelector = t => t.ExitOrder!.CreatedAt.Date;
+                    bucket = TimeSpan.FromDays(1);
+                    break;
+                case TimeInterval.Week:
+                    keySelector = t => t.ExitOrder!.CreatedAt.Date.AddDays(-(int)t.ExitOrder.CreatedAt.DayOfWeek + (int)DayOfWeek.Monday);
+                    bucket = TimeSpan.FromDays(7);
+                    break;
+                case TimeInterval.Month:
+                    keySelector = t => new DateTime(t.ExitOrder!.CreatedAt.Year, t.ExitOrder.CreatedAt.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+                    bucket = TimeSpan.FromDays(30);
+                    break;
+                case TimeInterval.Year:
+                    keySelector = t => new DateTime(t.ExitOrder!.CreatedAt.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                    bucket = TimeSpan.FromDays(365);
+                    break;
+                default:
+                    keySelector = t => t.ExitOrder!.CreatedAt.Date;
+                    bucket = TimeSpan.FromDays(1);
+                    break;
+            }
+
+            var grouped = await baseQuery
+                .GroupBy(keySelector)
                 .Select(g => new
                 {
-                    TimePeriod = g.Key,
-                    PeriodStart = GetPeriodStart(g.First().ExitOrder!.CreatedAt, interval),
-                    PeriodEnd = GetPeriodEnd(g.First().ExitOrder!.CreatedAt, interval),
-                    BotId = botId.HasValue ? botId.Value.ToString() : null,
-                    TotalProfit = g.Sum(t => t.Profit ?? CalculateProfit(t)),
-                    TotalVolume = g.Sum(t => t.EntryOrder!.Quantity * (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)),
+                    PeriodStart = g.Key,
+                    TotalProfit = g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                         (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                         (t.EntryOrder.Fees + t.ExitOrder.Fees)),
+                    TotalVolume = g.Sum(t => t.EntryOrder.Quantity *
+                                         (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)),
                     TradeCount = g.Count(),
-                    WinRate = g.Count(t => (t.Profit ?? 0) > 0) * 100.0m / g.Count(),
+                    WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                               (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                               (t.EntryOrder.Fees + t.ExitOrder.Fees)) > 0)
                 })
-                .OrderByDescending(g => g.PeriodStart)
-                .ToList();
+                .OrderBy(g => g.PeriodStart)
+                .ToListAsync();
 
-            // Calculate total count of periods
-            var totalCount = groupedTrades.Count;
-
-            // Apply pagination
-            var pagedGroups = groupedTrades
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
-
-            // Convert to DTOs
-            var botProfitDtos = pagedGroups.Select(g => new BotProfitDto
+            var result = grouped.Select(g => new BotProfitDto
             {
-                BotId = g.BotId,
-                TimePeriod = g.TimePeriod,
+                BotId = botId?.ToString(),
+                TimePeriod = g.PeriodStart.ToString("yyyy-MM-dd HH:mm"),
+                PeriodStart = g.PeriodStart,
+                PeriodEnd = g.PeriodStart.Add(bucket).AddSeconds(-1),
                 TotalProfit = g.TotalProfit,
                 TotalVolume = g.TotalVolume,
                 TradeCount = g.TradeCount,
-                WinRate = g.WinRate,
-                PeriodStart = g.PeriodStart,
-                PeriodEnd = g.PeriodEnd
+                WinRate = g.TradeCount == 0 ? 0 : 100m * g.WinCount / g.TradeCount
             }).ToList();
 
-            return new PagedResult<BotProfitDto>
-            {
-                Items = botProfitDtos,
-                Page = page,
-                PageSize = pageSize,
-                TotalItems = totalCount,
-                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
-            };
-        }
-
-        private string GetPeriodGroup(DateTime date, TimeInterval interval)
-        {
-            return interval switch
-            {
-                TimeInterval.Minute => date.ToString("yyyy-MM-dd HH:mm"),
-                TimeInterval.Hour => date.ToString("yyyy-MM-dd HH"),
-                TimeInterval.Day => date.ToString("yyyy-MM-dd"),
-                TimeInterval.Week => $"{date.Year}-W{GetIsoWeekNumber(date)}",
-                TimeInterval.Month => date.ToString("yyyy-MM"),
-                TimeInterval.Year => date.ToString("yyyy"),
-                _ => date.ToString("yyyy-MM-dd")
-            };
-        }
-
-        private DateTime GetPeriodStart(DateTime date, TimeInterval interval)
-        {
-            return interval switch
-            {
-                TimeInterval.Minute => new DateTime(date.Year, date.Month, date.Day, date.Hour, date.Minute, 0, DateTimeKind.Utc),
-                TimeInterval.Hour => new DateTime(date.Year, date.Month, date.Day, date.Hour, 0, 0, DateTimeKind.Utc),
-                TimeInterval.Day => date.Date,
-                TimeInterval.Week => GetStartOfWeek(date),
-                TimeInterval.Month => new DateTime(date.Year, date.Month, 1, 0, 0, 0, DateTimeKind.Utc),
-                TimeInterval.Year => new DateTime(date.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-                _ => date.Date
-            };
-        }
-
-        private DateTime GetPeriodEnd(DateTime date, TimeInterval interval)
-        {
-            return interval switch
-            {
-                TimeInterval.Minute => GetPeriodStart(date, interval).AddMinutes(1).AddSeconds(-1),
-                TimeInterval.Hour => GetPeriodStart(date, interval).AddHours(1).AddSeconds(-1),
-                TimeInterval.Day => GetPeriodStart(date, interval).AddDays(1).AddSeconds(-1),
-                TimeInterval.Week => GetPeriodStart(date, interval).AddDays(7).AddSeconds(-1),
-                TimeInterval.Month => GetPeriodStart(date, interval).AddMonths(1).AddSeconds(-1),
-                TimeInterval.Year => GetPeriodStart(date, interval).AddYears(1).AddSeconds(-1),
-                _ => GetPeriodStart(date, interval).AddDays(1).AddSeconds(-1)
-            };
-        }
-
-        private DateTime GetStartOfWeek(DateTime date)
-        {
-            int diff = (7 + (date.DayOfWeek - DayOfWeek.Monday)) % 7;
-            return date.AddDays(-1 * diff).Date;
-        }
-
-        private int GetIsoWeekNumber(DateTime date)
-        {
-            var day = (int)System.Globalization.CultureInfo.InvariantCulture.Calendar.GetDayOfWeek(date);
-            return System.Globalization.CultureInfo.InvariantCulture.Calendar.GetWeekOfYear(
-                date.AddDays(4 - (day == 0 ? 7 : day)),
-                System.Globalization.CalendarWeekRule.FirstFourDayWeek,
-                DayOfWeek.Monday);
-        }
-
-        private decimal CalculateProfit(Trade trade)
-        {
-            if (trade.EntryOrder == null || trade.ExitOrder == null)
-                return 0;
-
-            decimal entryPrice = trade.EntryOrder.AverageFillPrice ?? trade.EntryOrder.Price;
-            decimal exitPrice = trade.ExitOrder.AverageFillPrice ?? trade.ExitOrder.Price;
-            decimal quantity = trade.EntryOrder.Quantity;
-            decimal entryFee = trade.EntryOrder.Fees;
-            decimal exitFee = trade.ExitOrder.Fees;
-
-            // Calculate profit as (exit price - entry price) * quantity - fees
-            return (exitPrice - entryPrice) * quantity - (entryFee + exitFee);
+            return result;
         }
     }
 

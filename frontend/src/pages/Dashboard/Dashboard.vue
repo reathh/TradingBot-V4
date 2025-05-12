@@ -382,9 +382,9 @@ const fetchBotProfitData = async () => {
   try {
     const response = await botService.getAggregatedProfits(selectedInterval.value);
     
-    if (response && response.data && response.data.items) {
+    if (response && response.data) {
       // Transform aggregated data for chart format
-      const profitData = response.data.items;
+      const profitData = response.data;
       
       // Sort the data by period start to ensure chronological order
       profitData.sort((a, b) => new Date(a.periodStart) - new Date(b.periodStart));
