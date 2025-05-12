@@ -28,7 +28,7 @@ public class BinanceExchangeApi(
     {
         var side = isBuy ? OrderSide.Buy : OrderSide.Sell;
         var spotOrderType = MapOrderType(orderType);
-        TimeInForce? timeInForce = spotOrderType == SpotOrderType.Market ? null : TimeInForce.GoodTillCanceled;
+        TimeInForce? timeInForce = spotOrderType == SpotOrderType.Limit ? TimeInForce.GoodTillCanceled : null;
 
         WebCallResult<Binance.Net.Objects.Models.Spot.BinancePlacedOrder> orderResult;
 
