@@ -201,23 +201,17 @@ public class PlaceExitOrdersBasicTests : PlaceExitOrdersTestBase
         var entryPrice = 100m;
         
         // Create incomplete entry order
-        var incompleteOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
-        incompleteOrder.Closed = false;
-        incompleteOrder.QuantityFilled = 0;
+        var incompleteOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong, OrderStatus.New, 0);
         var incompleteTrade = new Trade(incompleteOrder);
         bot.Trades.Add(incompleteTrade);
         
         // Create zero filled entry order
-        var zeroFilledOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
-        zeroFilledOrder.Closed = true;
-        zeroFilledOrder.QuantityFilled = 0;
+        var zeroFilledOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong, OrderStatus.Filled, 0);
         var zeroFilledTrade = new Trade(zeroFilledOrder);
         bot.Trades.Add(zeroFilledTrade);
         
         // Create completed entry order
-        var completedOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
-        completedOrder.Closed = true;
-        completedOrder.QuantityFilled = bot.EntryQuantity;
+        var completedOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong, OrderStatus.Filled, bot.EntryQuantity);
         var completedTrade = new Trade(completedOrder);
         bot.Trades.Add(completedTrade);
         

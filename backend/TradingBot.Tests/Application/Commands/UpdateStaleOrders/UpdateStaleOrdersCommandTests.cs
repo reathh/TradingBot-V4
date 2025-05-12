@@ -55,9 +55,8 @@ public class UpdateStaleOrdersCommandTests : BaseTest
         recentOrder.LastUpdated = _currentTime.AddMinutes(-5);
 
         // Create a closed order
-        var closedOrder = CreateOrder(bot, 300m, 3m, true);
+        var closedOrder = CreateOrder(bot, 300m, 3m, true, OrderStatus.Filled);
         closedOrder.LastUpdated = _currentTime.AddMinutes(-20);
-        closedOrder.Closed = true;
 
         // Add the orders to the database
         DbContext.Orders.AddRange(staleOrder, recentOrder, closedOrder);
@@ -88,8 +87,7 @@ public class UpdateStaleOrdersCommandTests : BaseTest
                 QuantityFilled: staleOrder.Quantity * 0.5m, // Half filled
                 AverageFillPrice: 101m, // Different fill price
                 IsBuy: staleOrder.IsBuy,
-                Canceled: false,
-                Closed: false));
+                Status: OrderStatus.Filled));
 
         var command = new UpdateStaleOrdersCommand();
 

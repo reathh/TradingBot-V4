@@ -14,9 +14,13 @@ public class PlaceExitOrdersCommandTests : BaseTest
         // Arrange
         var bot = await CreateBot(exitStep: 1.0m);
         var entryPrice = 100m;
-        var entryOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
-        entryOrder.Closed = true;
-        entryOrder.QuantityFilled = entryOrder.Quantity;
+        var entryOrder = CreateOrder(
+            bot, 
+            entryPrice, 
+            bot.EntryQuantity, 
+            bot.IsLong, 
+            OrderStatus.Filled);
+            
         var trade = new Trade(entryOrder);
         bot.Trades.Add(trade);
         await DbContext.SaveChangesAsync();
@@ -62,9 +66,13 @@ public class PlaceExitOrdersCommandTests : BaseTest
         // Arrange
         var bot = await CreateBot(exitStep: 1.0m, isLong: false);
         var entryPrice = 101m;
-        var entryOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
-        entryOrder.Closed = true;
-        entryOrder.QuantityFilled = entryOrder.Quantity;
+        var entryOrder = CreateOrder(
+            bot, 
+            entryPrice, 
+            bot.EntryQuantity, 
+            bot.IsLong, 
+            OrderStatus.Filled);
+            
         var trade = new Trade(entryOrder);
         bot.Trades.Add(trade);
         await DbContext.SaveChangesAsync();
@@ -110,9 +118,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
         // Arrange
         var bot = await CreateBot(exitStep: 1.0m);
         var entryPrice = 100m;
-        var entryOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
-        entryOrder.Closed = true;
-        entryOrder.QuantityFilled = entryOrder.Quantity;
+        var entryOrder = CreateCompletedOrder(bot, entryPrice, bot.EntryQuantity);
         var trade = new Trade(entryOrder);
         bot.Trades.Add(trade);
         await DbContext.SaveChangesAsync();
@@ -140,7 +146,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
         var bot = await CreateBot(exitStep: 1.0m, isLong: false);
         var entryPrice = 101m;
         var entryOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
-        entryOrder.Closed = true;
+        entryOrder.Status = OrderStatus.Filled;
         entryOrder.QuantityFilled = entryOrder.Quantity;
         var trade = new Trade(entryOrder);
         bot.Trades.Add(trade);
@@ -169,7 +175,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
         var bot = await CreateBot(exitStep: 1.0m, isLong: true);
         var entryPrice = 100m;
         var entryOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
-        entryOrder.Closed = true;
+        entryOrder.Status = OrderStatus.Filled;
         entryOrder.QuantityFilled = entryOrder.Quantity;
         var trade = new Trade(entryOrder);
         bot.Trades.Add(trade);
@@ -205,9 +211,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
 
         foreach (var price in entryPrices)
         {
-            var entryOrder = CreateOrder(bot, price, bot.EntryQuantity, bot.IsLong);
-            entryOrder.Closed = true;
-            entryOrder.QuantityFilled = entryOrder.Quantity;
+            var entryOrder = CreateCompletedOrder(bot, price, bot.EntryQuantity);
             var trade = new Trade(entryOrder);
             bot.Trades.Add(trade);
             trades.Add(trade);
@@ -256,9 +260,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
 
         foreach (var price in entryPrices)
         {
-            var entryOrder = CreateOrder(bot, price, bot.EntryQuantity, bot.IsLong);
-            entryOrder.Closed = true;
-            entryOrder.QuantityFilled = entryOrder.Quantity;
+            var entryOrder = CreateCompletedOrder(bot, price, bot.EntryQuantity);
             var trade = new Trade(entryOrder);
             bot.Trades.Add(trade);
             trades.Add(trade);
@@ -310,9 +312,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
         var trades = new List<Trade>();
         foreach (var price in entryPrices)
         {
-            var entryOrder = CreateOrder(bot, price, bot.EntryQuantity, bot.IsLong);
-            entryOrder.Closed = true;
-            entryOrder.QuantityFilled = entryOrder.Quantity;
+            var entryOrder = CreateCompletedOrder(bot, price, bot.EntryQuantity);
             var trade = new Trade(entryOrder);
             bot.Trades.Add(trade);
             trades.Add(trade);
@@ -387,9 +387,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
         var trades = new List<Trade>();
         foreach (var price in entryPrices)
         {
-            var entryOrder = CreateOrder(bot, price, bot.EntryQuantity, bot.IsLong);
-            entryOrder.Closed = true;
-            entryOrder.QuantityFilled = entryOrder.Quantity;
+            var entryOrder = CreateCompletedOrder(bot, price, bot.EntryQuantity);
             var trade = new Trade(entryOrder);
             bot.Trades.Add(trade);
             trades.Add(trade);
@@ -466,9 +464,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
         var entryPrices = new[] { 100m, 99m, 98m };
         foreach (var price in entryPrices)
         {
-            var entryOrder = CreateOrder(bot, price, bot.EntryQuantity, bot.IsLong);
-            entryOrder.Closed = true;
-            entryOrder.QuantityFilled = entryOrder.Quantity;
+            var entryOrder = CreateCompletedOrder(bot, price, bot.EntryQuantity);
             var trade = new Trade(entryOrder);
             bot.Trades.Add(trade);
         }
@@ -517,9 +513,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
         var trades = new List<Trade>();
         foreach (var price in entryPrices)
         {
-            var entryOrder = CreateOrder(bot, price, bot.EntryQuantity, bot.IsLong);
-            entryOrder.Closed = true;
-            entryOrder.QuantityFilled = entryOrder.Quantity;
+            var entryOrder = CreateCompletedOrder(bot, price, bot.EntryQuantity);
             var trade = new Trade(entryOrder);
             bot.Trades.Add(trade);
             trades.Add(trade);
@@ -562,7 +556,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
         var bot = await CreateBot(exitStep: 1.0m);
         var entryPrice = bot.IsLong ? 100m : 101m;
         var entryOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
-        entryOrder.Closed = true;
+        entryOrder.Status = OrderStatus.Filled;
         entryOrder.QuantityFilled = entryOrder.Quantity;
         var trade = new Trade(entryOrder);
         bot.Trades.Add(trade);
@@ -612,7 +606,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
         {
             var entryPrice = bot.IsLong ? 100m : 101m;
             var entryOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
-            entryOrder.Closed = true;
+            entryOrder.Status = OrderStatus.Filled;
             entryOrder.QuantityFilled = entryOrder.Quantity;
             var trade = new Trade(entryOrder);
             bot.Trades.Add(trade);
@@ -662,7 +656,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
         var bot = await CreateBot(exitStep: 1.0m);
         var entryPrice = bot.IsLong ? 100m : 101m;
         var entryOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
-        entryOrder.Closed = true;
+        entryOrder.Status = OrderStatus.Filled;
         entryOrder.QuantityFilled = entryOrder.Quantity;
         var trade = new Trade(entryOrder);
         bot.Trades.Add(trade);
@@ -705,7 +699,7 @@ public class PlaceExitOrdersCommandTests : BaseTest
         var bot = await CreateBot(exitStep: 1.0m);
         var entryPrice = bot.IsLong ? 100m : 101m;
         var entryOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
-        entryOrder.Closed = true;
+        entryOrder.Status = OrderStatus.Filled;
         entryOrder.QuantityFilled = entryOrder.Quantity;
         var trade = new Trade(entryOrder);
         bot.Trades.Add(trade);
@@ -763,24 +757,28 @@ public class PlaceExitOrdersCommandTests : BaseTest
         var bot = await CreateBot(exitStep: 1.0m, isLong: true);
         var entryPrice = 100m;
 
-        // Create first entry order that is NOT completed (not closed)
-        var incompleteOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
-        incompleteOrder.Closed = false;
-        incompleteOrder.QuantityFilled = 0;
+        // Create first entry order that is NOT completed (not filled)
+        var incompleteOrder = CreateOrderWithStatus(
+            bot, 
+            entryPrice, 
+            bot.EntryQuantity, 
+            OrderStatus.New, 
+            0);
         var incompleteTrade = new Trade(incompleteOrder);
         bot.Trades.Add(incompleteTrade);
-
+        
         // Create second entry order that is completed but has zero quantity filled
-        var zeroFilledOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
-        zeroFilledOrder.Closed = true;
-        zeroFilledOrder.QuantityFilled = 0;
+        var zeroFilledOrder = CreateOrderWithStatus(
+            bot, 
+            entryPrice, 
+            bot.EntryQuantity, 
+            OrderStatus.Filled, 
+            0);
         var zeroFilledTrade = new Trade(zeroFilledOrder);
         bot.Trades.Add(zeroFilledTrade);
-
-        // Create third entry order that is both closed and has quantity filled
-        var completedOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
-        completedOrder.Closed = true;
-        completedOrder.QuantityFilled = bot.EntryQuantity;
+        
+        // Create third entry order that is both filled and has quantity filled
+        var completedOrder = CreateCompletedOrder(bot, entryPrice, bot.EntryQuantity);
         var completedTrade = new Trade(completedOrder);
         bot.Trades.Add(completedTrade);
 
@@ -836,24 +834,28 @@ public class PlaceExitOrdersCommandTests : BaseTest
         var bot = await CreateBot(exitStep: 1.0m, isLong: false);
         var entryPrice = 101m;
 
-        // Create first entry order that is NOT completed (not closed)
-        var incompleteOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
-        incompleteOrder.Closed = false;
-        incompleteOrder.QuantityFilled = 0;
+        // Create first entry order that is NOT completed (not filled)
+        var incompleteOrder = CreateOrderWithStatus(
+            bot, 
+            entryPrice, 
+            bot.EntryQuantity, 
+            OrderStatus.New, 
+            0);
         var incompleteTrade = new Trade(incompleteOrder);
         bot.Trades.Add(incompleteTrade);
-
+        
         // Create second entry order that is completed but has zero quantity filled
-        var zeroFilledOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
-        zeroFilledOrder.Closed = true;
-        zeroFilledOrder.QuantityFilled = 0;
+        var zeroFilledOrder = CreateOrderWithStatus(
+            bot, 
+            entryPrice, 
+            bot.EntryQuantity, 
+            OrderStatus.Filled, 
+            0);
         var zeroFilledTrade = new Trade(zeroFilledOrder);
         bot.Trades.Add(zeroFilledTrade);
-
-        // Create third entry order that is both closed and has quantity filled
-        var completedOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
-        completedOrder.Closed = true;
-        completedOrder.QuantityFilled = bot.EntryQuantity;
+        
+        // Create third entry order that is both filled and has quantity filled
+        var completedOrder = CreateCompletedOrder(bot, entryPrice, bot.EntryQuantity);
         var completedTrade = new Trade(completedOrder);
         bot.Trades.Add(completedTrade);
 
@@ -919,5 +921,37 @@ public class PlaceExitOrdersCommandTests : BaseTest
     private Task Handle(PlaceExitOrdersCommand command, CancellationToken cancellationToken = default)
     {
         return _exitOrdersHandler.Handle(command, cancellationToken);
+    }
+
+    /// <summary>
+    /// Helper method to create an order that is filled (completed)
+    /// </summary>
+    private Order CreateCompletedOrder(Bot bot, decimal price, decimal quantity)
+    {
+        return CreateOrder(
+            bot, 
+            price, 
+            quantity, 
+            bot.IsLong, 
+            OrderStatus.Filled);
+    }
+    
+    /// <summary>
+    /// Helper method to create an order with a specific status and quantityFilled
+    /// </summary>
+    private Order CreateOrderWithStatus(
+        Bot bot, 
+        decimal price, 
+        decimal quantity, 
+        OrderStatus status,
+        decimal? quantityFilled = null)
+    {
+        return CreateOrder(
+            bot, 
+            price, 
+            quantity, 
+            bot.IsLong, 
+            status, 
+            quantityFilled);
     }
 }

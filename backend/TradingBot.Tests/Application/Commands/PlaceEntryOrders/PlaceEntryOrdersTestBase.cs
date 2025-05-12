@@ -77,24 +77,41 @@ public abstract class PlaceEntryOrdersTestBase
         return bot;
     }
 
-    protected TickerDto CreateTestTicker(decimal bid, decimal ask) => 
-        new("BTCUSDT", DateTime.UtcNow, bid, ask, _random.Next(2) == 0 ? bid : ask);
-
-    protected Order CreateOrder(Bot bot, decimal price, decimal quantity, bool isBuy)
+    protected TickerDto CreateTestTicker(decimal bid, decimal ask)
     {
-        return new Order(Guid.NewGuid().ToString(), bot.Symbol, price, quantity, isBuy, DateTime.UtcNow)
+        var lastPrice = _random.Next(2) == 0 ? bid : ask;
+        var now = DateTime.UtcNow;
+        return new TickerDto(
+            "BTCUSDT", now, bid, ask, lastPrice, lastPrice, 
+            lastPrice * 1.01m, lastPrice * 0.99m, 1000m, 
+            1000m * lastPrice, lastPrice, 0m, 0m, 
+            100, now.AddDays(-1), now);
+    }
+
+    protected Order CreateOrder(
+        Bot bot, 
+        decimal price, 
+        decimal quantity, 
+        bool isBuy, 
+        OrderStatus status = OrderStatus.New, 
+        decimal? quantityFilled = null)
+    {
+        var order = new Order(Guid.NewGuid().ToString(), bot.Symbol, price, quantity, isBuy, DateTime.UtcNow)
         {
             Quantity = quantity,
-            QuantityFilled = quantity,
+            QuantityFilled = quantityFilled ?? quantity,
             AverageFillPrice = price,
-            Fees = 0.001m * price * quantity
+            Fees = 0.001m * price * quantity,
+            Status = status
         };
+        
+        return order;
     }
 
     protected async Task<Trade> CreateTrade(Bot bot, decimal entryPrice, bool closed = true)
     {
-        var entryOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
-        entryOrder.Closed = closed;
+        var status = closed ? OrderStatus.Filled : OrderStatus.New;
+        var entryOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong, status);
         
         var trade = new Trade(entryOrder);
         bot.Trades.Add(trade);

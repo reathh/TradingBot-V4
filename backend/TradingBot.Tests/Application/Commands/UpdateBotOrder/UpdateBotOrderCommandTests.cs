@@ -30,13 +30,12 @@ public class UpdateBotOrderCommandTests : BaseTest
     {
         // Arrange
         var bot = await CreateBot();
-        var order = CreateOrder(bot, 100m, 1m, true);
-        order.QuantityFilled = 0; // Initial state: not filled
-        order.Closed = false;     // Initial state: not closed
-
+        var order = CreateOrder(bot, 100m, 1m, true, OrderStatus.New, 0); // Initial state: not filled, not closed
+        
         DbContext.Orders.Add(order);
         await DbContext.SaveChangesAsync();
 
+        // Create OrderUpdate indicating filled status
         var orderUpdate = new OrderUpdate(
             Id: order.Id,
             Symbol: order.Symbol,
@@ -45,8 +44,7 @@ public class UpdateBotOrderCommandTests : BaseTest
             QuantityFilled: order.Quantity, // Update: fully filled
             AverageFillPrice: 100.5m,       // Update: different fill price
             IsBuy: order.IsBuy,
-            Canceled: false,
-            Closed: true                    // Update: now closed
+            Status: OrderStatus.Filled      // Update: now filled (closed)
         );
 
         var command = new UpdateBotOrderCommand(orderUpdate);
@@ -62,7 +60,7 @@ public class UpdateBotOrderCommandTests : BaseTest
         Assert.NotNull(updatedOrder);
         Assert.Equal(orderUpdate.QuantityFilled, updatedOrder!.QuantityFilled);
         Assert.Equal(orderUpdate.AverageFillPrice, updatedOrder.AverageFillPrice);
-        Assert.Equal(orderUpdate.Closed, updatedOrder.Closed);
+        Assert.Equal(orderUpdate.Status, updatedOrder.Status);
     }
 
     [Fact]
@@ -78,8 +76,7 @@ public class UpdateBotOrderCommandTests : BaseTest
             QuantityFilled: 1m,
             AverageFillPrice: 100m,
             IsBuy: true,
-            Canceled: false,
-            Closed: true
+            Status: OrderStatus.Filled
         );
 
         var command = new UpdateBotOrderCommand(orderUpdate);
@@ -106,11 +103,9 @@ public class UpdateBotOrderCommandTests : BaseTest
     {
         // Arrange
         var bot = await CreateBot();
-        var order = CreateOrder(bot, 100m, 1m, true);
+        var order = CreateOrder(bot, 100m, 1m, true, OrderStatus.New, 0);
         order.Id = "order-id";
-        order.QuantityFilled = 0;
-        order.Closed = false;
-
+        
         DbContext.Orders.Add(order);
         await DbContext.SaveChangesAsync();
 
@@ -122,8 +117,7 @@ public class UpdateBotOrderCommandTests : BaseTest
             QuantityFilled: order.Quantity,
             AverageFillPrice: 100.5m,
             IsBuy: order.IsBuy,
-            Canceled: false,
-            Closed: true
+            Status: OrderStatus.Filled
         );
 
         var command = new UpdateBotOrderCommand(orderUpdate);
@@ -138,6 +132,6 @@ public class UpdateBotOrderCommandTests : BaseTest
         var updatedOrder = await DbContext.Orders.FirstOrDefaultAsync(o => o.Id == "order-id");
         Assert.NotNull(updatedOrder);
         Assert.Equal(orderUpdate.QuantityFilled, updatedOrder!.QuantityFilled);
-        Assert.Equal(orderUpdate.Closed, updatedOrder.Closed);
+        Assert.Equal(orderUpdate.Status, updatedOrder.Status);
     }
 }

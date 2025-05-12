@@ -124,23 +124,17 @@ public class PlaceExitOrdersConsolidatedTests : PlaceExitOrdersTestBase
         
         // Create multiple trades with different quantities
         // First trade: entry price = 100, quantity = 1
-        var firstEntryOrder = CreateOrder(bot, 100m, 1m, bot.IsLong);
-        firstEntryOrder.Closed = true;
-        firstEntryOrder.QuantityFilled = 1m;
+        var firstEntryOrder = CreateOrder(bot, 100m, 1m, bot.IsLong, OrderStatus.Filled, 1m);
         var firstTrade = new Trade(firstEntryOrder);
         bot.Trades.Add(firstTrade);
         
         // Second trade: entry price = 99, quantity = 2
-        var secondEntryOrder = CreateOrder(bot, 99m, 2m, bot.IsLong);
-        secondEntryOrder.Closed = true;
-        secondEntryOrder.QuantityFilled = 2m;
+        var secondEntryOrder = CreateOrder(bot, 99m, 2m, bot.IsLong, OrderStatus.Filled, 2m);
         var secondTrade = new Trade(secondEntryOrder);
         bot.Trades.Add(secondTrade);
         
         // Third trade: entry price = 98, quantity = 3
-        var thirdEntryOrder = CreateOrder(bot, 98m, 3m, bot.IsLong);
-        thirdEntryOrder.Closed = true;
-        thirdEntryOrder.QuantityFilled = 3m;
+        var thirdEntryOrder = CreateOrder(bot, 98m, 3m, bot.IsLong, OrderStatus.Filled, 3m);
         var thirdTrade = new Trade(thirdEntryOrder);
         bot.Trades.Add(thirdTrade);
         

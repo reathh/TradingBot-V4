@@ -55,7 +55,7 @@ namespace TradingBot.Controllers
                              (t.EntryOrder.Fees + t.ExitOrder.Fees),
                     EntryTime = t.EntryOrder.CreatedAt,
                     ExitTime = t.ExitOrder.CreatedAt,
-                    IsCompleted = true
+                    IsCompleted = t.ExitOrder.Status == OrderStatus.Filled
                 })
                 .ToListAsync();
 
@@ -102,7 +102,7 @@ namespace TradingBot.Controllers
                     (trade.EntryOrder.Fees + (trade.ExitOrder?.Fees ?? 0)),
                 EntryTime = trade.EntryOrder.CreatedAt,
                 ExitTime = trade.ExitOrder?.CreatedAt,
-                IsCompleted = true
+                IsCompleted = trade.ExitOrder?.Status == OrderStatus.Filled
             };
 
             return tradeDto;

@@ -95,16 +95,14 @@ public class OrderUpdateServiceTests : BaseTest, IDisposable
     {
         // Arrange
         var orderUpdate = new OrderUpdate(
-            Id: "test-id",
-            Symbol: "BTCUSDT",
-            Price: 100m,
-            Quantity: 1m,
-            QuantityFilled: 0.5m,
-            AverageFillPrice: 100.2m,
-            IsBuy: true,
-            Canceled: false,
-            Closed: false
-        );
+            Guid.NewGuid().ToString(),
+            "BTCUSDT",
+            10000.0m,
+            1.0m,
+            0.5m,
+            9900.0m,
+            true,
+            Status: OrderStatus.Canceled);
 
         // Setup mediator to respond to UpdateBotOrderCommand
         _mediatorMock

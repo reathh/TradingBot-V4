@@ -37,7 +37,13 @@ public abstract class PlaceExitOrdersTestBase : BaseTest
     /// </summary>
     protected TickerDto CreateTestTicker(decimal bid, decimal ask)
     {
-        return new TickerDto("BTC/USDT", DateTime.Now, bid, ask, (bid + ask) / 2);
+        var lastPrice = (bid + ask) / 2;
+        var now = DateTime.Now;
+        return new TickerDto(
+            "BTC/USDT", now, bid, ask, lastPrice, lastPrice, 
+            lastPrice * 1.01m, lastPrice * 0.99m, 1000m, 
+            1000m * lastPrice, lastPrice, 0m, 0m, 
+            100, now.AddDays(-1), now);
     }
 
     /// <summary>
@@ -66,9 +72,14 @@ public abstract class PlaceExitOrdersTestBase : BaseTest
     /// </summary>
     protected async Task<Trade> CreateCompletedTrade(Bot bot, decimal entryPrice)
     {
-        var entryOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong);
-        entryOrder.Closed = true;
-        entryOrder.QuantityFilled = entryOrder.Quantity;
+        var entryOrder = CreateOrder(
+            bot, 
+            entryPrice, 
+            bot.EntryQuantity, 
+            bot.IsLong, 
+            OrderStatus.Filled, 
+            bot.EntryQuantity);
+            
         var trade = new Trade(entryOrder);
         bot.Trades.Add(trade);
         await DbContext.SaveChangesAsync();
