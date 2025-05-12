@@ -51,11 +51,12 @@ public class BinanceExchangeApi(string publicKey, string privateKey, TimeProvide
         var data = orderResult.Data;
 
         var correctPrice = data.Price != 0 ? data.Price : price;
+        var correctQuantity = data.Quantity != 0 ? data.Quantity : quantity;
 
         return new Order(data.Id.ToString(),
             bot.Symbol,
             correctPrice,
-            data.Quantity,
+            correctQuantity,
             data.Side == OrderSide.Buy,
             timeProvider.GetUtcNow()
                 .DateTime);
