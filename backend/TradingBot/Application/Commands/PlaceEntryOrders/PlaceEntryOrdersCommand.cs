@@ -49,9 +49,9 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                         ? x.Bot.EntryQuantity
                         : x.Bot.IsLong
                             // Long positions: calculate difference when price moves down
-                            ? Math.Max(0, ((int)Math.Floor(Math.Abs(x.FirstTradePrice - x.CurrentPrice) / x.Bot.EntryStep) + 1) * x.Bot.EntryQuantity - x.CurrentVolume)
+                            ? Math.Max(0, ((int)Math.Floor(((x.FirstTradePrice - x.CurrentPrice) > 0m ? (x.FirstTradePrice - x.CurrentPrice) : 0m) / x.Bot.EntryStep) + 1) * x.Bot.EntryQuantity - x.CurrentVolume)
                             // Short positions: calculate difference when price moves up
-                            : Math.Max(0, ((int)Math.Floor(Math.Abs(x.CurrentPrice - x.FirstTradePrice) / x.Bot.EntryStep) + 1) * x.Bot.EntryQuantity - x.CurrentVolume)
+                            : Math.Max(0, ((int)Math.Floor(((x.CurrentPrice - x.FirstTradePrice) > 0m ? (x.CurrentPrice - x.FirstTradePrice) : 0m) / x.Bot.EntryStep) + 1) * x.Bot.EntryQuantity - x.CurrentVolume)
                 })
                 .Where(x => x.CatchUpQuantity > 0 || (x.Bot.PlaceOrdersInAdvance && x.OpenTradesCount < x.Bot.EntryOrdersInAdvance))
                 .ToListAsync(cancellationToken);
