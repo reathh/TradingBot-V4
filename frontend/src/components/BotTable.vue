@@ -22,6 +22,11 @@
             {{ row.isLong ? 'Long' : 'Short' }}
           </el-tag>
         </td>
+        <td>
+          <el-tag :type="row.tradingMode === 'Margin' ? 'warning' : 'info'">
+            {{ row.tradingMode || 'Spot' }}
+          </el-tag>
+        </td>
         <td class="text-right">
           <BaseButton
             v-if="showViewButton"
@@ -79,6 +84,7 @@ const tableColumns = [
   { key: 'status', label: 'STATUS' },
   { key: 'minMaxPrice', label: 'MIN/MAX PRICE' },
   { key: 'direction', label: 'DIRECTION' },
+  { key: 'tradingMode', label: 'TRADING MODE' },
   { key: 'actions', label: 'ACTIONS', align: 'right' }
 ];
 

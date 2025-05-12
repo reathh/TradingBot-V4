@@ -5,8 +5,7 @@ namespace TradingBot.Data
         public HashSet<Trade> Trades { get; set; } = [];
 
         public int Id { get; set; } = id;
-
-        #region Parameters
+        
         public string Name { get; set; } = name;
         public string PublicKey { get; set; } = publicKey;
         public string PrivateKey { get; set; } = privateKey;
@@ -33,6 +32,12 @@ namespace TradingBot.Data
                 field = value;
             }
         }
-        #endregion
+        public TradingMode TradingMode { get; set; } = TradingMode.Spot;
+    }
+    
+    public enum TradingMode
+    {
+        Spot,
+        Margin
     }
 }

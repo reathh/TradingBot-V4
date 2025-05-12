@@ -3,6 +3,7 @@ using Binance.Net.Clients;
 using Binance.Net.Enums;
 using Binance.Net.Objects.Models.Spot.Socket;
 using CryptoExchange.Net.Authentication;
+using CryptoExchange.Net.Objects;
 
 namespace TradingBot.Services;
 
@@ -25,26 +26,47 @@ public class BinanceExchangeApi(
 
     public async Task<Order> PlaceOrder(Bot bot, decimal price, decimal quantity, bool isBuy, CancellationToken cancellationToken)
     {
-        var order = await _restClient.SpotApi.Trading.PlaceOrderAsync(
-            symbol: bot.Symbol,
-            side: isBuy ? OrderSide.Buy : OrderSide.Sell,
-            type: SpotOrderType.Limit,
-            quantity: quantity,
-            price: price,
-            timeInForce: TimeInForce.GoodTillCanceled,
-            ct: cancellationToken);
+        var side = isBuy ? OrderSide.Buy : OrderSide.Sell;
+        var orderType = SpotOrderType.Limit;
+        var timeInForce = TimeInForce.GoodTillCanceled;
 
-        if (!order.Success)
+        WebCallResult<Binance.Net.Objects.Models.Spot.BinancePlacedOrder> orderResult;
+
+        if (bot.TradingMode == TradingMode.Spot)
         {
-            throw new Exception($"Failed to place order: {order.Error?.Message}");
+            orderResult = await _restClient.SpotApi.Trading.PlaceOrderAsync(
+                symbol: bot.Symbol,
+                side: side,
+                type: orderType,
+                quantity: quantity,
+                price: price,
+                timeInForce: timeInForce,
+                ct: cancellationToken);
+        }
+        else // TradingMode.Margin
+        {
+            orderResult = await _restClient.SpotApi.Trading.PlaceMarginOrderAsync(
+                symbol: bot.Symbol,
+                side: side,
+                type: orderType,
+                quantity: quantity,
+                price: price,
+                timeInForce: timeInForce,
+                ct: cancellationToken);
         }
 
+        if (!orderResult.Success)
+        {
+            throw new Exception($"Failed to place order: {orderResult.Error?.Message}");
+        }
+
+        var data = orderResult.Data;
         return new Order(
-            order.Data.Id.ToString(),
+            data.Id.ToString(),
             bot.Symbol,
-            order.Data.Price,
-            order.Data.Quantity,
-            order.Data.Side == OrderSide.Buy,
+            data.Price,
+            data.Quantity,
+            data.Side == OrderSide.Buy,
             timeProvider.GetUtcNow().DateTime);
     }
 

@@ -65,6 +65,17 @@
             </el-form-item>
           </div>
           <div class="col-md-6">
+            <el-form-item label="Trading Mode" required>
+              <el-select v-model="currentBot.tradingMode" placeholder="Select trading mode">
+                <el-option value="Spot" label="Spot"></el-option>
+                <el-option value="Margin" label="Margin"></el-option>
+              </el-select>
+            </el-form-item>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
             <el-form-item label="Trade Quantity" required>
               <el-input
                 v-model.number="currentBot.quantity"
@@ -75,9 +86,6 @@
               ></el-input>
             </el-form-item>
           </div>
-        </div>
-
-        <div class="row">
           <div class="col-md-6">
             <el-form-item label="Min Price">
               <el-input
@@ -89,6 +97,9 @@
               ></el-input>
             </el-form-item>
           </div>
+        </div>
+
+        <div class="row">
           <div class="col-md-6">
             <el-form-item label="Max Price">
               <el-input
@@ -100,9 +111,6 @@
               ></el-input>
             </el-form-item>
           </div>
-        </div>
-
-        <div class="row">
           <div class="col-md-6">
             <el-form-item label="Entry Step" required>
               <el-input
@@ -114,6 +122,9 @@
               ></el-input>
             </el-form-item>
           </div>
+        </div>
+
+        <div class="row">
           <div class="col-md-6">
             <el-form-item label="Exit Step" required>
               <el-input
@@ -125,11 +136,12 @@
               ></el-input>
             </el-form-item>
           </div>
+          <div class="col-md-6">
+            <el-form-item label="Place Orders in Advance">
+              <el-checkbox v-model="currentBot.placeOrdersInAdvance"></el-checkbox>
+            </el-form-item>
+          </div>
         </div>
-
-        <el-form-item>
-          <el-checkbox v-model="currentBot.placeOrdersInAdvance">Place orders in advance</el-checkbox>
-        </el-form-item>
 
         <el-form-item v-if="currentBot.placeOrdersInAdvance" label="Orders in Advance">
           <el-input
@@ -200,7 +212,8 @@ const defaultBot = {
   entryStep: 0.01,
   entryQuantity: 0,
   startingBaseAmount: 0,
-  startFromMaxPrice: false
+  startFromMaxPrice: false,
+  tradingMode: 'Spot',
 };
 
 const currentBot = ref({...defaultBot});

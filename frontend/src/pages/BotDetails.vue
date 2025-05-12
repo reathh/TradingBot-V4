@@ -76,6 +76,17 @@
                   </el-form-item>
                 </div>
                 <div class="col-md-6">
+                  <el-form-item label="Trading Mode" required>
+                    <el-select v-model="bot.tradingMode" placeholder="Select trading mode">
+                      <el-option value="Spot" label="Spot"></el-option>
+                      <el-option value="Margin" label="Margin"></el-option>
+                    </el-select>
+                  </el-form-item>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
                   <el-form-item label="Trade Quantity" required>
                     <el-input
                       v-model.number="bot.quantity"
@@ -86,9 +97,6 @@
                     ></el-input>
                   </el-form-item>
                 </div>
-              </div>
-
-              <div class="row">
                 <div class="col-md-6">
                   <el-form-item label="Min Price">
                     <el-input
@@ -100,6 +108,9 @@
                     ></el-input>
                   </el-form-item>
                 </div>
+              </div>
+
+              <div class="row">
                 <div class="col-md-6">
                   <el-form-item label="Max Price">
                     <el-input
@@ -111,9 +122,6 @@
                     ></el-input>
                   </el-form-item>
                 </div>
-              </div>
-
-              <div class="row">
                 <div class="col-md-6">
                   <el-form-item label="Entry Step" required>
                     <el-input
@@ -125,6 +133,9 @@
                     ></el-input>
                   </el-form-item>
                 </div>
+              </div>
+
+              <div class="row">
                 <div class="col-md-6">
                   <el-form-item label="Exit Step" required>
                     <el-input
@@ -133,6 +144,17 @@
                       step="0.01"
                       placeholder="Exit step"
                       @input="formatNumberInput($event, 'exitStep')"
+                    ></el-input>
+                  </el-form-item>
+                </div>
+                <div class="col-md-6">
+                  <el-form-item label="Starting Base Amount" required>
+                    <el-input
+                      v-model.number="bot.startingBaseAmount"
+                      type="number"
+                      step="0.0001"
+                      placeholder="Starting base amount"
+                      @input="formatNumberInput($event, 'startingBaseAmount')"
                     ></el-input>
                   </el-form-item>
                 </div>
@@ -233,7 +255,8 @@ const bot = ref({
   startingBaseAmount: 0,
   startFromMaxPrice: false,
   entryOrdersInAdvance: 100,
-  exitOrdersInAdvance: 100
+  exitOrdersInAdvance: 100,
+  tradingMode: 'Spot'
 });
 
 const { notify } = useNotifications();
