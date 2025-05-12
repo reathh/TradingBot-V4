@@ -6,24 +6,24 @@ using Moq;
 using TradingBot.Application.Commands.VerifyBotBalance;
 using TradingBot.Services;
 
-public class VerifyBotBalanceCommandTests : BaseTest
+public class VerifyBalancesCommandTests : BaseTest
 {
-    private VerifyBotBalanceCommand.VerifyBotBalanceCommandHandler _handler;
+    private VerifyBalancesCommand.VerifyBalancesCommandHandler _handler;
     private Mock<IExchangeApiRepository> _mockExchangeApiRepository;
     private Mock<IExchangeApi> _mockExchangeApi;
-    private Mock<ILogger<VerifyBotBalanceCommand.VerifyBotBalanceCommandHandler>> _mockLogger;
+    private Mock<ILogger<VerifyBalancesCommand.VerifyBalancesCommandHandler>> _mockLogger;
 
-    public VerifyBotBalanceCommandTests() : base()
+    public VerifyBalancesCommandTests() : base()
     {
         _mockExchangeApi = new Mock<IExchangeApi>();
         _mockExchangeApiRepository = new Mock<IExchangeApiRepository>();
-        _mockLogger = new Mock<ILogger<VerifyBotBalanceCommand.VerifyBotBalanceCommandHandler>>();
+        _mockLogger = new Mock<ILogger<VerifyBalancesCommand.VerifyBalancesCommandHandler>>();
 
         _mockExchangeApiRepository
             .Setup(repo => repo.GetExchangeApi(It.IsAny<Bot>()))
             .Returns(_mockExchangeApi.Object);
 
-        _handler = new VerifyBotBalanceCommand.VerifyBotBalanceCommandHandler(
+        _handler = new VerifyBalancesCommand.VerifyBalancesCommandHandler(
             DbContext,
             _mockExchangeApiRepository.Object,
             _mockLogger.Object);
@@ -78,10 +78,7 @@ public class VerifyBotBalanceCommandTests : BaseTest
             .ReturnsAsync(expectedBalance);
 
         // Create command
-        var command = new VerifyBotBalanceCommand
-        {
-            Bot = bot
-        };
+        var command = new VerifyBalancesCommand();
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -139,10 +136,7 @@ public class VerifyBotBalanceCommandTests : BaseTest
             .ReturnsAsync(expectedBalance);
 
         // Create command
-        var command = new VerifyBotBalanceCommand
-        {
-            Bot = bot
-        };
+        var command = new VerifyBalancesCommand();
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -169,7 +163,7 @@ public class VerifyBotBalanceCommandTests : BaseTest
         bot.StartingBaseAmount = 5.0m;
 
         // Set the delay between checks to zero to make tests faster
-        var delayField = typeof(VerifyBotBalanceCommand.VerifyBotBalanceCommandHandler)
+        var delayField = typeof(VerifyBalancesCommand.VerifyBalancesCommandHandler)
             .GetField("_delayBetweenChecks", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         delayField?.SetValue(_handler, TimeSpan.Zero);
 
@@ -192,10 +186,7 @@ public class VerifyBotBalanceCommandTests : BaseTest
             });
         
         // Create command
-        var command = new VerifyBotBalanceCommand
-        {
-            Bot = bot
-        };
+        var command = new VerifyBalancesCommand();
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -227,7 +218,7 @@ public class VerifyBotBalanceCommandTests : BaseTest
         bot.Enabled = true;
 
         // Set the delay between checks to zero to make tests faster
-        var delayField = typeof(VerifyBotBalanceCommand.VerifyBotBalanceCommandHandler)
+        var delayField = typeof(VerifyBalancesCommand.VerifyBalancesCommandHandler)
             .GetField("_delayBetweenChecks", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         delayField?.SetValue(_handler, TimeSpan.Zero);
 
@@ -238,10 +229,7 @@ public class VerifyBotBalanceCommandTests : BaseTest
             .ReturnsAsync(5.0m); // Significantly different from expected 10.0
 
         // Create command
-        var command = new VerifyBotBalanceCommand
-        {
-            Bot = bot
-        };
+        var command = new VerifyBalancesCommand();
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);

@@ -37,7 +37,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IExchangeApiRepository, BinanceExchangeApiRepository>();
 
 // Register MediatR
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<VerifyBotBalanceCommand>());
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<Program>());
 
 // Register all services with implemented interfaces as transient, except for IHostedService
 builder.Services.Scan(scan => scan

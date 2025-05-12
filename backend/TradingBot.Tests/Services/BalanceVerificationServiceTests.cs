@@ -35,12 +35,10 @@ public class BalanceVerificationServiceTests : BaseTest, IDisposable
     }
 
     [Fact]
-    public async Task VerifyBalancesAsync_SendsCommandForEachEnabledBot()
+    public async Task VerifyBalancesAsync_SendsSingleCommand()
     {
         // Arrange
-        var bots = new List<Bot>();
-
-        // Create 3 bots - 2 enabled with balance verification, 1 disabled
+        // Create some bots
         for (int i = 0; i < 3; i++)
         {
             var bot = await CreateBot(
@@ -52,59 +50,20 @@ public class BalanceVerificationServiceTests : BaseTest, IDisposable
                 entryQuantity: 1,
                 placeOrdersInAdvance: true
             );
-
-            bot.Enabled = i < 2; // First 2 are enabled
-            bots.Add(bot);
+            bot.Enabled = i < 2;
         }
-
         await DbContext.SaveChangesAsync();
 
-        // Setup mediator to return success
         _mockMediator
-            .Setup(m => m.Send(It.IsAny<VerifyBotBalanceCommand>(), It.IsAny<CancellationToken>()))
+            .Setup(m => m.Send(It.IsAny<VerifyBalancesCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success);
 
         // Act
         await _balanceVerificationService.ExecuteScheduledWork(CancellationToken.None);
 
-        // Assert - verify that command was sent for each enabled bot (2), but not for disabled bot
+        // Assert - verify that a single command was sent
         _mockMediator.Verify(
-            m => m.Send(It.IsAny<VerifyBotBalanceCommand>(), It.IsAny<CancellationToken>()),
-            Times.Exactly(2)
-        );
-    }
-
-    [Fact]
-    public async Task VerifyBotBalanceAsync_WithValidTicker_SendsCommand()
-    {
-        // Arrange
-        var bot = await CreateBot(
-            isLong: true,
-            maxPrice: 100,
-            minPrice: 90,
-            entryStep: 1,
-            exitStep: 1.5m,
-            entryQuantity: 1,
-            placeOrdersInAdvance: true
-        );
-
-        bot.Enabled = true;
-
-        await DbContext.SaveChangesAsync();
-
-        _mockMediator
-            .Setup(m => m.Send(It.IsAny<VerifyBotBalanceCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
-
-        // Act
-        await _balanceVerificationService.VerifyBotBalanceAsync(_serviceScope, bot, CancellationToken.None);
-
-        // Assert - verify command was sent
-        _mockMediator.Verify(
-            m => m.Send(
-                It.Is<VerifyBotBalanceCommand>(cmd => cmd.Bot == bot),
-                It.IsAny<CancellationToken>()
-            ),
+            m => m.Send(It.IsAny<VerifyBalancesCommand>(), It.IsAny<CancellationToken>()),
             Times.Once
         );
     }
