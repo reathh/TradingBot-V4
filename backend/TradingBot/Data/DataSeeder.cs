@@ -54,7 +54,6 @@ namespace TradingBot.Data
                         QuantityFilled = 0.01m,
                         AverageFillPrice = entryPrice,
                         Status = OrderStatus.Filled,
-                        Closed = true,
                         LastUpdated = tradeDate.AddMinutes(random.Next(1, 60))
                     };
 
@@ -82,7 +81,6 @@ namespace TradingBot.Data
                         QuantityFilled = 0.01m,
                         AverageFillPrice = exitPrice,
                         Status = OrderStatus.Filled,
-                        Closed = true,
                         LastUpdated = exitDate.AddMinutes(random.Next(1, 60))
                     };
 

@@ -25,8 +25,8 @@ public class UpdateStaleOrdersCommandHandler(
         // Get all bots that have orders that need updating
         var botsWithStaleOrders = await dbContext.Bots
             .Where(b => b.Trades.Any(t => 
-                (t.EntryOrder != null && !t.EntryOrder.Closed && t.EntryOrder.LastUpdated < cutoffTime) || 
-                (t.ExitOrder != null && !t.ExitOrder.Closed && t.ExitOrder.LastUpdated < cutoffTime)))
+                (t.EntryOrder != null && t.EntryOrder.Status != OrderStatus.Filled && t.EntryOrder.Status != OrderStatus.Canceled && t.EntryOrder.LastUpdated < cutoffTime) || 
+                (t.ExitOrder != null && t.ExitOrder.Status != OrderStatus.Filled && t.ExitOrder.Status != OrderStatus.Canceled && t.ExitOrder.LastUpdated < cutoffTime)))
             .Include(b => b.Trades)
                 .ThenInclude(t => t.EntryOrder)
             .Include(b => b.Trades)
@@ -52,7 +52,7 @@ public class UpdateStaleOrdersCommandHandler(
                 // Get all stale orders for this bot
                 var staleOrders = bot.Trades
                     .SelectMany(t => new[] { t.EntryOrder, t.ExitOrder })
-                    .Where(o => o != null && !o.Closed && o.LastUpdated < cutoffTime)
+                    .Where(o => o != null && o.Status != OrderStatus.Filled && o.Status != OrderStatus.Canceled && o.LastUpdated < cutoffTime)
                     .ToList();
                 
                 logger.LogInformation("Processing {OrderCount} stale orders for bot {BotId} ({BotName})", 
@@ -67,8 +67,7 @@ public class UpdateStaleOrdersCommandHandler(
 
                         // Update order properties with the latest information
                         order.QuantityFilled = updatedOrder.QuantityFilled;
-                        order.Closed = updatedOrder.Closed;
-                        order.Canceled = updatedOrder.Canceled;
+                        order.Status = updatedOrder.Status;
                         order.LastUpdated = currentTime;
 
                         if (updatedOrder.AverageFillPrice.HasValue)
@@ -77,8 +76,8 @@ public class UpdateStaleOrdersCommandHandler(
                         }
 
                         logger.LogInformation(
-                            "Updated order {OrderId}: Filled {QuantityFilled}/{Quantity}, Closed: {Closed}, Canceled: {Canceled}",
-                            order.Id, order.QuantityFilled, order.Quantity, order.Closed, order.Canceled);
+                            "Updated order {OrderId}: Filled {QuantityFilled}/{Quantity}, Status: {Status}",
+                            order.Id, order.QuantityFilled, order.Quantity, order.Status);
 
                         updatedCount++;
                     }

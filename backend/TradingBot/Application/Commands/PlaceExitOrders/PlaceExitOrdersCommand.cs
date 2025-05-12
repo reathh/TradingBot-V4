@@ -32,9 +32,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                     ConsolidatedTrades = bot.Trades
                         .Where(t =>
                             t.ExitOrder == null &&
-                            t.Profit == null &&
-                            t.EntryOrder.Closed &&
-                            t.EntryOrder.QuantityFilled > 0 &&
+                            t.EntryOrder.Status == OrderStatus.Filled &&
                             (
                                 (bot.IsLong && ((t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) + bot.ExitStep <= currentAsk)) ||
                                 (!bot.IsLong && ((t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) - bot.ExitStep >= currentBid))
@@ -51,9 +49,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                     AdvanceTrades = bot.Trades
                         .Where(t =>
                             t.ExitOrder == null &&
-                            t.Profit == null &&
-                            t.EntryOrder.Closed &&
-                            t.EntryOrder.QuantityFilled > 0 &&
+                            t.EntryOrder.Status == OrderStatus.Filled &&
                             (
                                 (bot.IsLong && ((t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) + bot.ExitStep > currentAsk)) ||
                                 (!bot.IsLong && ((t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) - bot.ExitStep < currentBid))

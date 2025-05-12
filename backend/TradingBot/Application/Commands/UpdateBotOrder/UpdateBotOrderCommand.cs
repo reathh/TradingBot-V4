@@ -31,8 +31,7 @@ public class UpdateBotOrderCommandHandler(
 
         // Update order properties
         order.QuantityFilled = orderUpdate.QuantityFilled;
-        order.Closed = orderUpdate.Closed;
-        order.Canceled = orderUpdate.Canceled;
+        order.Status = orderUpdate.Status;
         order.LastUpdated = timeProvider.GetUtcNow().DateTime;
 
         if (orderUpdate.AverageFillPrice.HasValue)
@@ -42,8 +41,8 @@ public class UpdateBotOrderCommandHandler(
 
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        logger.LogInformation("Updated order {OrderId}: Filled {QuantityFilled}/{Quantity}, Closed: {Closed}",
-            order.Id, order.QuantityFilled, order.Quantity, order.Closed);
+        logger.LogInformation("Updated order {OrderId}: Filled {QuantityFilled}/{Quantity}, Status: {Status}",
+            order.Id, order.QuantityFilled, order.Quantity, order.Status);
 
         return Result.Success;
     }
