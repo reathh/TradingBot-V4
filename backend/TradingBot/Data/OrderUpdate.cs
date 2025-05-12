@@ -11,5 +11,4 @@ public record OrderUpdate(
     decimal QuantityFilled,
     decimal? AverageFillPrice,
     bool IsBuy,
-    bool Canceled,
-    bool Closed);
+    OrderStatus Status);

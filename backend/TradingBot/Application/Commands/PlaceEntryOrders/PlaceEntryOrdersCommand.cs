@@ -24,47 +24,36 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                 .Where(b => b.Enabled)
                 // Price range filters
                 .Where(b =>
-                    (b.MaxPrice == null || b.IsLong && b.MaxPrice >= request.Ticker.Bid || !b.IsLong && b.MaxPrice >= request.Ticker.Ask) &&
-                    (b.MinPrice == null || b.IsLong && b.MinPrice <= request.Ticker.Ask || !b.IsLong && b.MinPrice <= request.Ticker.Bid))
-                // Orders in advance filter
-                .Where(b => !b.PlaceOrdersInAdvance
-                || b.PlaceOrdersInAdvance
-                && b.Trades.Count(t => t.ExitOrder != null
-                && t.ExitOrder.QuantityFilled > 0
-                && t.ExitOrder.Closed) < b.EntryOrdersInAdvance)
-                // Select all data needed for calculation
+                    (b.MaxPrice == null || (b.IsLong && b.MaxPrice >= request.Ticker.Bid) || (!b.IsLong && b.MaxPrice >= request.Ticker.Ask)) &&
+                    (b.MinPrice == null || (b.IsLong && b.MinPrice <= request.Ticker.Ask) || (!b.IsLong && b.MinPrice <= request.Ticker.Bid)))
                 .Select(b => new
                 {
                     Bot = b,
-                    OpenTradesCount = b.Trades.Count(t => t.Profit == null),
-                    HasOpenTrades = b.Trades.Any(t => t.Profit == null),
-                    // Get the price of the first trade (chronologically) to use as reference
+                    OpenTradesCount = b.Trades.Count(t => t.ExitOrder != null && t.ExitOrder.Status == OrderStatus.Filled),
+                    HasOpenTrades = b.Trades.Any(t => t.ExitOrder != null && t.ExitOrder.Status == OrderStatus.Filled),
                     FirstTradePrice = b.Trades
-                        .Where(t => t.Profit == null)
+                        .Where(t => t.ExitOrder != null && t.ExitOrder.Status == OrderStatus.Filled)
                         .OrderBy(t => t.EntryOrder.CreatedAt)
                         .Select(t => t.EntryOrder.Price)
                         .FirstOrDefault(),
-                    // Total volume already allocated
-                    CurrentVolume = b.Trades.Where(t => t.Profit == null).Sum(t => t.EntryOrder.Quantity),
-                    // Current price to place order at
+                    CurrentVolume = b.Trades
+                        .Where(t => t.ExitOrder != null && t.ExitOrder.Status == OrderStatus.Filled)
+                        .Sum(t => t.EntryOrder.Quantity),
                     CurrentPrice = b.IsLong ? request.Ticker.Bid : request.Ticker.Ask
                 })
-                // Calculate needed quantity in a single step
                 .Select(x => new
                 {
                     x.Bot,
                     x.OpenTradesCount,
-                    Quantity = !x.HasOpenTrades
-                        // First order case
+                    CatchUpQuantity = !x.HasOpenTrades
                         ? x.Bot.EntryQuantity
-                        // For existing positions, calculate required quantity based on price movement
                         : x.Bot.IsLong
                             // Long positions: calculate difference when price moves down
                             ? Math.Max(0, ((int)Math.Floor(Math.Abs(x.FirstTradePrice - x.CurrentPrice) / x.Bot.EntryStep) + 1) * x.Bot.EntryQuantity - x.CurrentVolume)
                             // Short positions: calculate difference when price moves up
                             : Math.Max(0, ((int)Math.Floor(Math.Abs(x.CurrentPrice - x.FirstTradePrice) / x.Bot.EntryStep) + 1) * x.Bot.EntryQuantity - x.CurrentVolume)
                 })
-                .Where(x => x.Quantity > 0)
+                .Where(x => x.CatchUpQuantity > 0 || (x.Bot.PlaceOrdersInAdvance && x.OpenTradesCount < x.Bot.EntryOrdersInAdvance))
                 .ToListAsync(cancellationToken);
 
             List<string> errors = [];
@@ -75,12 +64,12 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                 {
                     try
                     {
-                        await PlaceOrders(botWithQuantity.Bot, request.Ticker, botWithQuantity.Quantity, botWithQuantity.OpenTradesCount, token);
+                        await PlaceOrders(botWithQuantity.Bot, request.Ticker, botWithQuantity.CatchUpQuantity, botWithQuantity.OpenTradesCount, token);
                     }
                     catch (Exception ex)
                     {
                         logger.LogError(ex, "Failed to place orders for bot {BotId} with quantity {Quantity}",
-                            botWithQuantity.Bot.Id, botWithQuantity.Quantity);
+                            botWithQuantity.Bot.Id, botWithQuantity.CatchUpQuantity);
 
                         lock (errors)
                         {

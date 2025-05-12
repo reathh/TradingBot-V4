@@ -123,6 +123,21 @@ public class BinanceExchangeApi(
         _userDataSubscribed[key] = true;
     }
 
+    private static Data.OrderStatus MapOrderStatus(Binance.Net.Enums.OrderStatus status)
+    {
+        return status switch
+        {
+            Binance.Net.Enums.OrderStatus.New => Data.OrderStatus.New,
+            Binance.Net.Enums.OrderStatus.PartiallyFilled => Data.OrderStatus.PartiallyFilled,
+            Binance.Net.Enums.OrderStatus.Filled => Data.OrderStatus.Filled,
+            Binance.Net.Enums.OrderStatus.Canceled => Data.OrderStatus.Canceled,
+            Binance.Net.Enums.OrderStatus.Rejected => Data.OrderStatus.Rejected,
+            Binance.Net.Enums.OrderStatus.Expired => Data.OrderStatus.Expired,
+            Binance.Net.Enums.OrderStatus.PendingCancel => Data.OrderStatus.PendingCancel,
+            _ => throw new ArgumentOutOfRangeException(nameof(status), status, null)
+        };
+    }
+
     private static OrderUpdate MapBinanceOrderToOrderUpdate(BinanceStreamOrderUpdate order)
     {
         return new OrderUpdate(
@@ -133,8 +148,7 @@ public class BinanceExchangeApi(
             QuantityFilled: order.QuantityFilled,
             AverageFillPrice: order.QuoteQuantityFilled == 0 ? null : order.QuoteQuantityFilled / order.QuantityFilled,
             IsBuy: order.Side == OrderSide.Buy,
-            Canceled: order.Status == OrderStatus.Canceled,
-            Closed: IsOrderClosed(order.Status)
+            Status: MapOrderStatus(order.Status)
         );
     }
 
@@ -168,8 +182,7 @@ public class BinanceExchangeApi(
             QuantityFilled: order.QuantityFilled,
             AverageFillPrice: order.AverageFillPrice > 0 ? order.AverageFillPrice : null,
             IsBuy: order.Side == OrderSide.Buy,
-            Canceled: order.Status == OrderStatus.Canceled,
-            Closed: IsOrderClosedStatus(order.Status)
+            Status: MapOrderStatus(order.Status)
         );
     }
 
@@ -192,9 +205,4 @@ public class BinanceExchangeApi(
 
         return assetBalance.Total;
     }
-
-    private static bool IsOrderClosed(OrderStatus status) => IsOrderClosedStatus(status);
-
-    private static bool IsOrderClosedStatus(OrderStatus status) =>
-        status is OrderStatus.Filled or OrderStatus.Canceled or OrderStatus.Expired or OrderStatus.Rejected;
 }

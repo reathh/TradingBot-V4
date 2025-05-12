@@ -11,8 +11,7 @@ namespace TradingBot.Data
         public decimal QuantityFilled { get; set; }
         public decimal? AverageFillPrice { get; set; }
         public decimal Fees { get; set; }
-        public bool Canceled { get; set; }
-        public bool Closed { get; set; }
+        public OrderStatus Status { get; set; }
         public DateTime LastUpdated { get; set; } = createdAt;
 
         #region Navigation Properties
@@ -20,5 +19,16 @@ namespace TradingBot.Data
         public Trade? EntryTrade { get; set; } = null!;
         public ICollection<Trade> ExitTrades { get; set; } = [];
         #endregion
+    }
+
+    public enum OrderStatus
+    {
+        New,
+        PartiallyFilled,
+        Filled,
+        Canceled,
+        Rejected,
+        Expired,
+        PendingCancel
     }
 }
