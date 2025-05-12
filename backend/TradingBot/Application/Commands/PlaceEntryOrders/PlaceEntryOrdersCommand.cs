@@ -29,15 +29,15 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                 .Select(b => new
                 {
                     Bot = b,
-                    OpenTradesCount = b.Trades.Count(t => t.ExitOrder != null && t.ExitOrder.Status == OrderStatus.Filled),
-                    HasOpenTrades = b.Trades.Any(t => t.ExitOrder != null && t.ExitOrder.Status == OrderStatus.Filled),
+                    OpenTradesCount = b.Trades.Count(t => t.ExitOrder == null || t.ExitOrder.Status != OrderStatus.Filled),
+                    HasOpenTrades = b.Trades.Any(t => t.ExitOrder == null || t.ExitOrder.Status != OrderStatus.Filled),
                     FirstTradePrice = b.Trades
-                        .Where(t => t.ExitOrder != null && t.ExitOrder.Status == OrderStatus.Filled)
+                        .Where(t => t.ExitOrder == null || t.ExitOrder.Status != OrderStatus.Filled)
                         .OrderBy(t => t.EntryOrder.CreatedAt)
                         .Select(t => t.EntryOrder.Price)
                         .FirstOrDefault(),
                     CurrentVolume = b.Trades
-                        .Where(t => t.ExitOrder != null && t.ExitOrder.Status == OrderStatus.Filled)
+                        .Where(t => t.ExitOrder == null || t.ExitOrder.Status != OrderStatus.Filled)
                         .Sum(t => t.EntryOrder.Quantity),
                     CurrentPrice = b.IsLong ? request.Ticker.Bid : request.Ticker.Ask
                 })

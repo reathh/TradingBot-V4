@@ -33,6 +33,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                         .Where(t =>
                             t.ExitOrder == null &&
                             t.EntryOrder.Status == OrderStatus.Filled &&
+                            t.EntryOrder.QuantityFilled > 0 &&
                             (
                                 (bot.IsLong && ((t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) + bot.ExitStep <= currentAsk)) ||
                                 (!bot.IsLong && ((t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) - bot.ExitStep >= currentBid))
@@ -50,6 +51,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                         .Where(t =>
                             t.ExitOrder == null &&
                             t.EntryOrder.Status == OrderStatus.Filled &&
+                            t.EntryOrder.QuantityFilled > 0 &&
                             (
                                 (bot.IsLong && ((t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) + bot.ExitStep > currentAsk)) ||
                                 (!bot.IsLong && ((t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) - bot.ExitStep < currentBid))
