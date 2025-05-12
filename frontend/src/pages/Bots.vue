@@ -78,11 +78,11 @@
           <div class="col-md-6">
             <el-form-item label="Trade Quantity" required>
               <el-input
-                v-model.number="currentBot.quantity"
+                v-model.number="currentBot.entryQuantity"
                 type="number"
                 step="0.0001"
                 placeholder="Enter quantity"
-                @input="formatNumberInput($event, 'quantity')"
+                @input="formatNumberInput($event, 'entryQuantity')"
               ></el-input>
             </el-form-item>
           </div>

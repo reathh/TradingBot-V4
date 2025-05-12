@@ -87,13 +87,13 @@
 
               <div class="row">
                 <div class="col-md-6">
-                  <el-form-item label="Trade Quantity" required>
+                  <el-form-item label="Quantity Per Level" required>
                     <el-input
-                      v-model.number="bot.quantity"
+                      v-model.number="bot.entryQuantity"
                       type="number"
                       step="0.0001"
                       placeholder="Enter quantity"
-                      @input="formatNumberInput($event, 'quantity')"
+                      @input="formatNumberInput($event, 'entryQuantity')"
                     ></el-input>
                   </el-form-item>
                 </div>
