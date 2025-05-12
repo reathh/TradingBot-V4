@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using TradingBot.Data;
 using TradingBot.Services;
-using TradingBot.Application.Commands.VerifyBotBalance;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);

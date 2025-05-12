@@ -1,5 +1,3 @@
-using System.Runtime.CompilerServices;
-
 namespace TradingBot.Data
 {
     public class Order(string id, string symbol, decimal price, decimal quantity, bool isBuy, DateTime createdAt)

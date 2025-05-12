@@ -1,18 +1,13 @@
-using Microsoft.EntityFrameworkCore;
 using TradingBot.Application.Commands.VerifyBotBalance;
-using TradingBot.Data;
 using MediatR;
 
 namespace TradingBot.Services;
 
-using Models;
-
 /// <summary>
 /// Background service that verifies the correct balance on exchanges for all bots
 /// </summary>
-public class BalanceVerificationService(
-    IServiceProvider serviceProvider,
-    ILogger<BalanceVerificationService> logger) : ScheduledBackgroundService(serviceProvider, logger, TimeSpan.FromMinutes(1), "Balance verification service")
+public class BalanceVerificationService(IServiceProvider serviceProvider, ILogger<BalanceVerificationService> logger)
+    : ScheduledBackgroundService(serviceProvider, logger, TimeSpan.FromMinutes(1), "Balance verification service")
 {
     private readonly IServiceProvider _serviceProvider = serviceProvider;
 

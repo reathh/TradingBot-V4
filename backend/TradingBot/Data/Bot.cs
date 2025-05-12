@@ -1,7 +1,5 @@
 namespace TradingBot.Data
 {
-    using System.ComponentModel.DataAnnotations.Schema;
-
     public class Bot(int id, string name, string publicKey, string privateKey)
     {
         public HashSet<Trade> Trades { get; set; } = [];
