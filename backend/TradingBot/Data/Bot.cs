@@ -14,7 +14,6 @@ namespace TradingBot.Data
         public bool Enabled { get; set; }
         public decimal? MaxPrice { get; set; }
         public decimal? MinPrice { get; set; }
-        public decimal Quantity { get; set; }
         public bool PlaceOrdersInAdvance { get; set; }
         public bool IsLong { get; set; } = true;
         public int EntryOrdersInAdvance { get; set; } = 100;
