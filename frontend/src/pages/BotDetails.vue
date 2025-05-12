@@ -87,6 +87,27 @@
 
               <div class="row">
                 <div class="col-md-6">
+                  <el-form-item label="Entry Order Type" required>
+                    <el-select v-model="bot.entryOrderType" placeholder="Select entry order type">
+                      <el-option value="LimitMaker" label="Limit Maker"></el-option>
+                      <el-option value="Limit" label="Limit"></el-option>
+                      <el-option value="Market" label="Market"></el-option>
+                    </el-select>
+                  </el-form-item>
+                </div>
+                <div class="col-md-6">
+                  <el-form-item label="Exit Order Type" required>
+                    <el-select v-model="bot.exitOrderType" placeholder="Select exit order type">
+                      <el-option value="LimitMaker" label="Limit Maker"></el-option>
+                      <el-option value="Limit" label="Limit"></el-option>
+                      <el-option value="Market" label="Market"></el-option>
+                    </el-select>
+                  </el-form-item>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
                   <el-form-item label="Quantity Per Level" required>
                     <el-input
                       v-model.number="bot.entryQuantity"
@@ -256,7 +277,9 @@ const bot = ref({
   startFromMaxPrice: false,
   entryOrdersInAdvance: 100,
   exitOrdersInAdvance: 100,
-  tradingMode: 'Spot'
+  tradingMode: 'Spot',
+  entryOrderType: 'LimitMaker',
+  exitOrderType: 'LimitMaker'
 });
 
 const { notify } = useNotifications();

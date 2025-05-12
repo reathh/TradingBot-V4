@@ -1,5 +1,7 @@
 namespace TradingBot.Data
 {
+    using System.ComponentModel.DataAnnotations.Schema;
+
     public class Bot(int id, string name, string publicKey, string privateKey)
     {
         public HashSet<Trade> Trades { get; set; } = [];
@@ -33,11 +35,20 @@ namespace TradingBot.Data
             }
         }
         public TradingMode TradingMode { get; set; } = TradingMode.Spot;
+        public OrderType EntryOrderType { get; set; } = OrderType.LimitMaker;
+        public OrderType ExitOrderType { get; set; } = OrderType.LimitMaker;
     }
     
     public enum TradingMode
     {
         Spot,
         Margin
+    }
+
+    public enum OrderType
+    {
+        LimitMaker,
+        Limit,
+        Market
     }
 }
