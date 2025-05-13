@@ -8,7 +8,7 @@ namespace TradingBot.Application.Commands.UpdateStaleOrders;
 
 public record UpdateStaleOrdersCommand : IRequest<Result<int>>
 {
-    public TimeSpan StaleThreshold { get; init; } = TimeSpan.FromMinutes(10);
+    public TimeSpan StaleThreshold { get; init; } = TimeSpan.FromMinutes(3);
 }
 
 public class UpdateStaleOrdersCommandHandler(
