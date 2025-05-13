@@ -233,7 +233,7 @@ public class BinanceExchangeApi(string publicKey, string privateKey, TimeProvide
         }
 
         decimal? totalFee = null;
-        if (tradesResult.Success && tradesResult.Data.Any())
+        if (tradesResult.Success && tradesResult.Data.Length != 0)
         {
             totalFee = tradesResult.Data.Sum(t => t.Fee);
         }
