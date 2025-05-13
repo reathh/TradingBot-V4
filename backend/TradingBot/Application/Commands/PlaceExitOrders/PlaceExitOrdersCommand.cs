@@ -16,8 +16,28 @@ public class PlaceExitOrdersCommand : IRequest<Result>
     public class PlaceExitOrdersCommandHandler(
         TradingBotDbContext dbContext,
         IExchangeApiRepository exchangeApiRepository,
+        ISymbolInfoCache symbolInfoCache,
         ILogger<PlaceExitOrdersCommandHandler> logger) : BaseCommandHandler<PlaceExitOrdersCommand>(logger)
     {
+        private const decimal QuantityStepSize = 0.00001m; // Binance default for BTC-like symbols
+
+        private static decimal RoundDownQuantity(decimal quantity)
+        {
+            if (quantity <= 0)
+                return 0m;
+
+            var steps = Math.Floor(quantity / QuantityStepSize);
+            var rounded = steps * QuantityStepSize;
+            // Ensure we round towards zero to avoid exceeding max allowed precision
+            return Math.Round(rounded, 5, MidpointRounding.ToZero);
+        }
+
+        private static decimal NetFilledQuantity(Order entryOrder)
+        {
+            var net = entryOrder.QuantityFilled - entryOrder.Fee;
+            return RoundDownQuantity(net);
+        }
+
         protected override async Task<Result> HandleCore(PlaceExitOrdersCommand request, CancellationToken cancellationToken)
         {
             var currentAsk = request.Ticker.Ask;
@@ -125,7 +145,14 @@ public class PlaceExitOrdersCommand : IRequest<Result>
         {
             var currentPrice = bot.IsLong ? ticker.Ask : ticker.Bid;
             var exchangeApi = exchangeApiRepository.GetExchangeApi(bot);
+            var symbolInfo = await symbolInfoCache.GetAsync(bot.Symbol, cancellationToken);
             var orderTasks = new List<(Task<Order> OrderTask, List<Trade> AssociatedTrades)>();
+
+            decimal NetFilledQuantity(Order entryOrder)
+            {
+                var net = entryOrder.QuantityFilled - entryOrder.Fee;
+                return QuantityUtils.RoundDownToStep(net, symbolInfo);
+            }
 
             // Prepare consolidated exit order for eligible trades
             if (consolidatedTrades.Any())
@@ -134,22 +161,32 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                     ? Math.Max(consolidatedTrades.Min(t => t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) + bot.ExitStep, currentPrice)
                     : Math.Min(consolidatedTrades.Max(t => t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) - bot.ExitStep, currentPrice);
 
-                var exitQuantity = consolidatedTrades.Sum(t => t.EntryOrder.QuantityFilled);
+                var exitQuantity = consolidatedTrades.Sum(t => NetFilledQuantity(t.EntryOrder));
 
-                var orderTask = exchangeApi.PlaceOrder(
-                    bot,
-                    targetExitPrice,
-                    exitQuantity,
-                    !bot.IsLong,
-                    bot.ExitOrderType,
-                    cancellationToken);
+                if (exitQuantity >= symbolInfo.MinQty)
+                {
+                    var orderTask = exchangeApi.PlaceOrder(
+                        bot,
+                        targetExitPrice,
+                        exitQuantity,
+                        !bot.IsLong,
+                        bot.ExitOrderType,
+                        cancellationToken);
 
-                orderTasks.Add((orderTask, consolidatedTrades.ToList()));
+                    orderTasks.Add((orderTask, consolidatedTrades.ToList()));
+                }
             }
 
             // Prepare advance exit orders
             foreach (var trade in advanceTrades)
             {
+                var qty = NetFilledQuantity(trade.EntryOrder);
+                if (qty < symbolInfo.MinQty)
+                {
+                    // Nothing to sell after accounting for fees and rounding
+                    continue;
+                }
+
                 var exitPrice = bot.IsLong
                     ? (trade.EntryOrder.AverageFillPrice ?? trade.EntryOrder.Price) + bot.ExitStep
                     : (trade.EntryOrder.AverageFillPrice ?? trade.EntryOrder.Price) - bot.ExitStep;
@@ -157,7 +194,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                 var orderTask = exchangeApi.PlaceOrder(
                     bot,
                     exitPrice,
-                    trade.EntryOrder.QuantityFilled,
+                    qty,
                     !bot.IsLong,
                     bot.ExitOrderType,
                     cancellationToken);

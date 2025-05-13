@@ -116,7 +116,7 @@ namespace TradingBot.Data.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_Tickers_Symbol_Timestamp",
                 table: "Tickers",
-                columns: new[] { "Symbol", "Timestamp" });
+                columns: ["Symbol", "Timestamp"]);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Trades_BotId",

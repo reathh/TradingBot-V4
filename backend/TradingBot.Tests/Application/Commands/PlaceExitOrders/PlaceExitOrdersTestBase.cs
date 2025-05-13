@@ -2,6 +2,8 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using TradingBot.Application.Commands.PlaceExitOrders;
 using TradingBot.Data;
+using TradingBot.Services;
+using TradingBot.Application.Common;
 
 namespace TradingBot.Tests.Application.Commands.PlaceExitOrders;
 
@@ -14,13 +16,19 @@ public abstract class PlaceExitOrdersTestBase : BaseTest
 {
     protected new readonly PlaceExitOrdersCommand.PlaceExitOrdersCommandHandler Handler;
     protected new readonly Mock<ILogger<PlaceExitOrdersCommand.PlaceExitOrdersCommandHandler>> LoggerMock;
+    protected readonly Mock<ISymbolInfoCache> SymbolInfoCacheMock;
 
     protected PlaceExitOrdersTestBase()
     {
         LoggerMock = new Mock<ILogger<PlaceExitOrdersCommand.PlaceExitOrdersCommandHandler>>();
+        SymbolInfoCacheMock = new Mock<ISymbolInfoCache>();
+        var defaultSymbolInfo = new SymbolInfo(0.00001m, 0.00001m, 5);
+        SymbolInfoCacheMock.Setup(x => x.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(defaultSymbolInfo);
         Handler = new PlaceExitOrdersCommand.PlaceExitOrdersCommandHandler(
             DbContext,
             ExchangeApiRepositoryMock.Object,
+            SymbolInfoCacheMock.Object,
             LoggerMock.Object);
     }
 
