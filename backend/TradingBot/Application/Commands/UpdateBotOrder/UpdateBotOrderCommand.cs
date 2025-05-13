@@ -26,7 +26,7 @@ public class UpdateBotOrderCommandHandler(
         if (order == null)
         {
             logger.LogWarning("Order update received for unknown order ID: {OrderId}", orderUpdate.Id);
-            return $"Order with ID {orderUpdate.Id} not found";
+            return Result.Failure($"Order with ID {orderUpdate.Id} not found", ErrorCode.OrderNotFound);
         }
 
         // Update order properties

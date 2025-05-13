@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
 using System.Threading.Tasks.Dataflow;
 using TradingBot.Application.Commands.UpdateBotOrder;
+using TradingBot.Application.Common;
 using TradingBot.Data;
 
 namespace TradingBot.Services;
@@ -101,13 +102,15 @@ public class OrderUpdateService(
             }
             else
             {
-                // If it failed due to order not found, schedule a retry
-                if (result.Errors.Any(e => e.Contains("not found")))
+                // Check for OrderNotFound error code
+                if (result.HasErrorCode(ErrorCode.OrderNotFound))
                 {
+                    // Only retry for "order not found" errors
                     ScheduleRetry(orderUpdate, cancellationToken);
                 }
                 else
                 {
+                    // For other errors, just log and don't retry
                     Logger.LogWarning("Failed to process order update: {Errors}",
                         string.Join(", ", result.Errors));
                 }
@@ -115,10 +118,8 @@ public class OrderUpdateService(
         }
         catch (Exception ex)
         {
+            // Don't retry on general exceptions, just log them
             Logger.LogError(ex, "Error processing order update for order {OrderId}", orderUpdate.Id);
-            
-            // Schedule retry in case of exception as well
-            ScheduleRetry(orderUpdate, cancellationToken);
         }
     }
     
