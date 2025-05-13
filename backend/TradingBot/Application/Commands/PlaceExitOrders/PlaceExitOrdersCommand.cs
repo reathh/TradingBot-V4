@@ -28,14 +28,9 @@ public class PlaceExitOrdersCommand : IRequest<Result>
 
             var steps = Math.Floor(quantity / QuantityStepSize);
             var rounded = steps * QuantityStepSize;
+
             // Ensure we round towards zero to avoid exceeding max allowed precision
             return Math.Round(rounded, 5, MidpointRounding.ToZero);
-        }
-
-        private static decimal NetFilledQuantity(Order entryOrder)
-        {
-            var net = entryOrder.QuantityFilled - entryOrder.Fee;
-            return RoundDownQuantity(net);
         }
 
         protected override async Task<Result> HandleCore(PlaceExitOrdersCommand request, CancellationToken cancellationToken)
@@ -44,22 +39,21 @@ public class PlaceExitOrdersCommand : IRequest<Result>
             var currentBid = request.Ticker.Bid;
 
             // Fetch only bots with suitable trades, and only the relevant trades for each bot
-            var botsWithTrades = await dbContext.Bots
+            var botsWithTrades = await dbContext
+                .Bots
                 .Where(bot => bot.Enabled)
                 .Select(bot => new
                 {
                     Bot = bot,
-                    ConsolidatedTrades = bot.Trades
-                        .Where(t =>
-                            t.ExitOrder == null &&
-                            t.EntryOrder.Status == OrderStatus.Filled &&
-                            t.EntryOrder.QuantityFilled > 0 &&
-                            (
-                                (bot.IsLong && ((t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) + bot.ExitStep <= currentAsk)) ||
-                                (!bot.IsLong && ((t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) - bot.ExitStep >= currentBid))
-                            )
-                        )
-                        .OrderByDescending(t => bot.IsLong ? (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) : -(t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price))
+                    ConsolidatedTrades = bot
+                        .Trades
+                        .Where(t => t.ExitOrder == null &&
+                                    t.EntryOrder.Status == OrderStatus.Filled &&
+                                    t.EntryOrder.QuantityFilled > 0 &&
+                                    ((bot.IsLong && ((t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) + bot.ExitStep <= currentAsk)) ||
+                                     (!bot.IsLong && ((t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) - bot.ExitStep >= currentBid))))
+                        .OrderByDescending(t
+                            => bot.IsLong ? (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) : -(t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price))
                         .Select(t => new
                         {
                             Trade = t,
@@ -67,19 +61,18 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                             t.ExitOrder
                         })
                         .ToList(),
-                    AdvanceTrades = bot.Trades
-                        .Where(t =>
-                            t.ExitOrder == null &&
-                            t.EntryOrder.Status == OrderStatus.Filled &&
-                            t.EntryOrder.QuantityFilled > 0 &&
-                            (
-                                (bot.IsLong && ((t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) + bot.ExitStep > currentAsk)) ||
-                                (!bot.IsLong && ((t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) - bot.ExitStep < currentBid))
-                            )
-                        )
+                    AdvanceTrades = bot
+                        .Trades
+                        .Where(t => t.ExitOrder == null &&
+                                    t.EntryOrder.Status == OrderStatus.Filled &&
+                                    t.EntryOrder.QuantityFilled > 0 &&
+                                    ((bot.IsLong && ((t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) + bot.ExitStep > currentAsk)) ||
+                                     (!bot.IsLong && ((t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) - bot.ExitStep < currentBid))))
                         .OrderBy(t => bot.IsLong
+
                             // For long bots, prioritize lower entry prices since they'll become eligible sooner as price rises
                             ? (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)
+
                             // For short bots, prioritize higher entry prices since they'll become eligible sooner as price falls
                             : -(t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price))
                         .Take(bot.PlaceOrdersInAdvance && bot.ExitOrdersInAdvance > 0 ? bot.ExitOrdersInAdvance : 0)
@@ -113,12 +106,23 @@ public class PlaceExitOrdersCommand : IRequest<Result>
             ConcurrentBag<string> errors = [];
 
             await Parallel.ForEachAsync(botsWithTrades,
-                new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
+                new ParallelOptions
+                {
+                    MaxDegreeOfParallelism = Environment.ProcessorCount
+                },
                 async (botWithTrades, token) =>
                 {
                     var bot = botWithTrades.Bot;
-                    var consolidatedTrades = botWithTrades.ConsolidatedTrades.Select(t => t.Trade).ToList();
-                    var advanceTrades = botWithTrades.AdvanceTrades.Select(t => t.Trade).ToList();
+
+                    var consolidatedTrades = botWithTrades
+                        .ConsolidatedTrades
+                        .Select(t => t.Trade)
+                        .ToList();
+
+                    var advanceTrades = botWithTrades
+                        .AdvanceTrades
+                        .Select(t => t.Trade)
+                        .ToList();
 
                     if (consolidatedTrades.Count == 0 && advanceTrades.Count == 0)
                     {
@@ -136,23 +140,20 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                     }
                 });
 
-            return errors.IsEmpty
-                ? Result.Success
-                : Result.Failure(errors);
+            return errors.IsEmpty ? Result.Success : Result.Failure(errors);
         }
 
-        private async Task PlaceExitOrders(Bot bot, TickerDto ticker, IList<Trade> consolidatedTrades, IList<Trade> advanceTrades, CancellationToken cancellationToken)
+        private async Task PlaceExitOrders(
+            Bot bot,
+            TickerDto ticker,
+            IList<Trade> consolidatedTrades,
+            IList<Trade> advanceTrades,
+            CancellationToken cancellationToken)
         {
             var currentPrice = bot.IsLong ? ticker.Ask : ticker.Bid;
             var exchangeApi = exchangeApiRepository.GetExchangeApi(bot);
             var symbolInfo = await symbolInfoCache.GetAsync(bot.Symbol, cancellationToken);
             var orderTasks = new List<(Task<Order> OrderTask, List<Trade> AssociatedTrades)>();
-
-            decimal NetFilledQuantity(Order entryOrder)
-            {
-                var net = entryOrder.QuantityFilled - entryOrder.Fee;
-                return QuantityUtils.RoundDownToStep(net, symbolInfo);
-            }
 
             // Prepare consolidated exit order for eligible trades
             if (consolidatedTrades.Any())
@@ -165,13 +166,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
 
                 if (exitQuantity >= symbolInfo.MinQty)
                 {
-                    var orderTask = exchangeApi.PlaceOrder(
-                        bot,
-                        targetExitPrice,
-                        exitQuantity,
-                        !bot.IsLong,
-                        bot.ExitOrderType,
-                        cancellationToken);
+                    var orderTask = exchangeApi.PlaceOrder(bot, targetExitPrice, exitQuantity, !bot.IsLong, bot.ExitOrderType, cancellationToken);
 
                     orderTasks.Add((orderTask, consolidatedTrades.ToList()));
                 }
@@ -181,6 +176,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
             foreach (var trade in advanceTrades)
             {
                 var qty = NetFilledQuantity(trade.EntryOrder);
+
                 if (qty < symbolInfo.MinQty)
                 {
                     // Nothing to sell after accounting for fees and rounding
@@ -191,30 +187,27 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                     ? (trade.EntryOrder.AverageFillPrice ?? trade.EntryOrder.Price) + bot.ExitStep
                     : (trade.EntryOrder.AverageFillPrice ?? trade.EntryOrder.Price) - bot.ExitStep;
 
-                var orderTask = exchangeApi.PlaceOrder(
-                    bot,
-                    exitPrice,
-                    qty,
-                    !bot.IsLong,
-                    bot.ExitOrderType,
-                    cancellationToken);
+                var orderTask = exchangeApi.PlaceOrder(bot, exitPrice, qty, !bot.IsLong, bot.ExitOrderType, cancellationToken);
 
                 orderTasks.Add((orderTask, [trade]));
             }
 
             // Execute all orders in parallel
-            var orderResults = await Task.WhenAll(
-                orderTasks.Select(async item => {
-                    try {
-                        var order = await item.OrderTask;
-                        return (Order: order, Trades: item.AssociatedTrades, Success: true);
-                    }
-                    catch (Exception ex) {
-                        logger.LogError(ex, "Failed to place exit order for bot {BotId}", bot.Id);
-                        return (Order: null!, Trades: item.AssociatedTrades, Success: false);
-                    }
-                })
-            );
+            var orderResults = await Task.WhenAll(orderTasks.Select(async item =>
+            {
+                try
+                {
+                    var order = await item.OrderTask;
+
+                    return (Order: order, Trades: item.AssociatedTrades, Success: true);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to place exit order for bot {BotId}", bot.Id);
+
+                    return (Order: null!, Trades: item.AssociatedTrades, Success: false);
+                }
+            }));
 
             // Process successful orders
             foreach (var result in orderResults.Where(r => r.Success && r.Order != null))
@@ -222,9 +215,8 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                 foreach (var trade in result.Trades)
                 {
                     trade.ExitOrder = result.Order;
-                    
-                    logger.LogInformation(
-                        "Bot {BotId} placed exit {Side} order at {Price} for trade with entry price {EntryPrice}",
+
+                    logger.LogInformation("Bot {BotId} placed exit {Side} order at {Price} for trade with entry price {EntryPrice}",
                         bot.Id,
                         result.Order.IsBuy ? "buy" : "sell",
                         result.Order.Price,
@@ -239,14 +231,21 @@ public class PlaceExitOrdersCommand : IRequest<Result>
 
             if (successfulOrderCount > 0)
             {
-                logger.LogInformation("Successfully placed {OrderCount} exit orders for bot {BotId}", 
-                    successfulOrderCount, bot.Id);
+                logger.LogInformation("Successfully placed {OrderCount} exit orders for bot {BotId}", successfulOrderCount, bot.Id);
             }
-            
+
             if (failedOrderCount > 0)
             {
-                logger.LogWarning("Failed to place {OrderCount} exit orders for bot {BotId}",
-                    failedOrderCount, bot.Id);
+                logger.LogWarning("Failed to place {OrderCount} exit orders for bot {BotId}", failedOrderCount, bot.Id);
+            }
+
+            return;
+
+            decimal NetFilledQuantity(Order entryOrder)
+            {
+                var net = entryOrder.QuantityFilled - entryOrder.Fee;
+
+                return QuantityUtils.RoundDownToStep(net, symbolInfo);
             }
         }
     }

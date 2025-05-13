@@ -22,52 +22,37 @@ public class UpdateStaleOrdersCommandHandler(
         var currentTime = timeProvider.GetUtcNow().DateTime;
         var cutoffTime = currentTime - request.StaleThreshold;
 
-        // Only fetch bots and their trades with stale orders (projected)
-        var botsWithStaleOrders = await dbContext.Bots
-            .Where(b => b.Trades.Any(t =>
-                (t.EntryOrder.Status != OrderStatus.Filled && t.EntryOrder.Status != OrderStatus.Canceled && t.EntryOrder.LastUpdated < cutoffTime) ||
-                (t.ExitOrder != null && t.ExitOrder.Status != OrderStatus.Filled && t.ExitOrder.Status != OrderStatus.Canceled && t.ExitOrder.LastUpdated < cutoffTime)))
-            .Select(b => new
+        // Fetch only stale orders, and get the associated bot via EntryTrade or ExitTrades
+        var staleOrders = await dbContext.Orders
+            .Where(o => o.Status != OrderStatus.Filled && o.Status != OrderStatus.Canceled && o.LastUpdated < cutoffTime)
+            .Select(o => new
             {
-                Bot = b,
-                StaleTrades = b.Trades
-                    .Where(t =>
-                        (t.EntryOrder.Status != OrderStatus.Filled && t.EntryOrder.Status != OrderStatus.Canceled && t.EntryOrder.LastUpdated < cutoffTime) ||
-                        (t.ExitOrder != null && t.ExitOrder.Status != OrderStatus.Filled && t.ExitOrder.Status != OrderStatus.Canceled && t.ExitOrder.LastUpdated < cutoffTime))
-                    .Select(t => new
-                    {
-                        EntryOrder = t.EntryOrder,
-                        ExitOrder = t.ExitOrder
-                    })
-                    .ToList()
+                Order = o,
+                Bot = o.EntryTrade != null
+                    ? o.EntryTrade.Bot
+                    : o.ExitTrades.First().Bot
             })
             .ToListAsync(cancellationToken);
 
-        if (botsWithStaleOrders.Count == 0)
+        if (staleOrders.Count == 0)
         {
-            logger.LogInformation("No bots with stale orders found");
+            logger.LogInformation("No stale orders found");
             return Result<int>.SuccessWith(0);
         }
 
-        logger.LogInformation("Found {BotCount} bots with stale orders", botsWithStaleOrders.Count);
+        logger.LogInformation("Found {OrderCount} stale orders", staleOrders.Count);
         int updatedCount = 0;
 
-        var updateTasks = botsWithStaleOrders.Select(async botWithStale =>
+        // Group by Bot for exchange API reuse
+        var ordersByBot = staleOrders.GroupBy(x => x.Bot);
+
+        var updateTasks = ordersByBot.SelectMany(group =>
         {
-            var bot = botWithStale.Bot;
+            var bot = group.Key;
             var exchangeApi = exchangeApiRepository.GetExchangeApi(bot);
-            // Collect all entry and exit orders that are stale for this bot
-            var staleOrders = botWithStale.StaleTrades
-                .SelectMany(t => new[] { t.EntryOrder, t.ExitOrder })
-                .Where(o => o != null && o.Status != OrderStatus.Filled && o.Status != OrderStatus.Canceled && o.LastUpdated < cutoffTime)
-                .GroupBy(o => o.Id)
-                .Select(g => g.First())
-                .ToList();
-
-            logger.LogInformation("Processing {OrderCount} stale orders for bot {BotId} ({BotName})", staleOrders.Count, bot.Id, bot.Name);
-
-            var orderTasks = staleOrders.Select(async order =>
+            return group.Select(async x =>
             {
+                var order = x.Order;
                 try
                 {
                     var updatedOrder = await exchangeApi.GetOrderStatus(order.Id, bot, cancellationToken);
@@ -88,8 +73,7 @@ public class UpdateStaleOrdersCommandHandler(
                     order.LastUpdated = currentTime;
                 }
             });
-            await Task.WhenAll(orderTasks);
-        });
+        }).ToList();
 
         await Task.WhenAll(updateTasks);
         await dbContext.SaveChangesAsync(cancellationToken);
