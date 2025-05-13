@@ -13,7 +13,7 @@
         <td>{{ formatNumber(row.quantity) }}</td>
         <td>{{ formatCurrency(row.entryFee + row.exitFee) }}</td>
         <td class="text-right" :class="getProfitClass(row.profit)">
-          {{ formatCurrency(row.profit) }}
+          {{ formatCurrency(row.profit, '$', 4) }}
         </td>
         <td class="text-center">
           <BaseButton 
