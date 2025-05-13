@@ -252,23 +252,44 @@ public class BinanceExchangeApi(string publicKey, string privateKey, TimeProvide
 
     public async Task<decimal> GetBalance(string asset, Bot bot, CancellationToken cancellationToken = default)
     {
-        var balanceResult = await _restClient.SpotApi.Account.GetAccountInfoAsync(ct: cancellationToken);
-
-        if (!balanceResult.Success)
+        if (bot.TradingMode == TradingMode.Spot)
         {
-            throw new Exception($"Failed to get balance information: {balanceResult.Error?.Message}");
+            var balanceResult = await _restClient.SpotApi.Account.GetAccountInfoAsync(ct: cancellationToken);
+
+            if (!balanceResult.Success)
+            {
+                throw new Exception($"Failed to get spot balance information: {balanceResult.Error?.Message}");
+            }
+
+            var assetBalance = balanceResult.Data.Balances.FirstOrDefault(b => b.Asset == asset);
+
+            if (assetBalance == null)
+            {
+                logger.LogWarning("Asset {Asset} not found in spot account balances", asset);
+                return 0;
+            }
+
+            return assetBalance.Total;
         }
-
-        var assetBalance = balanceResult.Data.Balances.FirstOrDefault(b => b.Asset == asset);
-
-        if (assetBalance == null)
+        else // TradingMode.Margin
         {
-            logger.LogWarning("Asset {Asset} not found in account balances", asset);
+            var marginAccountResult = await _restClient.SpotApi.Account.GetMarginAccountInfoAsync(ct: cancellationToken);
 
-            return 0;
+            if (!marginAccountResult.Success)
+            {
+                throw new Exception($"Failed to get margin balance information: {marginAccountResult.Error?.Message}");
+            }
+
+            var assetBalance = marginAccountResult.Data.UserAssets.FirstOrDefault(b => b.Asset == asset);
+
+            if (assetBalance == null)
+            {
+                logger.LogWarning("Asset {Asset} not found in margin account balances", asset);
+                return 0;
+            }
+
+            return assetBalance.Total;
         }
-
-        return assetBalance.Total;
     }
 
     /// <inheritdoc />
