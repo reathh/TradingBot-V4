@@ -5,9 +5,9 @@ namespace TradingBot.Services;
 /// <summary>
 /// Background service that periodically updates stale orders
 /// </summary>
-public class StaleOrderUpdateService(
+public class StaleOrderUpdateScheduledService(
     IServiceProvider serviceProvider,
-    ILogger<StaleOrderUpdateService> logger) : ScheduledBackgroundService(serviceProvider, logger, TimeSpan.FromMinutes(10), "Stale order update service")
+    ILogger<StaleOrderUpdateScheduledService> logger) : ScheduledBackgroundService(serviceProvider, logger, TimeSpan.FromMinutes(1), "Stale order update service")
 {
     protected internal override async Task ExecuteScheduledWork(CancellationToken cancellationToken)
     {
