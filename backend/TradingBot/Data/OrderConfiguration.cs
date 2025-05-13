@@ -8,6 +8,8 @@ namespace TradingBot.Data
         public void Configure(EntityTypeBuilder<Order> builder)
         {
             builder.HasKey(o => o.Id);
+            builder.Property(o => o.AverageFillPrice)
+                .HasColumnType("numeric(18,8)");
         }
     }
 }

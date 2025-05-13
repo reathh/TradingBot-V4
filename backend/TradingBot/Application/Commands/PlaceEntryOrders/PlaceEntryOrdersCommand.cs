@@ -21,23 +21,26 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
     {
         protected override async Task<Result> HandleCore(PlaceEntryOrdersCommand request, CancellationToken cancellationToken)
         {
-            var botsWithQuantities = await dbContext.Bots
+            var botsWithQuantities = await dbContext
+                .Bots
                 .Where(b => b.Enabled)
+
                 // Price range filters
-                .Where(b =>
-                    (b.MaxPrice == null || (b.IsLong && b.MaxPrice >= request.Ticker.Bid) || (!b.IsLong && b.MaxPrice >= request.Ticker.Ask)) &&
-                    (b.MinPrice == null || (b.IsLong && b.MinPrice <= request.Ticker.Ask) || (!b.IsLong && b.MinPrice <= request.Ticker.Bid)))
+                .Where(b => (b.MaxPrice == null || (b.IsLong && b.MaxPrice >= request.Ticker.Bid) || (!b.IsLong && b.MaxPrice >= request.Ticker.Ask)) &&
+                            (b.MinPrice == null || (b.IsLong && b.MinPrice <= request.Ticker.Ask) || (!b.IsLong && b.MinPrice <= request.Ticker.Bid)))
                 .Select(b => new
                 {
                     Bot = b,
                     OpenTradesCount = b.Trades.Count(t => t.ExitOrder == null || t.ExitOrder.Status != OrderStatus.Filled),
                     HasOpenTrades = b.Trades.Any(t => t.ExitOrder == null || t.ExitOrder.Status != OrderStatus.Filled),
-                    FirstTradePrice = b.Trades
+                    FirstTradePrice = b
+                        .Trades
                         .Where(t => t.ExitOrder == null || t.ExitOrder.Status != OrderStatus.Filled)
                         .OrderBy(t => t.EntryOrder.CreatedAt)
                         .Select(t => t.EntryOrder.Price)
                         .FirstOrDefault(),
-                    CurrentVolume = b.Trades
+                    CurrentVolume = b
+                        .Trades
                         .Where(t => t.ExitOrder == null || t.ExitOrder.Status != OrderStatus.Filled)
                         .Sum(t => t.EntryOrder.Quantity),
                     CurrentPrice = b.IsLong ? request.Ticker.Bid : request.Ticker.Ask
@@ -49,10 +52,18 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                     CatchUpQuantity = !x.HasOpenTrades
                         ? x.Bot.EntryQuantity
                         : x.Bot.IsLong
+
                             // Long positions: calculate difference when price moves down
-                            ? Math.Max(0, ((int)Math.Floor(((x.FirstTradePrice - x.CurrentPrice) > 0m ? (x.FirstTradePrice - x.CurrentPrice) : 0m) / x.Bot.EntryStep) + 1) * x.Bot.EntryQuantity - x.CurrentVolume)
+                            ? Math.Max(0,
+                                ((int)Math.Floor((x.FirstTradePrice - x.CurrentPrice > 0m ? x.FirstTradePrice - x.CurrentPrice : 0m) / x.Bot.EntryStep) + 1) *
+                                x.Bot.EntryQuantity -
+                                x.CurrentVolume)
+
                             // Short positions: calculate difference when price moves up
-                            : Math.Max(0, ((int)Math.Floor(((x.CurrentPrice - x.FirstTradePrice) > 0m ? (x.CurrentPrice - x.FirstTradePrice) : 0m) / x.Bot.EntryStep) + 1) * x.Bot.EntryQuantity - x.CurrentVolume)
+                            : Math.Max(0,
+                                ((int)Math.Floor((x.CurrentPrice - x.FirstTradePrice > 0m ? (x.CurrentPrice - x.FirstTradePrice) : 0m) / x.Bot.EntryStep) + 1) *
+                                x.Bot.EntryQuantity -
+                                x.CurrentVolume)
                 })
                 .Where(x => x.CatchUpQuantity > 0 || (x.Bot.PlaceOrdersInAdvance && x.OpenTradesCount < x.Bot.EntryOrdersInAdvance))
                 .ToListAsync(cancellationToken);
@@ -60,7 +71,10 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
             List<string> errors = [];
 
             await Parallel.ForEachAsync(botsWithQuantities,
-                new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
+                new ParallelOptions
+                {
+                    MaxDegreeOfParallelism = Environment.ProcessorCount
+                },
                 async (botWithQuantity, token) =>
                 {
                     try
@@ -69,8 +83,10 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError(ex, "Failed to place orders for bot {BotId} with quantity {Quantity}",
-                            botWithQuantity.Bot.Id, botWithQuantity.CatchUpQuantity);
+                        logger.LogError(ex,
+                            "Failed to place orders for bot {BotId} with quantity {Quantity}",
+                            botWithQuantity.Bot.Id,
+                            botWithQuantity.CatchUpQuantity);
 
                         lock (errors)
                         {
@@ -79,9 +95,7 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                     }
                 });
 
-            return errors.Count > 0
-                ? Result.Failure(errors)
-                : Result.Success;
+            return errors.Count > 0 ? Result.Failure(errors) : Result.Success;
         }
 
         private async Task PlaceOrders(Bot bot, TickerDto ticker, decimal quantity, int openTradesCount, CancellationToken cancellationToken)
@@ -107,13 +121,7 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                     var orderPrice = currentPrice - bot.EntryStep * stepDirection * i;
                     var orderQuantity = i == 0 ? quantity : bot.EntryQuantity;
 
-                    orderTasks.Add(exchangeApi.PlaceOrder(
-                        bot,
-                        orderPrice,
-                        orderQuantity,
-                        bot.IsLong,
-                        bot.EntryOrderType,
-                        cancellationToken));
+                    orderTasks.Add(exchangeApi.PlaceOrder(bot, orderPrice, orderQuantity, bot.IsLong, bot.EntryOrderType, cancellationToken));
                 }
 
                 var orders = await Task.WhenAll(orderTasks);
@@ -122,14 +130,14 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                 {
                     var trade = new Trade(order);
                     bot.Trades.Add(trade);
-                    logger.LogInformation(
-                        "Bot {BotId} placed {Side} order at {Price} for {Quantity} units ({OrderId})",
+
+                    logger.LogInformation("Bot {BotId} placed {Side} order at {Price} for {Quantity} units ({OrderId})",
                         bot.Id,
                         order.IsBuy ? "buy" : "sell",
                         order.Price,
                         order.Quantity,
                         order.Id);
-                        
+
                     // Notify about the new order
                     await notificationService.NotifyOrderUpdated(order.Id);
                 }
@@ -140,24 +148,18 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
             else
             {
                 // Standard behavior for bots without PlaceOrdersInAdvance
-                var order = await exchangeApi.PlaceOrder(
-                    bot,
-                    currentPrice,
-                    quantity,
-                    bot.IsLong,
-                    bot.EntryOrderType,
-                    cancellationToken);
+                var order = await exchangeApi.PlaceOrder(bot, currentPrice, quantity, bot.IsLong, bot.EntryOrderType, cancellationToken);
 
                 var trade = new Trade(order);
                 bot.Trades.Add(trade);
-                logger.LogInformation(
-                    "Bot {BotId} placed {Side} order at {Price} for {Quantity} units ({OrderId})",
+
+                logger.LogInformation("Bot {BotId} placed {Side} order at {Price} for {Quantity} units ({OrderId})",
                     bot.Id,
                     order.IsBuy ? "buy" : "sell",
                     order.Price,
                     order.Quantity,
                     order.Id);
-                    
+
                 // Notify about the new order
                 await notificationService.NotifyOrderUpdated(order.Id);
 
