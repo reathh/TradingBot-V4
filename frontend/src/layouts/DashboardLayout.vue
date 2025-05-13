@@ -18,6 +18,11 @@
           </fade-in-out>
         </router-view>
       </div>
+      
+      <!-- SignalR connection status indicator -->
+      <div v-if="!signalRConnected" class="signalr-indicator">
+        <i class="tim-icons icon-simple-remove"></i> Reconnecting...
+      </div>
     </div>
 
     <Notifications />
@@ -25,7 +30,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { useSidebarStore } from "@/stores/sidebar";
 import { useThemeStore } from "@/stores/theme";
 import DashboardNavbar from "./DashboardNavbar.vue";
@@ -34,12 +39,30 @@ import Notifications from "@/components/Notifications/Notifications.vue";
 import SidebarFixedToggleButton from "./SidebarFixedToggleButton.vue";
 // import SidebarShare from "./SidebarSharePlugin.vue";
 import { FadeInOut } from "vue3-transitions";
+import signalrService from "@/services/signalrService";
 
 const sidebarStore = useSidebarStore();
 const themeStore = useThemeStore();
 const sidebarBackground = ref("vue");
 const title = ref("DASHBOARD");
 const shortTitle = ref("DB");
+
+// SignalR connection status
+const signalRConnected = computed(() => signalrService.isConnected.value);
+
+// Initialize SignalR connection on component mount
+onMounted(async () => {
+  try {
+    await signalrService.start();
+  } catch (error) {
+    console.error("Failed to start SignalR connection:", error);
+  }
+});
+
+// Stop SignalR connection when component is unmounted
+onBeforeUnmount(async () => {
+  await signalrService.stop();
+});
 
 // Dark mode related computed properties
 const isDarkMode = computed(() => themeStore.isDarkMode);
@@ -147,5 +170,33 @@ $scaleSize: 0.95;
 
 .main-panel .zoomOut {
   animation-name: zoomOut95;
+}
+
+.signalr-indicator {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: rgba(231, 76, 60, 0.9);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.14);
+  z-index: 1000;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.7;
+  }
 }
 </style>

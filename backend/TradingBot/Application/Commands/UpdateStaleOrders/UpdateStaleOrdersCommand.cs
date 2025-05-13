@@ -15,6 +15,7 @@ public class UpdateStaleOrdersCommandHandler(
     TradingBotDbContext dbContext,
     IExchangeApiRepository exchangeApiRepository,
     TimeProvider timeProvider,
+    TradingNotificationService notificationService,
     ILogger<UpdateStaleOrdersCommandHandler> logger) : BaseCommandHandler<UpdateStaleOrdersCommand, int>(logger)
 {
     protected override async Task<Result<int>> HandleCore(UpdateStaleOrdersCommand request, CancellationToken cancellationToken)
@@ -54,7 +55,7 @@ public class UpdateStaleOrdersCommandHandler(
             {
                 var order = x.Order;
                 try
-                {
+                {   
                     var updatedOrder = await exchangeApi.GetOrderStatus(order.Id, bot, cancellationToken);
                     order.QuantityFilled = updatedOrder.QuantityFilled;
                     order.Status = updatedOrder.Status;
@@ -66,6 +67,8 @@ public class UpdateStaleOrdersCommandHandler(
                     logger.LogInformation("Updated order {OrderId}: Filled {QuantityFilled}/{Quantity}, Status: {Status}",
                         order.Id, order.QuantityFilled, order.Quantity, order.Status);
                     Interlocked.Increment(ref updatedCount);
+                    
+                    await notificationService.NotifyOrderUpdated(order.Id);
                 }
                 catch (Exception ex)
                 {
@@ -78,6 +81,7 @@ public class UpdateStaleOrdersCommandHandler(
         await Task.WhenAll(updateTasks);
         await dbContext.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Successfully updated {UpdatedCount} stale orders", updatedCount);
+        
         return Result<int>.SuccessWith(updatedCount);
     }
 }

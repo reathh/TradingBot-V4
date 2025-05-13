@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@microsoft/signalr": "^8.0.7",
     "@vee-validate/rules": "^4.15.0",
     "axios": "^1.4.0",
     "bootstrap": "^4.6.2",

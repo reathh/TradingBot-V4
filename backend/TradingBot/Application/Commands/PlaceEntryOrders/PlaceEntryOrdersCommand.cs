@@ -16,6 +16,7 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
     public class PlaceEntryOrdersCommandHandler(
         TradingBotDbContext dbContext,
         IExchangeApiRepository exchangeApiRepository,
+        TradingNotificationService notificationService,
         ILogger<PlaceEntryOrdersCommandHandler> logger) : BaseCommandHandler<PlaceEntryOrdersCommand>(logger)
     {
         protected override async Task<Result> HandleCore(PlaceEntryOrdersCommand request, CancellationToken cancellationToken)
@@ -128,6 +129,9 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                         order.Price,
                         order.Quantity,
                         order.Id);
+                        
+                    // Notify about the new order
+                    await notificationService.NotifyOrderUpdated(order.Id);
                 }
 
                 await dbContext.SaveChangesAsync(cancellationToken);
@@ -153,6 +157,9 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                     order.Price,
                     order.Quantity,
                     order.Id);
+                    
+                // Notify about the new order
+                await notificationService.NotifyOrderUpdated(order.Id);
 
                 await dbContext.SaveChangesAsync(cancellationToken);
                 logger.LogInformation("Successfully placed 1 entry order for bot {BotId}", bot.Id);

@@ -14,9 +14,16 @@ builder.Services.AddCors(options =>
             policy
                 .WithOrigins("http://localhost:5001")
                 .AllowAnyHeader()
-                .AllowAnyMethod();
+                .AllowAnyMethod()
+                .AllowCredentials(); // Important for SignalR
         });
 });
+
+// Add SignalR services
+builder.Services.AddSignalR();
+
+// Register the notification service as a singleton
+builder.Services.AddSingleton<TradingNotificationService>();
 
 if (builder.Environment.IsDevelopment())
 {
@@ -96,5 +103,8 @@ app.UseCors("AllowFrontend");
 app.UseHttpsRedirection();
 
 app.MapControllers();
+
+// Map SignalR hub
+app.MapHub<TradingHub>("/hubs/trading");
 
 app.Run();

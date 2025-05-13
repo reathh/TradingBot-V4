@@ -17,6 +17,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
         TradingBotDbContext dbContext,
         IExchangeApiRepository exchangeApiRepository,
         ISymbolInfoCache symbolInfoCache,
+        TradingNotificationService notificationService,
         ILogger<PlaceExitOrdersCommandHandler> logger) : BaseCommandHandler<PlaceExitOrdersCommand>(logger)
     {
         private const decimal QuantityStepSize = 0.00001m; // Binance default for BTC-like symbols
@@ -222,6 +223,9 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                         result.Order.Price,
                         trade.EntryOrder.AverageFillPrice ?? trade.EntryOrder.Price);
                 }
+                
+                // Notify about the new exit order
+                await notificationService.NotifyOrderUpdated(result.Order.Id);
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);

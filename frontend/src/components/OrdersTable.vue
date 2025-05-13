@@ -1,6 +1,7 @@
 <template>
   <div class="card-body">
     <PagedTable
+      ref="pagedTableRef"
       :columns="tableColumns"
       :fetch-data="fetchOrderData"
       thead-classes="text-primary"
@@ -109,11 +110,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, defineProps, defineEmits, watch } from "vue";
+import { ref, onMounted, defineProps, defineEmits, watch, onBeforeUnmount } from "vue";
 import { ElTag, ElDialog } from "element-plus";
 import BaseButton from "@/components/BaseButton.vue";
 import PagedTable from "@/components/PagedTable.vue";
 import apiClient from "@/services/api";
+import signalrService from "@/services/signalrService";
 import { formatCurrency, formatNumber, formatDate } from "@/util/formatters";
 
 const props = defineProps({
@@ -137,6 +139,7 @@ const isLoading = ref(false);
 const error = ref(null);
 const selectedOrder = ref(null);
 const showDetailsModal = ref(false);
+const pagedTableRef = ref(null);
 
 const tableColumns = [
   { key: 'id', label: 'ID' },
@@ -149,6 +152,28 @@ const tableColumns = [
   { key: 'status', label: 'STATUS' },
   { key: 'actions', label: 'ACTIONS', align: 'center' }
 ];
+
+// SignalR subscription for order updates
+let unsubscribeOrderUpdated;
+
+onMounted(() => {
+  // Subscribe to order updates
+  unsubscribeOrderUpdated = signalrService.onOrderUpdated((orderId) => {
+    console.log(`Refreshing orders table due to order update: ${orderId}`);
+    refreshData();
+  });
+});
+
+onBeforeUnmount(() => {
+  // Clean up subscriptions
+  if (unsubscribeOrderUpdated) unsubscribeOrderUpdated();
+});
+
+function refreshData() {
+  if (pagedTableRef.value) {
+    pagedTableRef.value.refresh();
+  }
+}
 
 function viewOrderDetails(order) {
   selectedOrder.value = order;
@@ -201,15 +226,15 @@ const fetchOrderData = async (params) => {
 };
 
 watch(() => props.botId, () => {
-  // No need to manage currentPage, PagedTable will handle
+  refreshData();
 });
 
 watch(() => props.period, () => {
-  // No need to manage currentPage, PagedTable will handle
+  refreshData();
 });
 
 watch(() => props.searchQuery, () => {
-  // No need to manage currentPage, PagedTable will handle
+  refreshData();
 });
 </script>
 

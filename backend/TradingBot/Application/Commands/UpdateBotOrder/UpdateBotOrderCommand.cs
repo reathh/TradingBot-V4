@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using TradingBot.Application.Common;
 using TradingBot.Data;
+using TradingBot.Services;
 
 namespace TradingBot.Application.Commands.UpdateBotOrder;
 
@@ -9,7 +10,11 @@ public record UpdateBotOrderCommand(OrderUpdate OrderUpdate) : IRequest<Result>
 {
 }
 
-public class UpdateBotOrderCommandHandler(TradingBotDbContext dbContext, ILogger<UpdateBotOrderCommandHandler> logger, TimeProvider timeProvider)
+public class UpdateBotOrderCommandHandler(
+    TradingBotDbContext dbContext, 
+    ILogger<UpdateBotOrderCommandHandler> logger, 
+    TimeProvider timeProvider,
+    TradingNotificationService notificationService)
     : BaseCommandHandler<UpdateBotOrderCommand>(logger)
 {
     protected override async Task<Result> HandleCore(UpdateBotOrderCommand request, CancellationToken cancellationToken)
@@ -37,6 +42,8 @@ public class UpdateBotOrderCommandHandler(TradingBotDbContext dbContext, ILogger
             return Result.Success;
         }
 
+
+
         // Update order properties
         order.QuantityFilled = orderUpdate.QuantityFilled;
         order.Status = orderUpdate.Status;
@@ -62,6 +69,9 @@ public class UpdateBotOrderCommandHandler(TradingBotDbContext dbContext, ILogger
             order.QuantityFilled,
             order.Quantity,
             order.Status);
+            
+        // Notify clients about the order update
+        await notificationService.NotifyOrderUpdated(order.Id);
 
         return Result.Success;
     }
