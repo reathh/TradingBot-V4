@@ -280,7 +280,7 @@ public class BinanceExchangeApi(string publicKey, string privateKey, TimeProvide
                 throw new Exception($"Failed to get margin balance information: {marginAccountResult.Error?.Message}");
             }
 
-            var assetBalance = marginAccountResult.Data.UserAssets.FirstOrDefault(b => b.Asset == asset);
+            var assetBalance = marginAccountResult.Data.Balances.FirstOrDefault(b => b.Asset == asset);
 
             if (assetBalance == null)
             {
