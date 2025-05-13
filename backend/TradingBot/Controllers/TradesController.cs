@@ -131,60 +131,142 @@ namespace TradingBot.Controllers
                 baseQuery = baseQuery.Where(t => t.BotId == botId.Value);
             }
 
-            Expression<Func<Trade, DateTime>> keySelector;
+            IQueryable<ProfitAggregation> groupedQuery;
             TimeSpan bucket;
 
             switch (interval)
             {
                 case TimeInterval.Minute:
-                    keySelector = t => new DateTime(t.ExitOrder!.CreatedAt.Year, t.ExitOrder.CreatedAt.Month, t.ExitOrder.CreatedAt.Day, t.ExitOrder.CreatedAt.Hour, t.ExitOrder.CreatedAt.Minute, 0, DateTimeKind.Utc);
+                    groupedQuery = baseQuery
+                        .GroupBy(t => new { t.ExitOrder!.CreatedAt.Year, t.ExitOrder.CreatedAt.Month, t.ExitOrder.CreatedAt.Day, t.ExitOrder.CreatedAt.Hour, t.ExitOrder.CreatedAt.Minute })
+                        .Select(g => new ProfitAggregation
+                        {
+                            PeriodStart = new DateTime(g.Key.Year, g.Key.Month, g.Key.Day, g.Key.Hour, g.Key.Minute, 0, DateTimeKind.Utc),
+                            TotalProfit = g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                                 (t.EntryOrder.Fee + t.ExitOrder.Fee)),
+                            TotalVolume = g.Sum(t => t.EntryOrder.Quantity *
+                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)),
+                            TradeCount = g.Count(),
+                            WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                                   (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                                   (t.EntryOrder.Fee + t.ExitOrder.Fee)) > 0)
+                        });
                     bucket = TimeSpan.FromMinutes(1);
                     break;
                 case TimeInterval.Hour:
-                    keySelector = t => new DateTime(t.ExitOrder!.CreatedAt.Year, t.ExitOrder.CreatedAt.Month, t.ExitOrder.CreatedAt.Day, t.ExitOrder.CreatedAt.Hour, 0, 0, DateTimeKind.Utc);
+                    groupedQuery = baseQuery
+                        .GroupBy(t => new { t.ExitOrder!.CreatedAt.Year, t.ExitOrder.CreatedAt.Month, t.ExitOrder.CreatedAt.Day, t.ExitOrder.CreatedAt.Hour })
+                        .Select(g => new ProfitAggregation
+                        {
+                            PeriodStart = new DateTime(g.Key.Year, g.Key.Month, g.Key.Day, g.Key.Hour, 0, 0, DateTimeKind.Utc),
+                            TotalProfit = g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                                 (t.EntryOrder.Fee + t.ExitOrder.Fee)),
+                            TotalVolume = g.Sum(t => t.EntryOrder.Quantity *
+                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)),
+                            TradeCount = g.Count(),
+                            WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                                   (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                                   (t.EntryOrder.Fee + t.ExitOrder.Fee)) > 0)
+                        });
                     bucket = TimeSpan.FromHours(1);
                     break;
                 case TimeInterval.Day:
-                    keySelector = t => t.ExitOrder!.CreatedAt.Date;
+                    groupedQuery = baseQuery
+                        .GroupBy(t => new { t.ExitOrder!.CreatedAt.Year, t.ExitOrder.CreatedAt.Month, t.ExitOrder.CreatedAt.Day })
+                        .Select(g => new ProfitAggregation
+                        {
+                            PeriodStart = new DateTime(g.Key.Year, g.Key.Month, g.Key.Day, 0, 0, 0, DateTimeKind.Utc),
+                            TotalProfit = g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                                 (t.EntryOrder.Fee + t.ExitOrder.Fee)),
+                            TotalVolume = g.Sum(t => t.EntryOrder.Quantity *
+                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)),
+                            TradeCount = g.Count(),
+                            WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                                   (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                                   (t.EntryOrder.Fee + t.ExitOrder.Fee)) > 0)
+                        });
                     bucket = TimeSpan.FromDays(1);
                     break;
                 case TimeInterval.Week:
-                    keySelector = t => t.ExitOrder!.CreatedAt.Date.AddDays(-(int)t.ExitOrder.CreatedAt.DayOfWeek + (int)DayOfWeek.Monday);
+                    groupedQuery = baseQuery
+                        .GroupBy(t => t.ExitOrder!.CreatedAt.Date.AddDays(-(int)t.ExitOrder.CreatedAt.DayOfWeek + (int)DayOfWeek.Monday))
+                        .Select(g => new ProfitAggregation
+                        {
+                            PeriodStart = g.Key,
+                            TotalProfit = g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                                 (t.EntryOrder.Fee + t.ExitOrder.Fee)),
+                            TotalVolume = g.Sum(t => t.EntryOrder.Quantity *
+                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)),
+                            TradeCount = g.Count(),
+                            WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                                   (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                                   (t.EntryOrder.Fee + t.ExitOrder.Fee)) > 0)
+                        });
                     bucket = TimeSpan.FromDays(7);
                     break;
                 case TimeInterval.Month:
-                    keySelector = t => new DateTime(t.ExitOrder!.CreatedAt.Year, t.ExitOrder.CreatedAt.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-                    bucket = TimeSpan.FromDays(30);
+                    groupedQuery = baseQuery
+                        .GroupBy(t => new { t.ExitOrder!.CreatedAt.Year, t.ExitOrder.CreatedAt.Month })
+                        .Select(g => new ProfitAggregation
+                        {
+                            PeriodStart = new DateTime(g.Key.Year, g.Key.Month, 1, 0, 0, 0, DateTimeKind.Utc),
+                            TotalProfit = g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                                 (t.EntryOrder.Fee + t.ExitOrder.Fee)),
+                            TotalVolume = g.Sum(t => t.EntryOrder.Quantity *
+                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)),
+                            TradeCount = g.Count(),
+                            WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                                   (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                                   (t.EntryOrder.Fee + t.ExitOrder.Fee)) > 0)
+                        });
+                    bucket = TimeSpan.FromDays(30); // Approximate
                     break;
                 case TimeInterval.Year:
-                    keySelector = t => new DateTime(t.ExitOrder!.CreatedAt.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-                    bucket = TimeSpan.FromDays(365);
+                    groupedQuery = baseQuery
+                        .GroupBy(t => t.ExitOrder!.CreatedAt.Year)
+                        .Select(g => new ProfitAggregation
+                        {
+                            PeriodStart = new DateTime(g.Key, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                            TotalProfit = g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                                 (t.EntryOrder.Fee + t.ExitOrder.Fee)),
+                            TotalVolume = g.Sum(t => t.EntryOrder.Quantity *
+                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)),
+                            TradeCount = g.Count(),
+                            WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                                   (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                                   (t.EntryOrder.Fee + t.ExitOrder.Fee)) > 0)
+                        });
+                    bucket = TimeSpan.FromDays(365); // Approximate
                     break;
                 default:
-                    keySelector = t => t.ExitOrder!.CreatedAt.Date;
+                    groupedQuery = baseQuery
+                        .GroupBy(t => new { t.ExitOrder!.CreatedAt.Year, t.ExitOrder.CreatedAt.Month, t.ExitOrder.CreatedAt.Day })
+                        .Select(g => new ProfitAggregation
+                        {
+                            PeriodStart = new DateTime(g.Key.Year, g.Key.Month, g.Key.Day, 0, 0, 0, DateTimeKind.Utc),
+                            TotalProfit = g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                                 (t.EntryOrder.Fee + t.ExitOrder.Fee)),
+                            TotalVolume = g.Sum(t => t.EntryOrder.Quantity *
+                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)),
+                            TradeCount = g.Count(),
+                            WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                                   (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                                   (t.EntryOrder.Fee + t.ExitOrder.Fee)) > 0)
+                        });
                     bucket = TimeSpan.FromDays(1);
                     break;
             }
 
-            var grouped = await baseQuery
-                .GroupBy(keySelector)
-                .Select(g => new
-                {
-                    PeriodStart = g.Key,
-                    TotalProfit = g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
-                                         (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
-                                         (t.EntryOrder.Fee + t.ExitOrder.Fee)),
-                    TotalVolume = g.Sum(t => t.EntryOrder.Quantity *
-                                         (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)),
-                    TradeCount = g.Count(),
-                    WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
-                                               (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
-                                               (t.EntryOrder.Fee + t.ExitOrder.Fee)) > 0)
-                })
-                .OrderBy(g => g.PeriodStart)
-                .ToListAsync();
+            var groupedList = await groupedQuery.OrderBy(g => g.PeriodStart).ToListAsync();
 
-            var result = grouped.Select(g => new BotProfitDto
+            var result = groupedList.Select(g => new BotProfitDto
             {
                 BotId = botId?.ToString(),
                 TimePeriod = g.PeriodStart.ToString("yyyy-MM-dd HH:mm"),
@@ -197,6 +279,16 @@ namespace TradingBot.Controllers
             }).ToList();
 
             return result;
+        }
+
+        // Nested type used for database projection of aggregated profit data
+        private class ProfitAggregation
+        {
+            public DateTime PeriodStart { get; init; }
+            public decimal TotalProfit { get; init; }
+            public decimal TotalVolume { get; init; }
+            public int TradeCount { get; init; }
+            public int WinCount { get; init; }
         }
     }
 
