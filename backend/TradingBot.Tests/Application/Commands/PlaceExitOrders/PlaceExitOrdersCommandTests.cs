@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using TradingBot.Application.Commands.PlaceExitOrders;
+using TradingBot.Services;
 
 public class PlaceExitOrdersCommandTests : BaseTest
 {
@@ -948,6 +949,63 @@ public class PlaceExitOrdersCommandTests : BaseTest
         var updatedCompletedTrade = await DbContext.Trades.FirstOrDefaultAsync(t => t.Id == completedTrade.Id);
         Assert.NotNull(updatedCompletedTrade);
         Assert.NotNull(updatedCompletedTrade.ExitOrder);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldSellMaxAllowedQuantityRoundedDownToStep_WhenFeesCauseDust()
+    {
+        // Arrange
+        var symbol = "BTCUSDT";
+        var stepSize = 0.00001m;
+        var minQty = 0.00001m;
+        var qtyDecimals = 5;
+        var symbolInfo = new SymbolInfo(stepSize, minQty, qtyDecimals);
+
+        var symbolInfoCacheMock = new Mock<ISymbolInfoCache>();
+        symbolInfoCacheMock.Setup(x => x.GetAsync(symbol, It.IsAny<CancellationToken>())).ReturnsAsync(symbolInfo);
+        symbolInfoCacheMock.Setup(x => x.RoundDownToStep(It.IsAny<decimal>(), symbolInfo)).Returns<decimal, SymbolInfo>((qty, _) =>
+        {
+            var steps = Math.Floor(qty / stepSize);
+            var rounded = steps * stepSize;
+            if (rounded < minQty) return 0m;
+            return Math.Round(rounded, qtyDecimals, MidpointRounding.ToZero);
+        });
+
+        var bot = await CreateBot(exitStep: 1.0m, isLong: true, entryQuantity: 0.0001m);
+        bot.Symbol = symbol;
+        var entryOrder = CreateOrder(bot, 10000m, 0.0001m, true, OrderStatus.Filled);
+        entryOrder.QuantityFilled = 0.0001m;
+        entryOrder.Fee = 0.0000001m;
+        var trade = new Trade(entryOrder);
+        bot.Trades.Add(trade);
+        await DbContext.SaveChangesAsync();
+
+        var ticker = CreateTicker(10000m, 10001m);
+        var command = new PlaceExitOrdersCommand { Ticker = ticker };
+
+        // Setup mock for exit order
+        var expectedSellQty = 0.00009m; // 0.0001 - 0.0000001 = 0.0000999, rounded down to 0.00009
+        var expectedExitOrder = CreateOrder(bot, 10001m, expectedSellQty, false);
+        ExchangeApiMock.Setup(x => x.PlaceOrder(
+                It.IsAny<Bot>(),
+                It.IsAny<decimal>(),
+                It.IsAny<decimal>(),
+                It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expectedExitOrder);
+
+        // Act
+        await Handle(command, CancellationToken.None);
+
+        // Assert
+        ExchangeApiMock.Verify(x => x.PlaceOrder(
+            It.Is<Bot>(b => b.Id == bot.Id),
+            It.Is<decimal>(p => p == 10001m),
+            It.Is<decimal>(q => q == expectedSellQty),
+            It.Is<bool>(b => b == false),
+            It.IsAny<OrderType>(),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // Replace the Handler field and constructor
