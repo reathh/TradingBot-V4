@@ -1,4 +1,5 @@
 export default {
+  apiBaseUrl: "https://localhost:7157", // API base URL for backend communication
   colors: {
     default: "#344675",
     primary: "#42b883",

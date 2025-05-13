@@ -1,9 +1,8 @@
 import axios from 'axios';
+import config from '@/config';
 
-// Set the base URL to the relative API path
-// This will work regardless of whether frontend is hosted at the same origin as API
-// or if it's accessed via HTTP or HTTPS
-const baseURL = '/api';
+// Use the baseURL from config
+const baseURL = `${config.apiBaseUrl}/api`;
 
 const apiClient = axios.create({
   baseURL,
