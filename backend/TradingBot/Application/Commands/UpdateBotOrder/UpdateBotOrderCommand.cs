@@ -39,6 +39,12 @@ public class UpdateBotOrderCommandHandler(
             order.AverageFillPrice = orderUpdate.AverageFillPrice;
         }
 
+        if (orderUpdate.Fee.HasValue)
+        {
+            // accumulate commission per fill
+            order.Fee += orderUpdate.Fee.Value;
+        }
+
         await dbContext.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation("Updated order {OrderId}: Filled {QuantityFilled}/{Quantity}, Status: {Status}",

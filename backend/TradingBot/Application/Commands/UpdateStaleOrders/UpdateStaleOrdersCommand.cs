@@ -82,6 +82,12 @@ public class UpdateStaleOrdersCommandHandler(
                             order.AverageFillPrice = updatedOrder.AverageFillPrice;
                         }
 
+                        if (updatedOrder.Fee.HasValue)
+                        {
+                            // REST call returns the total fee so overwrite
+                            order.Fee = updatedOrder.Fee.Value;
+                        }
+
                         logger.LogInformation("Updated order {OrderId}: Filled {QuantityFilled}/{Quantity}, Status: {Status}",
                             order.Id,
                             order.QuantityFilled,
