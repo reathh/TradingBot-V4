@@ -8,16 +8,16 @@ using TradingBot.Application.Commands.UpdateStaleOrders;
 using TradingBot.Application.Common;
 using TradingBot.Services;
 
-public class StaleOrderUpdateServiceTests : BaseTest, IDisposable
+public class StaleOrderUpdateScheduledServiceTests : BaseTest, IDisposable
 {
-    private readonly Mock<ILogger<StaleOrderUpdateService>> _loggerMock;
+    private readonly Mock<ILogger<StaleOrderUpdateScheduledService>> _loggerMock;
     private readonly Mock<IMediator> _mediatorMock;
     private readonly ServiceProvider _serviceProvider;
-    private readonly StaleOrderUpdateService _service;
+    private readonly StaleOrderUpdateScheduledService _scheduledService;
 
-    public StaleOrderUpdateServiceTests()
+    public StaleOrderUpdateScheduledServiceTests()
     {
-        _loggerMock = new Mock<ILogger<StaleOrderUpdateService>>();
+        _loggerMock = new Mock<ILogger<StaleOrderUpdateScheduledService>>();
         _mediatorMock = new Mock<IMediator>();
 
         // Configure service provider with required services
@@ -26,7 +26,7 @@ public class StaleOrderUpdateServiceTests : BaseTest, IDisposable
         _serviceProvider = services.BuildServiceProvider();
 
         // Create the service
-        _service = new StaleOrderUpdateService(
+        _scheduledService = new StaleOrderUpdateScheduledService(
             _serviceProvider,
             _loggerMock.Object);
     }
@@ -50,7 +50,7 @@ public class StaleOrderUpdateServiceTests : BaseTest, IDisposable
         // Act - start the service (should run at least once)
         try
         {
-            await _service.StartAsync(cts.Token);
+            await _scheduledService.StartAsync(cts.Token);
             await Task.Delay(50); // Reduced wait time
         }
         catch (OperationCanceledException)
@@ -78,7 +78,7 @@ public class StaleOrderUpdateServiceTests : BaseTest, IDisposable
         // Act - start the service
         try
         {
-            await _service.StartAsync(cts.Token);
+            await _scheduledService.StartAsync(cts.Token);
             await Task.Delay(50); // Reduced wait time
         }
         catch (OperationCanceledException)
@@ -112,7 +112,7 @@ public class StaleOrderUpdateServiceTests : BaseTest, IDisposable
         // Act - start the service
         try
         {
-            await _service.StartAsync(cts.Token);
+            await _scheduledService.StartAsync(cts.Token);
             await Task.Delay(50); // Reduced wait time
         }
         catch (OperationCanceledException)
