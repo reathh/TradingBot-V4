@@ -6,47 +6,61 @@ using TradingBot.Data;
 namespace TradingBot.Services;
 
 /// <summary>
-/// Background service that subscribes to order updates for all enabled bots
+/// Background service that subscribes to order updates for all enabled bots, checking for new bots every minute
 /// </summary>
 public class OrderUpdateService(
     IServiceProvider serviceProvider,
     IExchangeApiRepository exchangeApiRepository,
-    ILogger<OrderUpdateService> logger) : ScheduledBackgroundService(serviceProvider, logger, TimeSpan.FromMinutes(5), "Order update service")
+    ILogger<OrderUpdateService> logger) : ScheduledBackgroundService(serviceProvider, logger, TimeSpan.FromMinutes(1), "Order update service")
 {
-    protected override async Task OnStartAsync(CancellationToken cancellationToken)
+    private readonly HashSet<int> _subscribedBotIds = [];
+    private readonly Lock _lock = new();
+
+    protected override Task OnStartAsync(CancellationToken cancellationToken)
     {
-        // Create scope specifically for startup
-        await using var scope = ServiceProvider.CreateAsyncScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<TradingBotDbContext>();
-
-        // Use non-cancelable token for startup subscription to ensure test stability
-        var enabledBots = await dbContext.Bots
-            .Where(b => b.Enabled)
-            .ToListAsync(CancellationToken.None);
-
-        Logger.LogInformation("Found {BotCount} enabled bots for order update subscriptions", enabledBots.Count);
-
-        // Set up subscriptions for each bot
-        foreach (var bot in enabledBots)
-        {
-            // Get the appropriate exchange API for this bot
-            var exchangeApi = exchangeApiRepository.GetExchangeApi(bot);
-
-            await exchangeApi.SubscribeToOrderUpdates(
-                callback: async orderUpdate => await ProcessOrderUpdate(orderUpdate, cancellationToken),
-                bot: bot,
-                cancellationToken: CancellationToken.None);
-
-            Logger.LogInformation("Subscribed to order updates for bot {BotId} {BotName}", bot.Id, bot.Name);
-        }
+        Logger.LogInformation("OrderUpdateService started. Will check for new bots every minute.");
+        return Task.CompletedTask;
     }
 
-    // This service just needs to stay alive after subscribing to order updates
-    // The actual work happens in the callbacks
-    protected internal override Task ExecuteScheduledWork(CancellationToken cancellationToken)
+    protected internal override async Task ExecuteScheduledWork(CancellationToken cancellationToken)
     {
-        // No periodic work needed, just keep service alive
-        return Task.CompletedTask;
+        using var scope = ServiceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<TradingBotDbContext>();
+
+        // Copy the set of already subscribed bot IDs for thread safety
+        HashSet<int> alreadySubscribed;
+        lock (_lock)
+        {
+            alreadySubscribed = [.. _subscribedBotIds];
+        }
+
+        // Get only enabled bots that are not already subscribed
+        var botsToSubscribe = await dbContext.Bots
+            .Where(b => b.Enabled && !alreadySubscribed.Contains(b.Id))
+            .ToListAsync(cancellationToken);
+
+        foreach (var bot in botsToSubscribe)
+        {
+            // Subscribe to order updates for this bot
+            var exchangeApi = exchangeApiRepository.GetExchangeApi(bot);
+            try
+            {
+                await exchangeApi.SubscribeToOrderUpdates(
+                    callback: async orderUpdate => await ProcessOrderUpdate(orderUpdate, cancellationToken),
+                    bot: bot,
+                    cancellationToken: CancellationToken.None);
+
+                lock (_lock)
+                {
+                    _subscribedBotIds.Add(bot.Id);
+                }
+                Logger.LogInformation("Subscribed to order updates for bot {BotId} {BotName}", bot.Id, bot.Name);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Failed to subscribe to order updates for bot {BotId} {BotName}", bot.Id, bot.Name);
+            }
+        }
     }
 
     private async Task ProcessOrderUpdate(OrderUpdate orderUpdate, CancellationToken cancellationToken)

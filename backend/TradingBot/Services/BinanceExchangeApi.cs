@@ -92,16 +92,25 @@ public class BinanceExchangeApi(string publicKey, string privateKey, TimeProvide
             return;
         }
 
-        // Get listen key for user data stream
-        var response = await _restClient.SpotApi.Account.StartUserStreamAsync(cancellationToken);
+        // Get listen key for user data stream (spot or margin)
+        WebCallResult<string> response;
+        bool isMargin = bot.TradingMode == TradingMode.Margin;
+        if (isMargin)
+        {
+            response = await _restClient.SpotApi.Account.StartMarginUserStreamAsync(cancellationToken);
+        }
+        else
+        {
+            response = await _restClient.SpotApi.Account.StartUserStreamAsync(cancellationToken);
+        }
 
         if (!response.Success)
         {
-            throw new Exception($"Could not start user data stream: {response.Error?.Message}");
+            throw new Exception($"Could not start {(isMargin ? "margin" : "spot")} user data stream: {response.Error?.Message}");
         }
 
         var listenKey = response.Data;
-        logger.LogInformation("Started user data stream with listen key {ListenKey}", listenKey);
+        logger.LogInformation("Started {Mode} user data stream with listen key {ListenKey}", isMargin ? "margin" : "spot", listenKey);
 
         // Subscribe to user data updates
         var subscriptionResult = await _socketClient.SpotApi.Account.SubscribeToUserDataUpdatesAsync(listenKey,
@@ -128,7 +137,7 @@ public class BinanceExchangeApi(string publicKey, string privateKey, TimeProvide
             throw new Exception($"Could not subscribe to user data updates: {subscriptionResult.Error?.Message}");
         }
 
-        // Start keep-alive task to maintain the listen key
+        // Start keep-alive task to maintain the listen key (spot or margin)
         _ = Task.Run(async () =>
             {
                 while (!cancellationToken.IsCancellationRequested)
@@ -136,8 +145,16 @@ public class BinanceExchangeApi(string publicKey, string privateKey, TimeProvide
                     try
                     {
                         await Task.Delay(TimeSpan.FromMinutes(30), cancellationToken);
-                        await _restClient.SpotApi.Account.KeepAliveUserStreamAsync(listenKey, cancellationToken);
-                        logger.LogDebug("Refreshed listen key {ListenKey}", listenKey);
+                        if (isMargin)
+                        {
+                            await _restClient.SpotApi.Account.KeepAliveMarginUserStreamAsync(listenKey, cancellationToken);
+                            logger.LogDebug("Refreshed margin listen key {ListenKey}", listenKey);
+                        }
+                        else
+                        {
+                            await _restClient.SpotApi.Account.KeepAliveUserStreamAsync(listenKey, cancellationToken);
+                            logger.LogDebug("Refreshed spot listen key {ListenKey}", listenKey);
+                        }
                     }
                     catch (Exception ex) when (ex is not OperationCanceledException)
                     {
@@ -185,8 +202,16 @@ public class BinanceExchangeApi(string publicKey, string privateKey, TimeProvide
             throw new ArgumentException($"Invalid order ID format: {orderId}. Expected a numeric value.", nameof(orderId));
         }
 
-        // Query the order status from Binance
-        var orderResult = await _restClient.SpotApi.Trading.GetOrderAsync(symbol: bot.Symbol, orderId: binanceOrderId, ct: cancellationToken);
+        WebCallResult<Binance.Net.Objects.Models.Spot.BinanceOrder> orderResult;
+
+        if (bot.TradingMode == TradingMode.Spot)
+        {
+            orderResult = await _restClient.SpotApi.Trading.GetOrderAsync(symbol: bot.Symbol, orderId: binanceOrderId, ct: cancellationToken);
+        }
+        else // TradingMode.Margin
+        {
+            orderResult = await _restClient.SpotApi.Trading.GetMarginOrderAsync(symbol: bot.Symbol, orderId: binanceOrderId, ct: cancellationToken);
+        }
 
         if (!orderResult.Success)
         {

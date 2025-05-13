@@ -20,7 +20,7 @@ public class TickerUpdateService(IServiceProvider serviceProvider, ILogger<Ticke
     private readonly BinanceSocketClient _socketClient = new();
     private readonly Dictionary<string, CancellationTokenSource> _subscriptions = [];
     private readonly Lock _lock = new();
-    private readonly Dictionary<string, TickerDto> _lastTickers = new();
+    private readonly Dictionary<string, TickerDto> _lastTickers = [];
 
     protected override Task OnStartAsync(CancellationToken cancellationToken)
     {
