@@ -142,11 +142,13 @@ namespace TradingBot.Controllers
                         .Select(g => new ProfitAggregation
                         {
                             PeriodStart = new DateTime(g.Key.Year, g.Key.Month, g.Key.Day, g.Key.Hour, g.Key.Minute, 0, DateTimeKind.Utc),
-                            TotalProfit = g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
-                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
-                                                 (t.EntryOrder.Fee + t.ExitOrder.Fee)),
-                            TotalVolume = g.Sum(t => t.EntryOrder.Quantity *
-                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)),
+                            TotalProfit = Math.Round(
+                                g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                            (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                            (t.EntryOrder.Fee + t.ExitOrder.Fee)), 8),
+                            TotalVolume = Math.Round(
+                                g.Sum(t => t.EntryOrder.Quantity *
+                                           (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)), 8),
                             TradeCount = g.Count(),
                             WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                                    (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
@@ -160,11 +162,13 @@ namespace TradingBot.Controllers
                         .Select(g => new ProfitAggregation
                         {
                             PeriodStart = new DateTime(g.Key.Year, g.Key.Month, g.Key.Day, g.Key.Hour, 0, 0, DateTimeKind.Utc),
-                            TotalProfit = g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
-                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
-                                                 (t.EntryOrder.Fee + t.ExitOrder.Fee)),
-                            TotalVolume = g.Sum(t => t.EntryOrder.Quantity *
-                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)),
+                            TotalProfit = Math.Round(
+                                g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                            (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                            (t.EntryOrder.Fee + t.ExitOrder.Fee)), 8),
+                            TotalVolume = Math.Round(
+                                g.Sum(t => t.EntryOrder.Quantity *
+                                           (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)), 8),
                             TradeCount = g.Count(),
                             WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                                    (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
@@ -178,11 +182,13 @@ namespace TradingBot.Controllers
                         .Select(g => new ProfitAggregation
                         {
                             PeriodStart = new DateTime(g.Key.Year, g.Key.Month, g.Key.Day, 0, 0, 0, DateTimeKind.Utc),
-                            TotalProfit = g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
-                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
-                                                 (t.EntryOrder.Fee + t.ExitOrder.Fee)),
-                            TotalVolume = g.Sum(t => t.EntryOrder.Quantity *
-                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)),
+                            TotalProfit = Math.Round(
+                                g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                            (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                            (t.EntryOrder.Fee + t.ExitOrder.Fee)), 8),
+                            TotalVolume = Math.Round(
+                                g.Sum(t => t.EntryOrder.Quantity *
+                                           (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)), 8),
                             TradeCount = g.Count(),
                             WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                                    (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
@@ -196,11 +202,13 @@ namespace TradingBot.Controllers
                         .Select(g => new ProfitAggregation
                         {
                             PeriodStart = g.Key,
-                            TotalProfit = g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
-                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
-                                                 (t.EntryOrder.Fee + t.ExitOrder.Fee)),
-                            TotalVolume = g.Sum(t => t.EntryOrder.Quantity *
-                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)),
+                            TotalProfit = Math.Round(
+                                g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                            (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                            (t.EntryOrder.Fee + t.ExitOrder.Fee)), 8),
+                            TotalVolume = Math.Round(
+                                g.Sum(t => t.EntryOrder.Quantity *
+                                           (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)), 8),
                             TradeCount = g.Count(),
                             WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                                    (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
@@ -214,11 +222,13 @@ namespace TradingBot.Controllers
                         .Select(g => new ProfitAggregation
                         {
                             PeriodStart = new DateTime(g.Key.Year, g.Key.Month, 1, 0, 0, 0, DateTimeKind.Utc),
-                            TotalProfit = g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
-                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
-                                                 (t.EntryOrder.Fee + t.ExitOrder.Fee)),
-                            TotalVolume = g.Sum(t => t.EntryOrder.Quantity *
-                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)),
+                            TotalProfit = Math.Round(
+                                g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                            (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                            (t.EntryOrder.Fee + t.ExitOrder.Fee)), 8),
+                            TotalVolume = Math.Round(
+                                g.Sum(t => t.EntryOrder.Quantity *
+                                           (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)), 8),
                             TradeCount = g.Count(),
                             WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                                    (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
@@ -232,11 +242,13 @@ namespace TradingBot.Controllers
                         .Select(g => new ProfitAggregation
                         {
                             PeriodStart = new DateTime(g.Key, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-                            TotalProfit = g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
-                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
-                                                 (t.EntryOrder.Fee + t.ExitOrder.Fee)),
-                            TotalVolume = g.Sum(t => t.EntryOrder.Quantity *
-                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)),
+                            TotalProfit = Math.Round(
+                                g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                            (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                            (t.EntryOrder.Fee + t.ExitOrder.Fee)), 8),
+                            TotalVolume = Math.Round(
+                                g.Sum(t => t.EntryOrder.Quantity *
+                                           (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)), 8),
                             TradeCount = g.Count(),
                             WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                                    (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
@@ -250,11 +262,13 @@ namespace TradingBot.Controllers
                         .Select(g => new ProfitAggregation
                         {
                             PeriodStart = new DateTime(g.Key.Year, g.Key.Month, g.Key.Day, 0, 0, 0, DateTimeKind.Utc),
-                            TotalProfit = g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
-                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
-                                                 (t.EntryOrder.Fee + t.ExitOrder.Fee)),
-                            TotalVolume = g.Sum(t => t.EntryOrder.Quantity *
-                                                 (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)),
+                            TotalProfit = Math.Round(
+                                g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                            (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                            (t.EntryOrder.Fee + t.ExitOrder.Fee)), 8),
+                            TotalVolume = Math.Round(
+                                g.Sum(t => t.EntryOrder.Quantity *
+                                           (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)), 8),
                             TradeCount = g.Count(),
                             WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                                    (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
