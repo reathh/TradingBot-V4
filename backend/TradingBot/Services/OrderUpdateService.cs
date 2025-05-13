@@ -1,5 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Concurrent;
+using System.Threading.Tasks.Dataflow;
 using TradingBot.Application.Commands.UpdateBotOrder;
 using TradingBot.Data;
 
@@ -15,6 +17,19 @@ public class OrderUpdateService(
 {
     private readonly HashSet<int> _subscribedBotIds = [];
     private readonly Lock _lock = new();
+    
+    private readonly ConcurrentDictionary<string, OrderUpdateRetry> _pendingRetries = new();
+    
+    // Retry delays in milliseconds
+    private static readonly int[] RetryDelays = [100, 200, 500, 1000, 2000, 5000];
+    
+    // Initialize ActionBlock in field initializer
+    private readonly ActionBlock<OrderUpdateRetry> _retryProcessor = new(
+        async retry => await retry.Service.ProcessOrderUpdate(retry.OrderUpdate, retry.CancellationToken),
+        new ExecutionDataflowBlockOptions
+        {
+            MaxDegreeOfParallelism = Environment.ProcessorCount
+        });
 
     protected override Task OnStartAsync(CancellationToken cancellationToken)
     {
@@ -73,23 +88,80 @@ public class OrderUpdateService(
             using var scope = ServiceProvider.CreateScope();
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-            // Send the order update to the command handler
+            // Try to process the update directly
             var command = new UpdateBotOrderCommand(orderUpdate);
             var result = await mediator.Send(command, cancellationToken);
 
             if (result.Succeeded)
             {
                 Logger.LogDebug("Order update for {OrderId} processed successfully", orderUpdate.Id);
+                
+                // If this update was in the retry queue, we can remove it
+                _pendingRetries.TryRemove(orderUpdate.Id, out _);
             }
             else
             {
-                Logger.LogWarning("Failed to process order update: {Errors}",
-                    string.Join(", ", result.Errors));
+                // If it failed due to order not found, schedule a retry
+                if (result.Errors.Any(e => e.Contains("not found")))
+                {
+                    ScheduleRetry(orderUpdate, cancellationToken);
+                }
+                else
+                {
+                    Logger.LogWarning("Failed to process order update: {Errors}",
+                        string.Join(", ", result.Errors));
+                }
             }
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error processing order update for order {OrderId}", orderUpdate.Id);
+            
+            // Schedule retry in case of exception as well
+            ScheduleRetry(orderUpdate, cancellationToken);
+        }
+    }
+    
+    private void ScheduleRetry(OrderUpdate orderUpdate, CancellationToken cancellationToken)
+    {
+        // Get existing retry or create new one
+        var retry = _pendingRetries.GetOrAdd(orderUpdate.Id, 
+            _ => new OrderUpdateRetry(orderUpdate, 0, cancellationToken, this));
+        
+        // If we've already tried all delays, give up
+        if (retry.RetryCount >= RetryDelays.Length)
+        {
+            Logger.LogWarning("Giving up on order update for {OrderId} after {Count} retries", 
+                orderUpdate.Id, retry.RetryCount);
+            _pendingRetries.TryRemove(orderUpdate.Id, out _);
+            return;
+        }
+        
+        // Get the appropriate delay
+        int delay = RetryDelays[retry.RetryCount];
+        retry.RetryCount++;
+        
+        Logger.LogInformation("Scheduling retry #{Count} for order {OrderId} in {Delay}ms", 
+            retry.RetryCount, orderUpdate.Id, delay);
+        
+        // Schedule retry after delay
+        Task.Delay(delay, cancellationToken)
+            .ContinueWith(_ => _retryProcessor.Post(retry), cancellationToken);
+    }
+    
+    private class OrderUpdateRetry
+    {
+        public OrderUpdate OrderUpdate { get; }
+        public int RetryCount { get; set; }
+        public CancellationToken CancellationToken { get; }
+        public OrderUpdateService Service { get; }
+        
+        public OrderUpdateRetry(OrderUpdate orderUpdate, int retryCount, CancellationToken cancellationToken, OrderUpdateService service)
+        {
+            OrderUpdate = orderUpdate;
+            RetryCount = retryCount;
+            CancellationToken = cancellationToken;
+            Service = service;
         }
     }
 }
