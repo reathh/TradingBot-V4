@@ -221,6 +221,23 @@ public class BinanceExchangeApi(string publicKey, string privateKey, TimeProvide
 
         var order = orderResult.Data;
 
+        // Fetch trades for this order to calculate the fee
+        WebCallResult<Binance.Net.Objects.Models.Spot.BinanceTrade[]> tradesResult;
+        if (bot.TradingMode == TradingMode.Spot)
+        {
+            tradesResult = await _restClient.SpotApi.Trading.GetUserTradesAsync(symbol: bot.Symbol, orderId: binanceOrderId, ct: cancellationToken);
+        }
+        else // TradingMode.Margin
+        {
+            tradesResult = await _restClient.SpotApi.Trading.GetMarginUserTradesAsync(symbol: bot.Symbol, orderId: binanceOrderId, ct: cancellationToken);
+        }
+
+        decimal? totalFee = null;
+        if (tradesResult.Success && tradesResult.Data.Any())
+        {
+            totalFee = tradesResult.Data.Sum(t => t.Fee);
+        }
+
         // Map the Binance order to our OrderUpdate model
         return new OrderUpdate(Id: order.Id.ToString(),
             Symbol: order.Symbol,
@@ -228,7 +245,7 @@ public class BinanceExchangeApi(string publicKey, string privateKey, TimeProvide
             Quantity: order.Quantity,
             QuantityFilled: order.QuantityFilled,
             AverageFillPrice: order.AverageFillPrice > 0 ? order.AverageFillPrice : null,
-            Fee: null, 
+            Fee: totalFee, 
             IsBuy: order.Side == OrderSide.Buy,
             Status: MapOrderStatus(order.Status));
     }
