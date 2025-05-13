@@ -22,7 +22,7 @@ public class OrderUpdateService(
     private readonly ConcurrentDictionary<string, OrderUpdateRetry> _pendingRetries = new();
     
     // Retry delays in milliseconds
-    private static readonly int[] RetryDelays = [150, 200, 500, 1000, 2000, 5000];
+    private static readonly int[] RetryDelays = [200, 100, 500, 1000, 2000, 5000];
     
     // Initialize ActionBlock in field initializer
     private readonly ActionBlock<OrderUpdateRetry> _retryProcessor = new(

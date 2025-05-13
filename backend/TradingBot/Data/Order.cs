@@ -10,8 +10,8 @@ namespace TradingBot.Data
         decimal quantityFilled = 0,
         decimal? averageFillPrice = null,
         decimal fee = 0,
-        OrderStatus status = OrderStatus.New,
-        DateTime? lastUpdated = null)
+        OrderStatus status = OrderStatus.New
+)
     {
         public string Id { get; set; } = id;
         public string Symbol { get; set; } = symbol;
@@ -23,7 +23,7 @@ namespace TradingBot.Data
         public decimal? AverageFillPrice { get; set; } = averageFillPrice;
         public decimal Fee { get; set; } = fee;
         public OrderStatus Status { get; set; } = status;
-        public DateTime LastUpdated { get; set; } = lastUpdated ?? createdAt;
+        public DateTime LastUpdated { get; set; } = createdAt;
 
         #region Navigation Properties
         public ICollection<Trade> ExitTrades { get; set; } = [];

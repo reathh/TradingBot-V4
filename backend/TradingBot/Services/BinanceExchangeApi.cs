@@ -53,13 +53,18 @@ public class BinanceExchangeApi(string publicKey, string privateKey, TimeProvide
         var correctPrice = data.Price != 0 ? data.Price : price;
         var correctQuantity = data.Quantity != 0 ? data.Quantity : quantity;
 
-        return new Order(data.Id.ToString(),
+        return new Order(
+            data.Id.ToString(),
             bot.Symbol,
             correctPrice,
             correctQuantity,
             data.Side == OrderSide.Buy,
-            timeProvider.GetUtcNow()
-                .DateTime);
+            timeProvider.GetUtcNow().DateTime,
+            data.QuantityFilled,
+            data.AverageFillPrice > 0 ? data.AverageFillPrice : null,
+            0,
+            MapOrderStatus(data.Status)
+        );
     }
 
     private static SpotOrderType MapOrderType(OrderType orderType)
