@@ -28,7 +28,7 @@ public class VerifyBalancesCommand : IRequest<Result>
                                     + b.Trades
                                         .Where(t => t.ExitOrder == null || t.ExitOrder.Status != OrderStatus.Filled)
                                         .Sum(t => t.EntryOrder.QuantityFilled * (t.EntryOrder.IsBuy ? 1m : -1m))
-                                    - b.Trades
+                                    + b.Trades
                                         .Where(t => t.ExitOrder != null && t.ExitOrder.Status != OrderStatus.Filled)
                                         .Sum(t => t.ExitOrder!.QuantityFilled * (t.ExitOrder!.IsBuy ? 1m : -1m))
                 })

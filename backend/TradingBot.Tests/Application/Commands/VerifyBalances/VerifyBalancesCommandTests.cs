@@ -161,6 +161,7 @@ public class VerifyBalancesCommandTests : BaseTest
         
         // Make sure we can identify the expected balance
         bot.StartingBaseAmount = 5.0m;
+        await DbContext.SaveChangesAsync();
 
         // Set the delay between checks to zero to make tests faster
         var delayField = typeof(VerifyBalancesCommand.VerifyBalancesCommandHandler)
