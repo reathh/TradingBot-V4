@@ -954,7 +954,7 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
     }
 
     [Fact]
-    public async Task Handle_ShouldSellMaxAllowedQuantityRoundedDownToStep_WhenFeesCauseDust()
+    public async Task FeeHandling_ShouldSellMaxAllowedQuantityRoundedDownToStep()
     {
         // Arrange
         var symbol = "BTCUSDT";
@@ -970,7 +970,8 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
         bot.Symbol = symbol;
         var entryOrder = CreateOrder(bot, 10000m, 0.0001m, true, OrderStatus.Filled);
         entryOrder.QuantityFilled = 0.0001m;
-        entryOrder.Fee = 0.0000001m;
+        // Explicitly set a fee for this test
+        entryOrder.Fee = 0.0000001m; // Fee that causes dust
         var trade = new Trade(entryOrder);
         bot.Trades.Add(trade);
         await DbContext.SaveChangesAsync();
@@ -1003,9 +1004,72 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    // Helper method to handle exit orders commands
-    private Task Handle(PlaceExitOrdersCommand command, CancellationToken cancellationToken = default)
+    [Theory]
+    [InlineData(0.0001, 0.000001, 0.00009)] // Small fee, rounds down to nearest step (0.00001)
+    [InlineData(0.0001, 0.00001, 0.00009)]   // Larger fee, rounds down
+    [InlineData(0.0001, 0.00005, 0.00005)]   // Half consumed by fee
+    [InlineData(0.0001, 0.0001, 0)]          // Entire amount consumed by fee
+    [InlineData(0.0001, 0.00011, 0)]         // Fee larger than amount
+    public async Task FeeHandling_ShouldCalculateCorrectExitQuantities(
+        decimal entryQty, decimal fee, decimal expectedExitQty)
     {
-        return Handler.Handle(command, cancellationToken);
+        // Arrange
+        var symbol = "BTCUSDT";
+        var stepSize = 0.00001m;
+        var minQty = 0.00001m;
+        var qtyDecimals = 5;
+        var symbolInfo = new SymbolInfo(stepSize, minQty, qtyDecimals);
+
+        SymbolInfoCacheMock.Setup(x => x.GetAsync(symbol, It.IsAny<CancellationToken>())).ReturnsAsync(symbolInfo);
+
+        var bot = await CreateBot(exitStep: 1.0m, isLong: true, entryQuantity: entryQty);
+        bot.Symbol = symbol;
+        var entryOrder = CreateOrder(bot, 10000m, entryQty, true, OrderStatus.Filled);
+        entryOrder.QuantityFilled = entryQty;
+        entryOrder.Fee = fee;
+        var trade = new Trade(entryOrder);
+        bot.Trades.Add(trade);
+        await DbContext.SaveChangesAsync();
+
+        var ticker = CreateTicker(10000m, 10001m);
+        var command = new PlaceExitOrdersCommand { Ticker = ticker };
+
+        // Setup mock for exit order
+        var exitOrder = CreateOrder(bot, 10001m, expectedExitQty, false);
+        ExchangeApiMock.Setup(x => x.PlaceOrder(
+                It.IsAny<Bot>(),
+                It.IsAny<decimal>(),
+                It.IsAny<decimal>(),
+                It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(exitOrder);
+
+        // Act
+        await Handle(command, CancellationToken.None);
+
+        // Assert
+        if (expectedExitQty > 0)
+        {
+            // Should place an order when we have quantity after fees
+            ExchangeApiMock.Verify(x => x.PlaceOrder(
+                It.Is<Bot>(b => b.Id == bot.Id),
+                It.Is<decimal>(p => p == 10001m),
+                It.Is<decimal>(q => q == expectedExitQty),
+                It.Is<bool>(b => b == false),
+                It.IsAny<OrderType>(),
+                It.IsAny<CancellationToken>()), Times.Once);
+        }
+        else
+        {
+            // Should not place an order when all quantity is consumed by fees
+            ExchangeApiMock.Verify(x => x.PlaceOrder(
+                It.IsAny<Bot>(),
+                It.IsAny<decimal>(),
+                It.IsAny<decimal>(),
+                It.IsAny<bool>(),
+                It.IsAny<OrderType>(),
+                It.IsAny<CancellationToken>()), Times.Never);
+        }
     }
 }

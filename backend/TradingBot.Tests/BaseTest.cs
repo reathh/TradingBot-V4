@@ -91,14 +91,15 @@ public abstract class BaseTest
         decimal quantity, 
         bool isBuy, 
         OrderStatus status = OrderStatus.New, 
-        decimal? quantityFilled = null)
+        decimal? quantityFilled = null,
+        decimal? fee = null)
     {
         var order = new Order(Guid.NewGuid().ToString(), bot.Symbol, price, quantity, isBuy, DateTime.UtcNow)
         {
             Quantity = quantity,
             QuantityFilled = quantityFilled ?? quantity,
             AverageFillPrice = price,
-            Fee = 0.001m * price * quantity,
+            Fee = fee ?? 0m,
             Status = status
         };
         
