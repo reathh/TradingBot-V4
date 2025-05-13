@@ -190,6 +190,7 @@ public class BinanceExchangeApi(string publicKey, string privateKey, TimeProvide
             Quantity: order.Quantity,
             QuantityFilled: order.QuantityFilled,
             AverageFillPrice: order.QuoteQuantityFilled == 0 ? null : order.QuoteQuantityFilled / order.QuantityFilled,
+            Fee: order.Fee,
             IsBuy: order.Side == OrderSide.Buy,
             Status: MapOrderStatus(order.Status));
     }
@@ -227,6 +228,7 @@ public class BinanceExchangeApi(string publicKey, string privateKey, TimeProvide
             Quantity: order.Quantity,
             QuantityFilled: order.QuantityFilled,
             AverageFillPrice: order.AverageFillPrice > 0 ? order.AverageFillPrice : null,
+            Fee: null, 
             IsBuy: order.Side == OrderSide.Buy,
             Status: MapOrderStatus(order.Status));
     }

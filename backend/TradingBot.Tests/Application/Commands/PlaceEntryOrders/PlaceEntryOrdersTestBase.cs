@@ -101,7 +101,7 @@ public abstract class PlaceEntryOrdersTestBase
             Quantity = quantity,
             QuantityFilled = quantityFilled ?? quantity,
             AverageFillPrice = price,
-            Fees = 0.001m * price * quantity,
+            Fee = 0.001m * price * quantity,
             Status = status
         };
         

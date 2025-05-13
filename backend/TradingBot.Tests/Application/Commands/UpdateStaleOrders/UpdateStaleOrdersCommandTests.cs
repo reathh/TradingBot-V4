@@ -87,7 +87,8 @@ public class UpdateStaleOrdersCommandTests : BaseTest
                 QuantityFilled: staleOrder.Quantity * 0.5m, // Half filled
                 AverageFillPrice: 101m, // Different fill price
                 IsBuy: staleOrder.IsBuy,
-                Status: OrderStatus.Filled));
+                Status: OrderStatus.Filled,
+                Fee: null));
 
         var command = new UpdateStaleOrdersCommand();
 

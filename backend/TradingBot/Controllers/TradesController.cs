@@ -47,12 +47,12 @@ namespace TradingBot.Controllers
                     ExitPrice = t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price,
                     Quantity = t.EntryOrder.Quantity,
                     QuantityFilled = t.EntryOrder.QuantityFilled,
-                    EntryFee = t.EntryOrder.Fees,
-                    ExitFee = t.ExitOrder.Fees,
+                    EntryFee = t.EntryOrder.Fee,
+                    ExitFee = t.ExitOrder.Fee,
                     IsLong = t.EntryOrder.IsBuy,
                     Profit = ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                               (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
-                             (t.EntryOrder.Fees + t.ExitOrder.Fees),
+                             (t.EntryOrder.Fee + t.ExitOrder.Fee),
                     EntryTime = t.EntryOrder.CreatedAt,
                     ExitTime = t.ExitOrder.CreatedAt,
                     IsCompleted = t.ExitOrder.Status == OrderStatus.Filled
@@ -93,13 +93,13 @@ namespace TradingBot.Controllers
                 ExitPrice = trade.ExitOrder?.AverageFillPrice ?? trade.ExitOrder?.Price,
                 Quantity = trade.EntryOrder.Quantity,
                 QuantityFilled = trade.EntryOrder.QuantityFilled,
-                EntryFee = trade.EntryOrder.Fees,
-                ExitFee = trade.ExitOrder?.Fees ?? 0,
+                EntryFee = trade.EntryOrder.Fee,
+                ExitFee = trade.ExitOrder?.Fee ?? 0,
                 IsLong = trade.EntryOrder.IsBuy,
                 Profit = trade.ExitOrder is null ? null :
                     ((trade.ExitOrder.AverageFillPrice ?? trade.ExitOrder.Price) -
                     (trade.EntryOrder.AverageFillPrice ?? trade.EntryOrder.Price)) * trade.EntryOrder.Quantity -
-                    (trade.EntryOrder.Fees + (trade.ExitOrder?.Fees ?? 0)),
+                    (trade.EntryOrder.Fee + (trade.ExitOrder?.Fee ?? 0)),
                 EntryTime = trade.EntryOrder.CreatedAt,
                 ExitTime = trade.ExitOrder?.CreatedAt,
                 IsCompleted = trade.ExitOrder?.Status == OrderStatus.Filled
@@ -173,13 +173,13 @@ namespace TradingBot.Controllers
                     PeriodStart = g.Key,
                     TotalProfit = g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                          (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
-                                         (t.EntryOrder.Fees + t.ExitOrder.Fees)),
+                                         (t.EntryOrder.Fee + t.ExitOrder.Fee)),
                     TotalVolume = g.Sum(t => t.EntryOrder.Quantity *
                                          (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)),
                     TradeCount = g.Count(),
                     WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                                (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
-                                               (t.EntryOrder.Fees + t.ExitOrder.Fees)) > 0)
+                                               (t.EntryOrder.Fee + t.ExitOrder.Fee)) > 0)
                 })
                 .OrderBy(g => g.PeriodStart)
                 .ToListAsync();

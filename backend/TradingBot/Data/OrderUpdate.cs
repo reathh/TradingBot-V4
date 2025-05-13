@@ -10,6 +10,7 @@ public record OrderUpdate(
     decimal Quantity,
     decimal QuantityFilled,
     decimal? AverageFillPrice,
+    decimal? Fee,
     bool IsBuy,
     OrderStatus Status)
 {

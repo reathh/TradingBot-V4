@@ -10,7 +10,7 @@ namespace TradingBot.Data
         public DateTime CreatedAt { get; set; } = createdAt;
         public decimal QuantityFilled { get; set; }
         public decimal? AverageFillPrice { get; set; }
-        public decimal Fees { get; set; }
+        public decimal Fee { get; set; }
         public OrderStatus Status { get; set; }
         public DateTime LastUpdated { get; set; } = createdAt;
 

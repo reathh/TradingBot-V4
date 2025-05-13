@@ -101,8 +101,10 @@ public class OrderUpdateServiceTests : BaseTest, IDisposable
             1.0m,
             0.5m,
             9900.0m,
+            null, // Fee
             true,
-            Status: OrderStatus.Canceled);
+            OrderStatus.Canceled
+        );
 
         // Setup mediator to respond to UpdateBotOrderCommand
         _mediatorMock

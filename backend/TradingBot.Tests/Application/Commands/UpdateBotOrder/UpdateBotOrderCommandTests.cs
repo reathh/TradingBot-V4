@@ -43,6 +43,7 @@ public class UpdateBotOrderCommandTests : BaseTest
             Quantity: order.Quantity,
             QuantityFilled: order.Quantity, // Update: fully filled
             AverageFillPrice: 100.5m,       // Update: different fill price
+            Fee: null,
             IsBuy: order.IsBuy,
             Status: OrderStatus.Filled      // Update: now filled (closed)
         );
@@ -75,6 +76,7 @@ public class UpdateBotOrderCommandTests : BaseTest
             Quantity: 1m,
             QuantityFilled: 1m,
             AverageFillPrice: 100m,
+            Fee: null,
             IsBuy: true,
             Status: OrderStatus.Filled
         );
@@ -116,6 +118,7 @@ public class UpdateBotOrderCommandTests : BaseTest
             Quantity: order.Quantity,
             QuantityFilled: order.Quantity,
             AverageFillPrice: 100.5m,
+            Fee: null,
             IsBuy: order.IsBuy,
             Status: OrderStatus.Filled
         );

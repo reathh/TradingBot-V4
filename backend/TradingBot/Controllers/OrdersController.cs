@@ -117,7 +117,7 @@ namespace TradingBot.Controllers
                 Quantity = o.Quantity,
                 QuantityFilled = o.QuantityFilled,
                 IsBuy = o.IsBuy,
-                Fees = o.Fees,
+                Fee = o.Fee,
                 Status = o.Status,
                 CreatedAt = o.CreatedAt,
                 LastUpdated = o.LastUpdated
@@ -152,7 +152,7 @@ namespace TradingBot.Controllers
                 Quantity = order.Quantity,
                 QuantityFilled = order.QuantityFilled,
                 IsBuy = order.IsBuy,
-                Fees = order.Fees,
+                Fee = order.Fee,
                 Status = order.Status,
                 CreatedAt = order.CreatedAt,
                 LastUpdated = order.LastUpdated
@@ -169,7 +169,7 @@ namespace TradingBot.Controllers
         public decimal Quantity { get; set; }
         public decimal QuantityFilled { get; set; }
         public bool IsBuy { get; set; }
-        public decimal Fees { get; set; }
+        public decimal Fee { get; set; }
         public OrderStatus Status { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime LastUpdated { get; set; }
