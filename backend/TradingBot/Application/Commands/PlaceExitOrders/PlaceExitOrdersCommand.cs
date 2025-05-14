@@ -43,8 +43,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
 
             var botsWithTrades = await _dbContext
                 .Bots
-                .AsNoTracking()
-                .Where(bot => bot.Enabled)
+                .Where(b => b.Enabled)
                 .Select(bot => new
                 {
                     Bot = bot,
@@ -122,15 +121,6 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                     }
                     try
                     {
-                        _dbContext.Attach(bot);
-                        if (consolidatedTrades.Count > 0)
-                        {
-                            _dbContext.AttachRange(consolidatedTrades);
-                        }
-                        if (advanceTrades.Count > 0)
-                        {
-                            _dbContext.AttachRange(advanceTrades);
-                        }
                         await PlaceExitOrders(_dbContext, bot, request.Ticker, consolidatedTrades, advanceTrades, token);
                     }
                     catch (Exception ex)

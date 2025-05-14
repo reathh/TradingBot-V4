@@ -25,7 +25,6 @@ public abstract class BaseTest
         ExchangeApiMock = new Mock<IExchangeApi>();
         ExchangeApiRepositoryMock = new Mock<IExchangeApiRepository>();
         LoggerMock = new Mock<ILogger<PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler>>();
-        NotificationServiceMock = new Mock<TradingNotificationService>(null, LoggerMock.Object);
         NotificationServiceStub = new TestTradingNotificationService();
 
         // Configure the repository mock to return the exchange API mock

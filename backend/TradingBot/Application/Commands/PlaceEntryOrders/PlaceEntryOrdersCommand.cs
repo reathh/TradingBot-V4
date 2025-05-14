@@ -37,7 +37,6 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
         {
             var botsWithQuantities = await _dbContext
                 .Bots
-                .AsNoTracking()
                 .Where(b => b.Enabled)
 
                 // Price range filters
@@ -94,9 +93,6 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                 {
                     try
                     {
-                        // Attach the detached bot entity to the context so that EF tracks changes
-                        _dbContext.Attach(botWithQuantity.Bot);
-
                         await PlaceOrders(_dbContext,
                             botWithQuantity.Bot,
                             request.Ticker,
