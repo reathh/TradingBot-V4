@@ -108,8 +108,8 @@ namespace TradingBot.Controllers
             return tradeDto;
         }
 
-        [HttpGet("profit-data")]
-        public async Task<ActionResult<IEnumerable<BotProfitDto>>> GetAggregatedProfits(
+        [HttpGet("stats")]
+        public async Task<ActionResult<DashboardDto>> GetStats(
             [FromQuery] TimeInterval interval = TimeInterval.Day,
             [FromQuery] int? botId = null,
             [FromQuery] DateTime? startDate = null,
@@ -146,9 +146,11 @@ namespace TradingBot.Controllers
                                 g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                             (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
                                             (t.EntryOrder.Fee + t.ExitOrder.Fee)), 8),
-                            TotalVolume = Math.Round(
+                            QuoteVolume = Math.Round(
                                 g.Sum(t => t.EntryOrder.Quantity *
                                            (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)), 8),
+                            BaseVolume = Math.Round(
+                                g.Sum(t => t.EntryOrder.Quantity), 8),
                             TradeCount = g.Count(),
                             WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                                    (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
@@ -166,9 +168,11 @@ namespace TradingBot.Controllers
                                 g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                             (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
                                             (t.EntryOrder.Fee + t.ExitOrder.Fee)), 8),
-                            TotalVolume = Math.Round(
+                            QuoteVolume = Math.Round(
                                 g.Sum(t => t.EntryOrder.Quantity *
                                            (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)), 8),
+                            BaseVolume = Math.Round(
+                                g.Sum(t => t.EntryOrder.Quantity), 8),
                             TradeCount = g.Count(),
                             WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                                    (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
@@ -186,9 +190,11 @@ namespace TradingBot.Controllers
                                 g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                             (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
                                             (t.EntryOrder.Fee + t.ExitOrder.Fee)), 8),
-                            TotalVolume = Math.Round(
+                            QuoteVolume = Math.Round(
                                 g.Sum(t => t.EntryOrder.Quantity *
                                            (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)), 8),
+                            BaseVolume = Math.Round(
+                                g.Sum(t => t.EntryOrder.Quantity), 8),
                             TradeCount = g.Count(),
                             WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                                    (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
@@ -206,9 +212,11 @@ namespace TradingBot.Controllers
                                 g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                             (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
                                             (t.EntryOrder.Fee + t.ExitOrder.Fee)), 8),
-                            TotalVolume = Math.Round(
+                            QuoteVolume = Math.Round(
                                 g.Sum(t => t.EntryOrder.Quantity *
                                            (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)), 8),
+                            BaseVolume = Math.Round(
+                                g.Sum(t => t.EntryOrder.Quantity), 8),
                             TradeCount = g.Count(),
                             WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                                    (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
@@ -226,9 +234,11 @@ namespace TradingBot.Controllers
                                 g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                             (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
                                             (t.EntryOrder.Fee + t.ExitOrder.Fee)), 8),
-                            TotalVolume = Math.Round(
+                            QuoteVolume = Math.Round(
                                 g.Sum(t => t.EntryOrder.Quantity *
                                            (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)), 8),
+                            BaseVolume = Math.Round(
+                                g.Sum(t => t.EntryOrder.Quantity), 8),
                             TradeCount = g.Count(),
                             WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                                    (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
@@ -246,9 +256,11 @@ namespace TradingBot.Controllers
                                 g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                             (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
                                             (t.EntryOrder.Fee + t.ExitOrder.Fee)), 8),
-                            TotalVolume = Math.Round(
+                            QuoteVolume = Math.Round(
                                 g.Sum(t => t.EntryOrder.Quantity *
                                            (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)), 8),
+                            BaseVolume = Math.Round(
+                                g.Sum(t => t.EntryOrder.Quantity), 8),
                             TradeCount = g.Count(),
                             WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                                    (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
@@ -266,9 +278,11 @@ namespace TradingBot.Controllers
                                 g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                             (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
                                             (t.EntryOrder.Fee + t.ExitOrder.Fee)), 8),
-                            TotalVolume = Math.Round(
+                            QuoteVolume = Math.Round(
                                 g.Sum(t => t.EntryOrder.Quantity *
                                            (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)), 8),
+                            BaseVolume = Math.Round(
+                                g.Sum(t => t.EntryOrder.Quantity), 8),
                             TradeCount = g.Count(),
                             WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                                                    (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
@@ -280,19 +294,49 @@ namespace TradingBot.Controllers
 
             var groupedList = await groupedQuery.OrderBy(g => g.PeriodStart).ToListAsync();
 
-            var result = groupedList.Select(g => new BotProfitDto
+            var statsSeries = groupedList.Select(g => new StatsDto
             {
                 BotId = botId?.ToString(),
                 TimePeriod = g.PeriodStart.ToString("yyyy-MM-dd HH:mm"),
                 PeriodStart = g.PeriodStart,
                 PeriodEnd = g.PeriodStart.Add(bucket).AddSeconds(-1),
                 TotalProfit = g.TotalProfit,
-                TotalVolume = g.TotalVolume,
+                QuoteVolume = g.QuoteVolume,
+                BaseVolume = g.BaseVolume,
                 TradeCount = g.TradeCount,
-                WinRate = g.TradeCount == 0 ? 0 : 100m * g.WinCount / g.TradeCount
+                WinRate = g.TradeCount == 0 ? 0 : 100m * g.WinCount / g.TradeCount,
+                ProfitPct = g.QuoteVolume == 0 ? 0 : Math.Round(100m * g.TotalProfit / g.QuoteVolume, 8)
             }).ToList();
 
-            return result;
+            // Calculate last 24h summary metrics (based on EndDate reference)
+            var last24hStart = endDate.Value.AddDays(-1);
+
+            var lastDayAggregates = await baseQuery
+                .Where(t => t.ExitOrder!.CreatedAt >= last24hStart && t.ExitOrder.CreatedAt <= endDate)
+                .Select(t => new
+                {
+                    QuoteVolume = t.EntryOrder.Quantity * (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price),
+                    BaseVolume = t.EntryOrder.Quantity,
+                    Profit = ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                              (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                             (t.EntryOrder.Fee + t.ExitOrder.Fee)
+                })
+                .ToListAsync();
+
+            decimal quoteVol24h = lastDayAggregates.Sum(a => a.QuoteVolume);
+            decimal baseVol24h  = lastDayAggregates.Sum(a => a.BaseVolume);
+            decimal roi24h      = lastDayAggregates.Sum(a =>
+                                    a.QuoteVolume == 0 ? 0 : 100m * a.Profit / a.QuoteVolume);
+
+            var dashboard = new DashboardDto
+            {
+                Roi24h = Math.Round(roi24h, 8),
+                QuoteVolume24h = Math.Round(quoteVol24h, 8),
+                BaseVolume24h = Math.Round(baseVol24h, 8),
+                Stats = statsSeries
+            };
+
+            return dashboard;
         }
 
         // Nested type used for database projection of aggregated profit data
@@ -300,7 +344,8 @@ namespace TradingBot.Controllers
         {
             public DateTime PeriodStart { get; init; }
             public decimal TotalProfit { get; init; }
-            public decimal TotalVolume { get; init; }
+            public decimal QuoteVolume { get; init; }
+            public decimal BaseVolume { get; init; }
             public int TradeCount { get; init; }
             public int WinCount { get; init; }
         }

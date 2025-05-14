@@ -9,15 +9,28 @@
               <h2 class="card-title">Bot Profit Performance</h2>
             </div>
             <div class="col-md-6 col-sm-12 d-flex justify-content-md-end justify-content-sm-start align-items-center">
+              <!-- Date range picker with quick shortcuts -->
+              
+              <el-date-picker
+                v-model="dateRange"
+                type="datetimerange"
+                :shortcuts="rangeShortcuts"
+                size="large"
+                class="select-primary me-2"
+                start-placeholder="Start"
+                end-placeholder="End"
+                @change="fetchStatsData"
+              />
+
               <el-select
                 v-model="selectedInterval"
                 class="select-primary"
                 size="large"
                 placeholder="Select Interval"
-                @change="fetchBotProfitData"
+                @change="fetchStatsData"
               >
                 <el-option
-                  v-for="interval in timeIntervals"
+                  v-for="interval in intervalChoices"
                   :key="interval.value"
                   :label="interval.label"
                   :value="interval.value"
@@ -51,9 +64,9 @@
     <div class="col-lg-4">
       <Card type="chart">
         <template #header>
-          <h5 class="card-category">Total Shipments</h5>
+          <h5 class="card-category">ROI (24h)</h5>
           <h3 class="card-title">
-            <i class="tim-icons icon-bell-55 text-primary"></i> 763,215
+            <i class="tim-icons icon-bell-55 text-primary"></i> {{ roi24h.toFixed(2) }}%
           </h3>
         </template>
         <div class="chart-area">
@@ -68,9 +81,9 @@
     <div class="col-lg-4">
       <Card type="chart">
         <template #header>
-          <h5 class="card-category">Daily Sales</h5>
+          <h5 class="card-category">Base Volume (24h)</h5>
           <h3 class="card-title">
-            <i class="tim-icons icon-delivery-fast text-info"></i> 3,500€
+            <i class="tim-icons icon-delivery-fast text-info"></i> {{ baseVolume24h.toLocaleString() }}
           </h3>
         </template>
         <div class="chart-area">
@@ -87,9 +100,9 @@
     <div class="col-lg-4">
       <Card type="chart">
         <template #header>
-          <h5 class="card-category">Completed tasks</h5>
+          <h5 class="card-category">Quote Volume (24h)</h5>
           <h3 class="card-title">
-            <i class="tim-icons icon-send text-success"></i> 12,100K
+            <i class="tim-icons icon-send text-success"></i> {{ quoteVolume24h.toLocaleString() }}
           </h3>
         </template>
         <div class="chart-area">
@@ -158,9 +171,10 @@ import {
   onBeforeUnmount,
   inject,
 } from "vue";
-import { ElSelect, ElOption } from "element-plus";
+import { ElSelect, ElOption, ElDatePicker } from "element-plus";
 import "element-plus/es/components/select/style/css";
 import "element-plus/es/components/option/style/css";
+import "element-plus/es/components/date-picker/style/css";
 import LineChart from "@/components/Charts/LineChart.vue";
 import BarChart from "@/components/Charts/BarChart.vue";
 import * as chartConfigs from "@/components/Charts/config";
@@ -344,59 +358,153 @@ const blueBarChartData = ref({
 const blueBarChartExtraOptions = ref(chartConfigs.barChartOptions);
 const blueBarChartGradientStops = ref([1, 0.4, 0]);
 
-// Time intervals for profit chart
-const timeIntervals = [
-  { label: 'Minutely', value: 'Minute' },
-  { label: 'Hourly', value: 'Hour' },
-  { label: 'Daily', value: 'Day' },
-  { label: 'Weekly', value: 'Week' },
-  { label: 'Monthly', value: 'Month' },
-  { label: 'Yearly', value: 'Year' },
-];
-const selectedInterval = ref('Day'); // Default to daily interval
+// Reactive date range (default last 24h)
+const dateRange = ref([new Date(Date.now() - 24 * 60 * 60 * 1000), new Date()]);
 
-  // SignalR subscriptions
+// Quick-select shortcuts similar to Seq
+const rangeShortcuts = [
+  { text: 'Last 5m', value: () => [new Date(Date.now() - 5 * 60 * 1000), new Date()] },
+  { text: 'Last 15m', value: () => [new Date(Date.now() - 15 * 60 * 1000), new Date()] },
+  { text: 'Last 1h', value: () => [new Date(Date.now() - 60 * 60 * 1000), new Date()] },
+  { text: 'Last 1d', value: () => [new Date(Date.now() - 24 * 60 * 60 * 1000), new Date()] },
+  { text: 'Last 7d', value: () => [new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), new Date()] },
+  { text: 'Last 30d', value: () => [new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), new Date()] },
+  { text: 'Last 90d', value: () => [new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), new Date()] },
+  { text: 'Last 365d', value: () => [new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), new Date()] }
+];
+
+// Compute interval choices based on range length
+const intervalChoices = computed(() => {
+  const [start, end] = dateRange.value;
+  const diffMs = Math.abs(end - start);
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+  if (diffDays < 1) {
+    return [
+      { label: 'Minutely', value: 'Minute' },
+      { label: 'Hourly', value: 'Hour' }
+    ];
+  } else if (diffDays < 7) {
+    return [
+      { label: 'Hourly', value: 'Hour' },
+      { label: 'Daily', value: 'Day' }
+    ];
+  } else if (diffDays < 30) {
+    return [
+      { label: 'Daily', value: 'Day' },
+      { label: 'Weekly', value: 'Week' }
+    ];
+  } else if (diffDays < 365) {
+    return [
+      { label: 'Daily', value: 'Day' },
+      { label: 'Weekly', value: 'Week' },
+      { label: 'Monthly', value: 'Month' }
+    ];
+  }
+  return [
+    { label: 'Weekly', value: 'Week' },
+    { label: 'Monthly', value: 'Month' },
+    { label: 'Yearly', value: 'Year' }
+  ];
+});
+
+const selectedInterval = ref('Day');
+
+// SignalR subscriptions
 let unsubscribeOrderUpdated;
 
-// Fetch bot profit data based on time interval
-const fetchBotProfitData = async () => {
+const roi24h = ref(0);
+const quoteVolume24h = ref(0);
+const baseVolume24h = ref(0);
+
+const fetchStatsData = async () => {
   try {
-    const response = await botService.getAggregatedProfits(selectedInterval.value);
-    
+    const [start, end] = dateRange.value;
+    const response = await botService.getStats(selectedInterval.value, null, start.toISOString(), end.toISOString());
+
     if (response && response.data) {
-      // Transform aggregated data for chart format
-      const profitData = response.data;
+      const { stats: profitData, roi24h: roi, quoteVolume24h: quoteVol, baseVolume24h: baseVol } = response.data;
+
+      roi24h.value = roi;
+      quoteVolume24h.value = quoteVol;
+      baseVolume24h.value = baseVol;
       
-      // Sort the data by period start to ensure chronological order
-      profitData.sort((a, b) => new Date(a.periodStart) - new Date(b.periodStart));
+      // Transform aggregated data for chart format
+      profitData.sort((a, b) => new Date(a.periodStart || a.PeriodStart) - new Date(b.periodStart || b.PeriodStart));
       
       // Extract labels and data points
       const labels = profitData.map(item => {
+        const start = item.periodStart || item.PeriodStart;
         // Format the label based on interval
         switch (selectedInterval.value) {
-          case 'Minute': return new Date(item.periodStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          case 'Hour': return new Date(item.periodStart).toLocaleTimeString([], { hour: '2-digit' }) + ':00';
-          case 'Day': return new Date(item.periodStart).toLocaleDateString([], { day: 'numeric' });
-          case 'Week': return 'W' + Math.ceil(new Date(item.periodStart).getDate() / 7);
-          case 'Month': return new Date(item.periodStart).toLocaleDateString([], { month: 'short' });
-          case 'Year': return new Date(item.periodStart).getFullYear().toString();
-          default: return item.timePeriod;
+          case 'Minute': return new Date(start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          case 'Hour': return new Date(start).toLocaleTimeString([], { hour: '2-digit' }) + ':00';
+          case 'Day': return new Date(start).toLocaleDateString([], { day: 'numeric' });
+          case 'Week': return 'W' + Math.ceil(new Date(start).getDate() / 7);
+          case 'Month': return new Date(start).toLocaleDateString([], { month: 'short' });
+          case 'Year': return new Date(start).getFullYear().toString();
+          default: return item.timePeriod || item.TimePeriod;
         }
       });
       
-      const data = profitData.map(item => item.totalProfit);
-      
+      const totalProfitSeries = profitData.map(item => item.totalProfit ?? item.TotalProfit);
+
+      const roiSeries = profitData.map(item => item.profitPct ?? item.ProfitPct);
+      const baseVolSeries = profitData.map(item => item.baseVolume ?? item.BaseVolume);
+      const quoteVolSeries = profitData.map(item => item.quoteVolume ?? item.QuoteVolume);
+
+      // Update KPI charts
+      purpleLineChartData.value = {
+        labels,
+        datasets: [{
+          label: 'ROI %',
+          data: roiSeries,
+          borderColor: '#41B883',
+          backgroundColor: 'rgba(65, 184, 131, 0.1)',
+          borderWidth: 3,
+          pointRadius: 4,
+          pointBackgroundColor: '#41B883',
+          tension: 0.4,
+          fill: false,
+        }]
+      };
+
+      blueBarChartData.value = {
+        labels,
+        datasets: [{
+          label: 'Base Volume',
+          backgroundColor: config.colors.info,
+          data: baseVolSeries,
+          borderWidth: 2,
+        }]
+      };
+
+      greenLineChartData.value = {
+        labels,
+        datasets: [{
+          label: 'Quote Volume',
+          data: quoteVolSeries,
+          borderColor: config.colors.danger,
+          backgroundColor: 'rgba(255,99,132,0.15)',
+          borderWidth: 3,
+          pointRadius: 4,
+          pointBackgroundColor: config.colors.danger,
+          tension: 0.4,
+          fill: false,
+        }]
+      };
+
       performanceChartData.value = {
-        labels: labels,
+        labels,
         datasets: [
           {
-            label: "Bot Profit",
-            data: data,
-            borderColor: "#41B883",
-            backgroundColor: "rgba(65, 184, 131, 0.1)",
+            label: 'Bot Profit',
+            data: totalProfitSeries,
+            borderColor: '#41B883',
+            backgroundColor: 'rgba(65, 184, 131, 0.1)',
             borderWidth: 3,
             pointRadius: 4,
-            pointBackgroundColor: "#41B883",
+            pointBackgroundColor: '#41B883',
             tension: 0.4,
             fill: false,
           },
@@ -404,18 +512,17 @@ const fetchBotProfitData = async () => {
       };
     }
   } catch (err) {
-    console.error('Error fetching bot profit data:', err);
+    console.error('Error fetching stats data:', err);
   }
 };
 
 onMounted(() => {
-  // Initialize bot profit data with selected interval
-  fetchBotProfitData();
+  fetchStatsData();
   
   // Subscribe to order updates from SignalR - when an order changes, refresh profit data
   unsubscribeOrderUpdated = signalrService.onOrderUpdated(() => {
     console.log('Refreshing profit data due to order update');
-    fetchBotProfitData();
+    fetchStatsData();
   });
 });
 

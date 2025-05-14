@@ -21,6 +21,9 @@ namespace TradingBot.Data
                     .WithMany(b => b.Trades)
                     .HasForeignKey(t => t.BotId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+            // Frequently filtered field
+            builder.HasIndex(t => t.BotId);
         }
     }
 }

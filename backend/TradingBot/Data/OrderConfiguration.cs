@@ -10,6 +10,10 @@ namespace TradingBot.Data
             builder.HasKey(o => o.Id);
             builder.Property(o => o.AverageFillPrice)
                 .HasColumnType("numeric(18,8)");
+
+            // Indexes to speed up frequent filtering on order creation date and status
+            builder.HasIndex(o => o.CreatedAt);
+            builder.HasIndex(o => new { o.CreatedAt, o.Status });
         }
     }
 }
