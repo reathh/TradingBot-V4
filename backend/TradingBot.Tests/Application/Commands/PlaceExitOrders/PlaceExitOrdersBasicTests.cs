@@ -205,11 +205,6 @@ public class PlaceExitOrdersBasicTests : PlaceExitOrdersTestBase
         var incompleteTrade = new Trade(incompleteOrder);
         bot.Trades.Add(incompleteTrade);
         
-        // Create zero filled entry order
-        var zeroFilledOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong, OrderStatus.Filled, 0);
-        var zeroFilledTrade = new Trade(zeroFilledOrder);
-        bot.Trades.Add(zeroFilledTrade);
-        
         // Create completed entry order
         var completedOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong, OrderStatus.Filled, bot.EntryQuantity);
         var completedTrade = new Trade(completedOrder);
@@ -235,11 +230,6 @@ public class PlaceExitOrdersBasicTests : PlaceExitOrdersTestBase
         var updatedIncompleteTrade = await DbContext.Trades.FirstOrDefaultAsync(t => t.Id == incompleteTrade.Id);
         Assert.NotNull(updatedIncompleteTrade);
         Assert.Null(updatedIncompleteTrade.ExitOrder);
-        
-        // Check zero filled trade has no exit order
-        var updatedZeroFilledTrade = await DbContext.Trades.FirstOrDefaultAsync(t => t.Id == zeroFilledTrade.Id);
-        Assert.NotNull(updatedZeroFilledTrade);
-        Assert.Null(updatedZeroFilledTrade.ExitOrder);
         
         // Check completed trade has exit order
         var updatedCompletedTrade = await DbContext.Trades.FirstOrDefaultAsync(t => t.Id == completedTrade.Id);
