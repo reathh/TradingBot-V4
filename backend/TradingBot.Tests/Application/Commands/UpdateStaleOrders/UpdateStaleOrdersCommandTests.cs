@@ -91,7 +91,10 @@ public class UpdateStaleOrdersCommandTests : BaseTest
                 Status: OrderStatus.Filled,
                 Fee: null));
 
-        var command = new UpdateStaleOrdersCommand();
+        var command = new UpdateStaleOrdersCommand
+        {
+            StaleThreshold = TimeSpan.FromMinutes(10)
+        };
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -110,18 +113,21 @@ public class UpdateStaleOrdersCommandTests : BaseTest
         // Verify other orders were not updated
         var nonUpdatedOrder = await DbContext.Orders.FirstOrDefaultAsync(o => o.Id == recentOrder.Id);
         Assert.NotNull(nonUpdatedOrder);
-        Assert.Equal(_currentTime.AddMinutes(-5), nonUpdatedOrder.LastUpdated);
+        Assert.Equal(_currentTime.AddMinutes(-5), nonUpdatedOrder.LastUpdated); // Should remain unchanged
 
         var nonUpdatedClosedOrder = await DbContext.Orders.FirstOrDefaultAsync(o => o.Id == closedOrder.Id);
         Assert.NotNull(nonUpdatedClosedOrder);
-        Assert.Equal(_currentTime.AddMinutes(-20), nonUpdatedClosedOrder.LastUpdated);
+        Assert.Equal(_currentTime.AddMinutes(-20), nonUpdatedClosedOrder.LastUpdated); // Should remain unchanged
     }
 
     [Fact]
     public async Task Handle_ShouldReturnZero_WhenNoStaleOrdersExist()
     {
         // Arrange
-        var command = new UpdateStaleOrdersCommand();
+        var command = new UpdateStaleOrdersCommand
+        {
+            StaleThreshold = TimeSpan.FromMinutes(10)
+        };
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -152,7 +158,10 @@ public class UpdateStaleOrdersCommandTests : BaseTest
             .Setup(x => x.GetOrderStatus(staleOrder.Id, bot, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Exchange error"));
 
-        var command = new UpdateStaleOrdersCommand();
+        var command = new UpdateStaleOrdersCommand
+        {
+            StaleThreshold = TimeSpan.FromMinutes(10)
+        };
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
