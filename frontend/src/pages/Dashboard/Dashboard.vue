@@ -170,6 +170,7 @@ import {
   onMounted,
   onBeforeUnmount,
   inject,
+  watch,
 } from "vue";
 import { ElSelect, ElOption, ElDatePicker } from "element-plus";
 import "element-plus/es/components/select/style/css";
@@ -420,7 +421,12 @@ const baseVolume24h = ref(0);
 const fetchStatsData = async () => {
   try {
     const [start, end] = dateRange.value;
-    const response = await botService.getStats(selectedInterval.value, null, start.toISOString(), end.toISOString());
+    const response = await botService.getStats(
+      selectedInterval.value,
+      null,
+      start ? start.toISOString() : undefined,
+      end ? end.toISOString() : undefined
+    );
 
     if (response && response.data) {
       const { stats: profitData, roi24h: roi, quoteVolume24h: quoteVol, baseVolume24h: baseVol } = response.data;
@@ -516,12 +522,20 @@ const fetchStatsData = async () => {
   }
 };
 
+const isEndNearNow = () => {
+  const end = dateRange.value[1];
+  if (!end) return false;
+  return Math.abs(Date.now() - end.getTime()) < 2 * 60 * 1000; // within 2 minutes
+};
+
 onMounted(() => {
   fetchStatsData();
   
   // Subscribe to order updates from SignalR - when an order changes, refresh profit data
   unsubscribeOrderUpdated = signalrService.onOrderUpdated(() => {
-    console.log('Refreshing profit data due to order update');
+    if (isEndNearNow()) {
+      dateRange.value[1] = new Date(); // advance end to now
+    }
     fetchStatsData();
   });
 });
