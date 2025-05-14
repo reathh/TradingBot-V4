@@ -1,5 +1,7 @@
 using System.Data.Common;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Serilog;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace TradingBot.Data.Interceptors;
 
@@ -85,11 +87,32 @@ public class SlowQueryInterceptor(ILogger<SlowQueryInterceptor> logger, double w
     {
         if (duration.TotalSeconds >= warningThresholdSeconds)
         {
+            // Use both regular logger and Serilog for structured logging
             logger.LogWarning(
                 "Slow {OperationType} detected ({Duration:F3}s): {CommandText}", 
                 operationType,
                 duration.TotalSeconds, 
                 command.CommandText);
+            
+            // Use Serilog for structured logging with additional context
+            Log.Warning(
+                "Slow {OperationType} detected ({Duration:F3}s): {CommandText}", 
+                operationType,
+                duration.TotalSeconds, 
+                command.CommandText);
+            
+            // For very slow queries, add parameters to the log for debugging
+            if (duration.TotalSeconds >= warningThresholdSeconds * 5)
+            {
+                var parameters = string.Join(", ", 
+                    command.Parameters.Cast<DbParameter>()
+                        .Select(p => $"{p.ParameterName}={p.Value}"));
+                
+                Log.Warning(
+                    "Very slow {OperationType} parameters: {Parameters}", 
+                    operationType,
+                    parameters);
+            }
         }
     }
 } 
