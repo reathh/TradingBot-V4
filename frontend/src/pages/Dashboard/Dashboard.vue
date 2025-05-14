@@ -207,38 +207,8 @@ const months = [
   "NOV",
   "DEC",
 ];
-const performanceChartData = ref({
-  labels: months,
-  datasets: [
-    {
-      label: "Performance",
-      data: [100, 70, 90, 70, 85, 60, 75, 60, 90, 80, 110, 100],
-      borderColor: "#41B883",
-      backgroundColor: "rgba(65, 184, 131, 0.1)",
-      borderWidth: 3,
-      pointRadius: 4,
-      pointBackgroundColor: "#41B883",
-      tension: 0.4,
-      fill: false,
-    },
-  ],
-});
-const purpleLineChartData = ref({
-  labels: ["JUL", "AUG", "SEP", "OCT", "NOV", "DEC"],
-  datasets: [
-    {
-      label: "Performance",
-      data: [80, 100, 70, 80, 120, 80],
-      borderColor: "#41B883",
-      backgroundColor: "rgba(65, 184, 131, 0.1)",
-      borderWidth: 3,
-      pointRadius: 4,
-      pointBackgroundColor: "#41B883",
-      tension: 0.4,
-      fill: false,
-    },
-  ],
-});
+const performanceChartData = ref({ labels: [], datasets: [] });
+const purpleLineChartData = ref({ labels: [], datasets: [] });
 const lineChartOptions = ref({
   responsive: true,
   maintainAspectRatio: false,
@@ -317,23 +287,7 @@ const purpleLineChartExtraOptions = ref(chartConfigs.purpleChartOptions);
 const purpleLineChartGradientColors = ref(config.colors.primaryGradient);
 const purpleLineChartGradientStops = ref([1, 0.2, 0]);
 // greenLineChartData;
-const greenLineChartData = ref({
-  labels: ["JUL", "AUG", "SEP", "OCT", "NOV"],
-  datasets: [
-    {
-      label: "My First dataset",
-      data: [90, 27, 60, 12, 80],
-      borderColor: config.colors.danger,
-      borderWidth: 3,
-      pointRadius: 4,
-      pointBackgroundColor: config.colors.danger,
-      pointBorderColor: "rgba(255,255,255,0)",
-      pointHoverBackgroundColor: config.colors.danger,
-      tension: 0.4,
-      fill: true,
-    },
-  ],
-});
+const greenLineChartData = ref({ labels: [], datasets: [] });
 const greenLineChartExtraOptions = ref(chartConfigs.greenChartOptions);
 const greenLineChartGradientColors = ref([
   "rgba(66,134,121,0.15)",
@@ -342,20 +296,7 @@ const greenLineChartGradientColors = ref([
 ]);
 const greenLineChartGradientStops = ref([1, 0.4, 0]);
 
-const blueBarChartData = ref({
-  labels: ["USA", "GER", "AUS", "UK", "RO", "BR"],
-  datasets: [
-    {
-      label: "Countries",
-      fill: true,
-      borderColor: config.colors.info,
-      borderWidth: 2,
-      borderDash: [],
-      borderDashOffset: 0.0,
-      data: [53, 20, 10, 80, 100, 45],
-    },
-  ],
-});
+const blueBarChartData = ref({ labels: [], datasets: [] });
 const blueBarChartExtraOptions = ref(chartConfigs.barChartOptions);
 const blueBarChartGradientStops = ref([1, 0.4, 0]);
 
