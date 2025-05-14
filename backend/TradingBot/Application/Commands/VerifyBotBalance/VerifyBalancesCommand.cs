@@ -28,6 +28,20 @@ public class VerifyBalancesCommand : IRequest<Result>
             _logger = logger;
         }
 
+        // Convenience constructor used by existing unit tests
+        internal VerifyBalancesCommandHandler(
+            TradingBotDbContext dbContext,
+            IExchangeApiRepository exchangeApiRepository,
+            ILogger<VerifyBalancesCommandHandler> logger)
+            : this(new SingleDbContextFactory(dbContext), exchangeApiRepository, logger)
+        {
+        }
+
+        private sealed class SingleDbContextFactory(TradingBotDbContext ctx) : IDbContextFactory<TradingBotDbContext>
+        {
+            public TradingBotDbContext CreateDbContext() => ctx;
+        }
+
         protected override async Task<Result> HandleCore(VerifyBalancesCommand request, CancellationToken cancellationToken)
         {
             // Fetch enabled bot IDs at the start

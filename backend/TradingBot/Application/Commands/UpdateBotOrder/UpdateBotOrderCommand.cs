@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using TradingBot.Application.Common;
 using TradingBot.Data;
 using TradingBot.Services;
@@ -17,6 +18,22 @@ public class UpdateBotOrderCommandHandler(
     TradingNotificationService notificationService)
     : BaseCommandHandler<UpdateBotOrderCommand>(logger)
 {
+    // Convenience constructor for unit tests that don't supply a TradingNotificationService
+    internal UpdateBotOrderCommandHandler(
+        TradingBotDbContext dbContext,
+        ILogger<UpdateBotOrderCommandHandler> logger,
+        TimeProvider timeProvider)
+        : this(dbContext, logger, timeProvider, new NullTradingNotificationService())
+    {
+    }
+
+    private sealed class NullTradingNotificationService : TradingNotificationService
+    {
+        public NullTradingNotificationService() : base(null!, NullLogger<TradingNotificationService>.Instance) {}
+
+        public new Task NotifyOrderUpdated(string orderId) => Task.CompletedTask;
+    }
+
     protected override async Task<Result> HandleCore(UpdateBotOrderCommand request, CancellationToken cancellationToken)
     {
         var orderUpdate = request.OrderUpdate;

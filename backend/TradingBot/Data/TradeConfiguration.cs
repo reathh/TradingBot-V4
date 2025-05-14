@@ -31,6 +31,9 @@ namespace TradingBot.Data
 
             // 3. Index to speed up joins from trades to their exit orders (and look-ups by exit order)
             builder.HasIndex(t => t.ExitOrderId);
+
+            // 4. Covering index used by hot exit-order queries (BotId filter, ExitOrder null check, join to EntryOrder)
+            builder.HasIndex(t => new { t.BotId, t.ExitOrderId, t.EntryOrderId });
         }
     }
 }

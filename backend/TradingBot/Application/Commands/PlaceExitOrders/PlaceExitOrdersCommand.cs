@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using TradingBot.Application.Common;
 using TradingBot.Data;
 using TradingBot.Services;
@@ -14,20 +15,47 @@ public class PlaceExitOrdersCommand : IRequest<Result>
     public required TickerDto Ticker { get; set; }
 
     public class PlaceExitOrdersCommandHandler(
-        TradingBotDbContext dbContext,
+        IDbContextFactory<TradingBotDbContext> dbContextFactory,
         IExchangeApiRepository exchangeApiRepository,
         ISymbolInfoCache symbolInfoCache,
         TradingNotificationService notificationService,
         ILogger<PlaceExitOrdersCommandHandler> logger) : BaseCommandHandler<PlaceExitOrdersCommand>(logger)
     {
+        // Convenience constructor for unit tests (DbContext, repository, cache, logger)
+        internal PlaceExitOrdersCommandHandler(
+            TradingBotDbContext dbContext,
+            IExchangeApiRepository exchangeApiRepository,
+            ISymbolInfoCache symbolInfoCache,
+            ILogger<PlaceExitOrdersCommandHandler> logger)
+            : this(new SingleDbContextFactory(dbContext), exchangeApiRepository, symbolInfoCache, new NullTradingNotificationService(), logger)
+        {
+        }
+
+        // Minimal IDbContextFactory wrapper around a pre-created DbContext instance (used in tests)
+        private sealed class SingleDbContextFactory(TradingBotDbContext context) : IDbContextFactory<TradingBotDbContext>
+        {
+            public TradingBotDbContext CreateDbContext() => context;
+        }
+
+        // No-op implementation so unit tests don't have to provide SignalR infrastructure
+        private sealed class NullTradingNotificationService : TradingNotificationService
+        {
+            public NullTradingNotificationService() : base(null!, NullLogger<TradingNotificationService>.Instance) { }
+
+            public new Task NotifyOrderUpdated(string orderId) => Task.CompletedTask;
+        }
+
         protected override async Task<Result> HandleCore(PlaceExitOrdersCommand request, CancellationToken cancellationToken)
         {
             var currentAsk = request.Ticker.Ask;
             var currentBid = request.Ticker.Bid;
 
             // Fetch only bots with suitable trades, and only the relevant trades for each bot
-            var botsWithTrades = await dbContext
+            await using var queryContext = dbContextFactory.CreateDbContext();
+
+            var botsWithTrades = await queryContext
                 .Bots
+                .AsNoTracking()
                 .Where(bot => bot.Enabled)
                 .Select(bot => new
                 {
@@ -116,7 +144,22 @@ public class PlaceExitOrdersCommand : IRequest<Result>
 
                     try
                     {
-                        await PlaceExitOrders(bot, request.Ticker, consolidatedTrades, advanceTrades, token);
+                        await using var scopedContext = dbContextFactory.CreateDbContext();
+
+                        scopedContext.Attach(bot);
+
+                        // Ensure that the context is tracking the trades we are about to modify
+                        if (consolidatedTrades.Count > 0)
+                        {
+                            scopedContext.AttachRange(consolidatedTrades);
+                        }
+
+                        if (advanceTrades.Count > 0)
+                        {
+                            scopedContext.AttachRange(advanceTrades);
+                        }
+
+                        await PlaceExitOrders(scopedContext, bot, request.Ticker, consolidatedTrades, advanceTrades, token);
                     }
                     catch (Exception ex)
                     {
@@ -129,6 +172,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
         }
 
         private async Task PlaceExitOrders(
+            TradingBotDbContext dbContext,
             Bot bot,
             TickerDto ticker,
             IList<Trade> consolidatedTrades,

@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using TradingBot.Application.Common;
 using TradingBot.Data;
 using TradingBot.Services;
@@ -14,15 +15,18 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
     public required TickerDto Ticker { get; init; }
 
     public class PlaceEntryOrdersCommandHandler(
-        TradingBotDbContext dbContext,
+        IDbContextFactory<TradingBotDbContext> dbContextFactory,
         IExchangeApiRepository exchangeApiRepository,
         TradingNotificationService notificationService,
         ILogger<PlaceEntryOrdersCommandHandler> logger) : BaseCommandHandler<PlaceEntryOrdersCommand>(logger)
     {
         protected override async Task<Result> HandleCore(PlaceEntryOrdersCommand request, CancellationToken cancellationToken)
         {
-            var botsWithQuantities = await dbContext
+            await using var queryContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+            var botsWithQuantities = await queryContext
                 .Bots
+                .AsNoTracking()
                 .Where(b => b.Enabled)
 
                 // Price range filters
@@ -79,7 +83,17 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                 {
                     try
                     {
-                        await PlaceOrders(botWithQuantity.Bot, request.Ticker, botWithQuantity.CatchUpQuantity, botWithQuantity.OpenTradesCount, token);
+                        await using var scopedContext = await dbContextFactory.CreateDbContextAsync(token);
+
+                        // Attach the detached bot entity to the new context so that EF tracks changes
+                        scopedContext.Attach(botWithQuantity.Bot);
+
+                        await PlaceOrders(scopedContext,
+                            botWithQuantity.Bot,
+                            request.Ticker,
+                            botWithQuantity.CatchUpQuantity,
+                            botWithQuantity.OpenTradesCount,
+                            token);
                     }
                     catch (Exception ex)
                     {
@@ -98,7 +112,13 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
             return errors.Count > 0 ? Result.Failure(errors) : Result.Success;
         }
 
-        private async Task PlaceOrders(Bot bot, TickerDto ticker, decimal quantity, int openTradesCount, CancellationToken cancellationToken)
+        private async Task PlaceOrders(
+            TradingBotDbContext dbContext,
+            Bot bot,
+            TickerDto ticker,
+            decimal quantity,
+            int openTradesCount,
+            CancellationToken cancellationToken)
         {
             var exchangeApi = exchangeApiRepository.GetExchangeApi(bot);
 
@@ -166,6 +186,36 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                 await dbContext.SaveChangesAsync(cancellationToken);
                 logger.LogInformation("Successfully placed 1 entry order for bot {BotId}", bot.Id);
             }
+        }
+
+        // Convenience constructor used only from unit tests that still rely on the old signature (DbContext, Repository, Logger)
+        internal PlaceEntryOrdersCommandHandler(
+            TradingBotDbContext dbContext,
+            IExchangeApiRepository exchangeApiRepository,
+            ILogger<PlaceEntryOrdersCommandHandler> logger) : this(new SingleDbContextFactory(dbContext),
+            exchangeApiRepository,
+            new NullTradingNotificationService(),
+            logger)
+        {
+        }
+
+        // Minimal IDbContextFactory wrapper around a pre-created DbContext instance (used in tests)
+        private sealed class SingleDbContextFactory(TradingBotDbContext context) : IDbContextFactory<TradingBotDbContext>
+        {
+            public TradingBotDbContext CreateDbContext()
+                => context;
+        }
+
+        // No-op implementation so unit tests don't have to provide a SignalR hub
+        private sealed class NullTradingNotificationService : TradingNotificationService
+        {
+            public NullTradingNotificationService() : base(null!, NullLogger<TradingNotificationService>.Instance)
+            {
+            }
+
+            // Hide base implementation; no-op
+            public new Task NotifyOrderUpdated(string orderId)
+                => Task.CompletedTask;
         }
     }
 }

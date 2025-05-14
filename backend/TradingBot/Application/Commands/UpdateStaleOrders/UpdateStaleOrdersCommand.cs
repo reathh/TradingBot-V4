@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using TradingBot.Application.Common;
 using TradingBot.Data;
 using TradingBot.Services;
@@ -18,6 +19,33 @@ public class UpdateStaleOrdersCommandHandler(
     TradingNotificationService notificationService,
     ILogger<UpdateStaleOrdersCommandHandler> logger) : BaseCommandHandler<UpdateStaleOrdersCommand, int>(logger)
 {
+    // Convenience constructor for unit tests that don't supply an ILogger
+    internal UpdateStaleOrdersCommandHandler(
+        TradingBotDbContext dbContext,
+        IExchangeApiRepository exchangeApiRepository,
+        TimeProvider timeProvider,
+        TradingNotificationService notificationService)
+        : this(dbContext, exchangeApiRepository, timeProvider, notificationService, NullLogger<UpdateStaleOrdersCommandHandler>.Instance)
+    {
+    }
+
+    // Constructor used by older unit tests that did not provide a notification service
+    internal UpdateStaleOrdersCommandHandler(
+        TradingBotDbContext dbContext,
+        IExchangeApiRepository exchangeApiRepository,
+        TimeProvider timeProvider,
+        ILogger<UpdateStaleOrdersCommandHandler> logger)
+        : this(dbContext, exchangeApiRepository, timeProvider, new NullTradingNotificationService(), logger)
+    {
+    }
+
+    private sealed class NullTradingNotificationService : TradingNotificationService
+    {
+        public NullTradingNotificationService() : base(null!, NullLogger<TradingNotificationService>.Instance) {}
+
+        public new Task NotifyOrderUpdated(string orderId) => Task.CompletedTask;
+    }
+
     protected override async Task<Result<int>> HandleCore(UpdateStaleOrdersCommand request, CancellationToken cancellationToken)
     {
         var currentTime = timeProvider.GetUtcNow().DateTime;
