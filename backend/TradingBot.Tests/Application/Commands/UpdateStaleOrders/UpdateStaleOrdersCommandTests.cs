@@ -37,6 +37,7 @@ public class UpdateStaleOrdersCommandTests : BaseTest
             DbContext,
             _exchangeApiRepositoryMock.Object,
             _timeProviderMock.Object,
+            NotificationServiceStub,
             _loggerMock.Object);
     }
 

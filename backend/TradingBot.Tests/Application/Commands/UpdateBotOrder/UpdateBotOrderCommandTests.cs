@@ -22,7 +22,7 @@ public class UpdateBotOrderCommandTests : BaseTest
             .Setup(x => x.GetUtcNow())
             .Returns(new DateTimeOffset(DateTime.UtcNow));
 
-        _handler = new UpdateBotOrderCommandHandler(DbContext, _loggerMock.Object, _timeProviderMock.Object);
+        _handler = new UpdateBotOrderCommandHandler(DbContext, _loggerMock.Object, _timeProviderMock.Object, NotificationServiceStub);
     }
 
     [Fact]

@@ -59,8 +59,6 @@ public class UpdateBotOrderCommandHandler(
             return Result.Success;
         }
 
-
-
         // Update order properties
         order.QuantityFilled = orderUpdate.QuantityFilled;
         order.Status = orderUpdate.Status;

@@ -21,7 +21,7 @@ public class TradingNotificationService
     /// <summary>
     /// Notifies all clients that an order has been updated
     /// </summary>
-    public async Task NotifyOrderUpdated(string orderId)
+    public virtual async Task NotifyOrderUpdated(string orderId)
     {
         _logger.LogDebug("Notifying clients about order update: {OrderId}", orderId);
         await _hubContext.Clients.All.OnOrderUpdated(orderId);
