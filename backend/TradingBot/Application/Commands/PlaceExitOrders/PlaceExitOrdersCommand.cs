@@ -20,20 +20,6 @@ public class PlaceExitOrdersCommand : IRequest<Result>
         TradingNotificationService notificationService,
         ILogger<PlaceExitOrdersCommandHandler> logger) : BaseCommandHandler<PlaceExitOrdersCommand>(logger)
     {
-        private const decimal QuantityStepSize = 0.00001m; // Binance default for BTC-like symbols
-
-        private static decimal RoundDownQuantity(decimal quantity)
-        {
-            if (quantity <= 0)
-                return 0m;
-
-            var steps = Math.Floor(quantity / QuantityStepSize);
-            var rounded = steps * QuantityStepSize;
-
-            // Ensure we round towards zero to avoid exceeding max allowed precision
-            return Math.Round(rounded, 5, MidpointRounding.ToZero);
-        }
-
         protected override async Task<Result> HandleCore(PlaceExitOrdersCommand request, CancellationToken cancellationToken)
         {
             var currentAsk = request.Ticker.Ask;
@@ -50,7 +36,6 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                         .Trades
                         .Where(t => t.ExitOrder == null &&
                                     t.EntryOrder.Status == OrderStatus.Filled &&
-                                    t.EntryOrder.QuantityFilled > 0 &&
                                     ((bot.IsLong && ((t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) + bot.ExitStep <= currentAsk)) ||
                                      (!bot.IsLong && ((t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) - bot.ExitStep >= currentBid))))
                         .OrderByDescending(t
@@ -66,7 +51,6 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                         .Trades
                         .Where(t => t.ExitOrder == null &&
                                     t.EntryOrder.Status == OrderStatus.Filled &&
-                                    t.EntryOrder.QuantityFilled > 0 &&
                                     ((bot.IsLong && ((t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) + bot.ExitStep > currentAsk)) ||
                                      (!bot.IsLong && ((t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) - bot.ExitStep < currentBid))))
                         .OrderBy(t => bot.IsLong
