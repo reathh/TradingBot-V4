@@ -12,43 +12,25 @@ public record UpdateStaleOrdersCommand : IRequest<Result<int>>
     public TimeSpan StaleThreshold { get; init; } = TimeSpan.FromMinutes(1);
 }
 
-public class UpdateStaleOrdersCommandHandler : BaseCommandHandler<UpdateStaleOrdersCommand, int>
+public class UpdateStaleOrdersCommandHandler(
+    TradingBotDbContext dbContext,
+    IExchangeApiRepository exchangeApiRepository,
+    TimeProvider timeProvider,
+    TradingNotificationService notificationService,
+    ILogger<UpdateStaleOrdersCommandHandler> logger) : BaseCommandHandler<UpdateStaleOrdersCommand, int>(logger)
 {
-    private readonly TradingBotDbContext _dbContext;
-    private readonly IExchangeApiRepository _exchangeApiRepository;
-    private readonly TimeProvider _timeProvider;
-    private readonly TradingNotificationService _notificationService;
-    private readonly ILogger<UpdateStaleOrdersCommandHandler> _logger;
-
-    public UpdateStaleOrdersCommandHandler(
-        TradingBotDbContext dbContext,
-        IExchangeApiRepository exchangeApiRepository,
-        TimeProvider timeProvider,
-        TradingNotificationService notificationService,
-        ILogger<UpdateStaleOrdersCommandHandler> logger)
-        : base(logger)
+    private sealed class NullTradingNotificationService() : TradingNotificationService(null!, NullLogger<TradingNotificationService>.Instance)
     {
-        _dbContext = dbContext;
-        _exchangeApiRepository = exchangeApiRepository;
-        _timeProvider = timeProvider;
-        _notificationService = notificationService;
-        _logger = logger;
-    }
-
-    private sealed class NullTradingNotificationService : TradingNotificationService
-    {
-        public NullTradingNotificationService() : base(null!, NullLogger<TradingNotificationService>.Instance) {}
-
         public new Task NotifyOrderUpdated(string orderId) => Task.CompletedTask;
     }
 
     protected override async Task<Result<int>> HandleCore(UpdateStaleOrdersCommand request, CancellationToken cancellationToken)
     {
-        var currentTime = _timeProvider.GetUtcNow().DateTime;
+        var currentTime = timeProvider.GetUtcNow().DateTime;
         var cutoffTime = currentTime - request.StaleThreshold;
 
         // Fetch only stale orders, and get the associated bot via EntryTrade or ExitTrades
-        var staleOrders = await _dbContext.Orders
+        var staleOrders = await dbContext.Orders
             .Where(o => o.Status != OrderStatus.Filled && o.Status != OrderStatus.Canceled && o.LastUpdated < cutoffTime)
             .Where(o => o.EntryTrade != null || o.ExitTrades.Any()) // Ensure a related trade exists
             .Select(o => new
@@ -62,11 +44,11 @@ public class UpdateStaleOrdersCommandHandler : BaseCommandHandler<UpdateStaleOrd
 
         if (staleOrders.Count == 0)
         {
-            _logger.LogInformation("No stale orders found");
+            logger.LogInformation("No stale orders found");
             return Result<int>.SuccessWith(0);
         }
 
-        _logger.LogInformation("Found {OrderCount} stale orders", staleOrders.Count);
+        logger.LogInformation("Found {OrderCount} stale orders", staleOrders.Count);
         int updatedCount = 0;
 
         // Group by Bot for exchange API reuse
@@ -75,7 +57,7 @@ public class UpdateStaleOrdersCommandHandler : BaseCommandHandler<UpdateStaleOrd
         var updateTasks = ordersByBot.SelectMany(group =>
         {
             var bot = group.Key;
-            var exchangeApi = _exchangeApiRepository.GetExchangeApi(bot);
+            var exchangeApi = exchangeApiRepository.GetExchangeApi(bot);
             return group.Select(async x =>
             {
                 var order = x.Order;
@@ -89,23 +71,23 @@ public class UpdateStaleOrdersCommandHandler : BaseCommandHandler<UpdateStaleOrd
                         order.AverageFillPrice = updatedOrder.AverageFillPrice;
                     if (updatedOrder.Fee.HasValue)
                         order.Fee = updatedOrder.Fee.Value;
-                    _logger.LogInformation("Updated order {OrderId}: Filled {QuantityFilled}/{Quantity}, Status: {Status}",
+                    logger.LogInformation("Updated order {OrderId}: Filled {QuantityFilled}/{Quantity}, Status: {Status}",
                         order.Id, order.QuantityFilled, order.Quantity, order.Status);
                     Interlocked.Increment(ref updatedCount);
                     
-                    await _notificationService.NotifyOrderUpdated(order.Id);
+                    await notificationService.NotifyOrderUpdated(order.Id);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to get status for order {OrderId} from the exchange", order.Id);
+                    logger.LogError(ex, "Failed to get status for order {OrderId} from the exchange", order.Id);
                     order.LastUpdated = currentTime;
                 }
             });
         }).ToList();
 
         await Task.WhenAll(updateTasks);
-        await _dbContext.SaveChangesAsync(cancellationToken);
-        _logger.LogInformation("Successfully updated {UpdatedCount} stale orders", updatedCount);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Successfully updated {UpdatedCount} stale orders", updatedCount);
         
         return Result<int>.SuccessWith(updatedCount);
     }

@@ -3,7 +3,6 @@ using Moq;
 using TradingBot.Application.Commands.PlaceExitOrders;
 using TradingBot.Data;
 using TradingBot.Services;
-using TradingBot.Application.Common;
 
 namespace TradingBot.Tests.Application.Commands.PlaceExitOrders;
 
@@ -167,9 +166,8 @@ public abstract class PlaceExitOrdersTestBase : BaseTest
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    private class TestTradingNotificationService : TradingNotificationService
+    private class TestTradingNotificationService() : TradingNotificationService(null, null)
     {
-        public TestTradingNotificationService() : base(null, null) { }
         public Task NotifyOrderUpdated(string orderId) => Task.CompletedTask;
     }
 }

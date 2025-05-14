@@ -1,6 +1,5 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging.Abstractions;
 using TradingBot.Application.Common;
 using TradingBot.Data;
 using TradingBot.Services;
@@ -14,28 +13,15 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
 {
     public required TickerDto Ticker { get; init; }
 
-    public class PlaceEntryOrdersCommandHandler : BaseCommandHandler<PlaceEntryOrdersCommand>
+    public class PlaceEntryOrdersCommandHandler(
+        TradingBotDbContext dbContext,
+        IExchangeApiRepository exchangeApiRepository,
+        TradingNotificationService notificationService,
+        ILogger<PlaceEntryOrdersCommandHandler> logger) : BaseCommandHandler<PlaceEntryOrdersCommand>(logger)
     {
-        private readonly TradingBotDbContext _dbContext;
-        private readonly IExchangeApiRepository _exchangeApiRepository;
-        private readonly TradingNotificationService _notificationService;
-        private readonly ILogger<PlaceEntryOrdersCommandHandler> _logger;
-
-        public PlaceEntryOrdersCommandHandler(
-            TradingBotDbContext dbContext,
-            IExchangeApiRepository exchangeApiRepository,
-            TradingNotificationService notificationService,
-            ILogger<PlaceEntryOrdersCommandHandler> logger) : base(logger)
-        {
-            _dbContext = dbContext;
-            _exchangeApiRepository = exchangeApiRepository;
-            _notificationService = notificationService;
-            _logger = logger;
-        }
-
         protected override async Task<Result> HandleCore(PlaceEntryOrdersCommand request, CancellationToken cancellationToken)
         {
-            var botsWithQuantities = await _dbContext
+            var botsWithQuantities = await dbContext
                 .Bots
                 .Where(b => b.Enabled)
 
@@ -93,7 +79,7 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                 {
                     try
                     {
-                        await PlaceOrders(_dbContext,
+                        await PlaceOrders(dbContext,
                             botWithQuantity.Bot,
                             request.Ticker,
                             botWithQuantity.CatchUpQuantity,
@@ -102,7 +88,7 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex,
+                        logger.LogError(ex,
                             "Failed to place orders for bot {BotId} with quantity {Quantity}",
                             botWithQuantity.Bot.Id,
                             botWithQuantity.CatchUpQuantity);
@@ -125,7 +111,7 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
             int openTradesCount,
             CancellationToken cancellationToken)
         {
-            var exchangeApi = _exchangeApiRepository.GetExchangeApi(bot);
+            var exchangeApi = exchangeApiRepository.GetExchangeApi(bot);
 
             var currentPrice = bot.IsLong ? ticker.Bid : ticker.Ask;
             var stepDirection = bot.IsLong ? 1 : -1;
@@ -156,7 +142,7 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                     var trade = new Trade(order);
                     bot.Trades.Add(trade);
 
-                    _logger.LogInformation("Bot {BotId} placed {Side} order at {Price} for {Quantity} units ({OrderId})",
+                    logger.LogInformation("Bot {BotId} placed {Side} order at {Price} for {Quantity} units ({OrderId})",
                         bot.Id,
                         order.IsBuy ? "buy" : "sell",
                         order.Price,
@@ -164,11 +150,11 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                         order.Id);
 
                     // Notify about the new order
-                    await _notificationService.NotifyOrderUpdated(order.Id);
+                    await notificationService.NotifyOrderUpdated(order.Id);
                 }
 
                 await dbContext.SaveChangesAsync(cancellationToken);
-                _logger.LogInformation("Successfully placed {OrderCount} entry orders for bot {BotId}", orders.Length, bot.Id);
+                logger.LogInformation("Successfully placed {OrderCount} entry orders for bot {BotId}", orders.Length, bot.Id);
             }
             else
             {
@@ -178,7 +164,7 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                 var trade = new Trade(order);
                 bot.Trades.Add(trade);
 
-                _logger.LogInformation("Bot {BotId} placed {Side} order at {Price} for {Quantity} units ({OrderId})",
+                logger.LogInformation("Bot {BotId} placed {Side} order at {Price} for {Quantity} units ({OrderId})",
                     bot.Id,
                     order.IsBuy ? "buy" : "sell",
                     order.Price,
@@ -186,10 +172,10 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                     order.Id);
 
                 // Notify about the new order
-                await _notificationService.NotifyOrderUpdated(order.Id);
+                await notificationService.NotifyOrderUpdated(order.Id);
 
                 await dbContext.SaveChangesAsync(cancellationToken);
-                _logger.LogInformation("Successfully placed 1 entry order for bot {BotId}", bot.Id);
+                logger.LogInformation("Successfully placed 1 entry order for bot {BotId}", bot.Id);
             }
         }
     }

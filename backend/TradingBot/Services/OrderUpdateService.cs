@@ -150,19 +150,14 @@ public class OrderUpdateService(
             .ContinueWith(_ => _retryProcessor.Post(retry), cancellationToken);
     }
     
-    private class OrderUpdateRetry
+    private class OrderUpdateRetry(OrderUpdate orderUpdate, int retryCount, CancellationToken cancellationToken, OrderUpdateService service)
     {
-        public OrderUpdate OrderUpdate { get; }
-        public int RetryCount { get; set; }
-        public CancellationToken CancellationToken { get; }
-        public OrderUpdateService Service { get; }
-        
-        public OrderUpdateRetry(OrderUpdate orderUpdate, int retryCount, CancellationToken cancellationToken, OrderUpdateService service)
-        {
-            OrderUpdate = orderUpdate;
-            RetryCount = retryCount;
-            CancellationToken = cancellationToken;
-            Service = service;
-        }
+        public OrderUpdate OrderUpdate { get; } = orderUpdate;
+
+        public int RetryCount { get; set; } = retryCount;
+
+        public CancellationToken CancellationToken { get; } = cancellationToken;
+
+        public OrderUpdateService Service { get; } = service;
     }
 }

@@ -7,15 +7,8 @@ namespace TradingBot.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class OrdersController : ControllerBase
+    public class OrdersController(TradingBotDbContext context) : ControllerBase
     {
-        private readonly TradingBotDbContext _context;
-
-        public OrdersController(TradingBotDbContext context)
-        {
-            _context = context;
-        }
-
         [HttpGet]
         public async Task<ActionResult<PagedResult<OrderDto>>> GetOrders(
             [FromQuery] int page = 1,
@@ -27,13 +20,13 @@ namespace TradingBot.Controllers
             [FromQuery] string? sortDirection = null)
         {
             // Start with the base query
-            var query = _context.Orders.AsQueryable();
+            var query = context.Orders.AsQueryable();
 
             // Apply botId filter if provided
             if (botId.HasValue)
             {
                 // Get all trades related to this bot
-                var botTrades = await _context.Trades
+                var botTrades = await context.Trades
                     .Where(t => t.BotId == botId)
                     .Select(t => new { EntryOrderId = t.EntryOrder.Id, ExitOrderId = t.ExitOrder != null ? t.ExitOrder.Id : null })
                     .ToListAsync();
@@ -136,7 +129,7 @@ namespace TradingBot.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<OrderDto>> GetOrder(string id)
         {
-            var order = await _context.Orders.FindAsync(id);
+            var order = await context.Orders.FindAsync(id);
 
             if (order == null)
             {

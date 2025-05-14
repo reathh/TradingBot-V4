@@ -1,6 +1,5 @@
 namespace TradingBot.Tests.Services;
 
-using Data;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

@@ -27,10 +27,8 @@ public class UpdateBotOrderCommandHandler(
     {
     }
 
-    private sealed class NullTradingNotificationService : TradingNotificationService
+    private sealed class NullTradingNotificationService() : TradingNotificationService(null!, NullLogger<TradingNotificationService>.Instance)
     {
-        public NullTradingNotificationService() : base(null!, NullLogger<TradingNotificationService>.Instance) {}
-
         public new Task NotifyOrderUpdated(string orderId) => Task.CompletedTask;
     }
 

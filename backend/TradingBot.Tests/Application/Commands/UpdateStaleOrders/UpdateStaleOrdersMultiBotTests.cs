@@ -1,11 +1,7 @@
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Moq;
 using TradingBot.Application.Commands.UpdateStaleOrders;
 using TradingBot.Data;
-using TradingBot.Services;
-using Xunit;
 
 namespace TradingBot.Tests.Application.Commands.UpdateStaleOrders;
 

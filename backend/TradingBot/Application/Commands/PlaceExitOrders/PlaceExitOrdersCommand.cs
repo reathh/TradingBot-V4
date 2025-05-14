@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging.Abstractions;
 using TradingBot.Application.Common;
 using TradingBot.Data;
 using TradingBot.Services;
@@ -14,34 +13,19 @@ public class PlaceExitOrdersCommand : IRequest<Result>
 {
     public required TickerDto Ticker { get; set; }
 
-    public class PlaceExitOrdersCommandHandler : BaseCommandHandler<PlaceExitOrdersCommand>
+    public class PlaceExitOrdersCommandHandler(
+        TradingBotDbContext dbContext,
+        IExchangeApiRepository exchangeApiRepository,
+        ISymbolInfoCache symbolInfoCache,
+        TradingNotificationService notificationService,
+        ILogger<PlaceExitOrdersCommandHandler> logger) : BaseCommandHandler<PlaceExitOrdersCommand>(logger)
     {
-        private readonly TradingBotDbContext _dbContext;
-        private readonly IExchangeApiRepository _exchangeApiRepository;
-        private readonly ISymbolInfoCache _symbolInfoCache;
-        private readonly TradingNotificationService _notificationService;
-        private readonly ILogger<PlaceExitOrdersCommandHandler> _logger;
-
-        public PlaceExitOrdersCommandHandler(
-            TradingBotDbContext dbContext,
-            IExchangeApiRepository exchangeApiRepository,
-            ISymbolInfoCache symbolInfoCache,
-            TradingNotificationService notificationService,
-            ILogger<PlaceExitOrdersCommandHandler> logger) : base(logger)
-        {
-            _dbContext = dbContext;
-            _exchangeApiRepository = exchangeApiRepository;
-            _symbolInfoCache = symbolInfoCache;
-            _notificationService = notificationService;
-            _logger = logger;
-        }
-
         protected override async Task<Result> HandleCore(PlaceExitOrdersCommand request, CancellationToken cancellationToken)
         {
             var currentAsk = request.Ticker.Ask;
             var currentBid = request.Ticker.Bid;
 
-            var botsWithTrades = await _dbContext
+            var botsWithTrades = await dbContext
                 .Bots
                 .Where(b => b.Enabled)
                 .Select(bot => new
@@ -121,11 +105,11 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                     }
                     try
                     {
-                        await PlaceExitOrders(_dbContext, bot, request.Ticker, consolidatedTrades, advanceTrades, token);
+                        await PlaceExitOrders(dbContext, bot, request.Ticker, consolidatedTrades, advanceTrades, token);
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Failed to place exit orders for bot {BotId}", bot.Id);
+                        logger.LogError(ex, "Failed to place exit orders for bot {BotId}", bot.Id);
                         errors.Add($"Failed to place exit orders for bot {bot.Id}: {ex.Message}");
                     }
                 });
@@ -142,8 +126,8 @@ public class PlaceExitOrdersCommand : IRequest<Result>
             CancellationToken cancellationToken)
         {
             var currentPrice = bot.IsLong ? ticker.Ask : ticker.Bid;
-            var exchangeApi = _exchangeApiRepository.GetExchangeApi(bot);
-            var symbolInfo = await _symbolInfoCache.GetAsync(bot.Symbol, cancellationToken);
+            var exchangeApi = exchangeApiRepository.GetExchangeApi(bot);
+            var symbolInfo = await symbolInfoCache.GetAsync(bot.Symbol, cancellationToken);
             var orderTasks = new List<(Task<Order> OrderTask, List<Trade> AssociatedTrades)>();
 
             // Prepare consolidated exit order for eligible trades
@@ -194,7 +178,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to place exit order for bot {BotId}", bot.Id);
+                    logger.LogError(ex, "Failed to place exit order for bot {BotId}", bot.Id);
 
                     return (Order: null!, Trades: item.AssociatedTrades, Success: false);
                 }
@@ -207,7 +191,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                 {
                     trade.ExitOrder = result.Order;
 
-                    _logger.LogInformation("Bot {BotId} placed exit {Side} order at {Price} for trade with entry price {EntryPrice}",
+                    logger.LogInformation("Bot {BotId} placed exit {Side} order at {Price} for trade with entry price {EntryPrice}",
                         bot.Id,
                         result.Order.IsBuy ? "buy" : "sell",
                         result.Order.Price,
@@ -215,7 +199,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                 }
                 
                 // Notify about the new exit order
-                await _notificationService.NotifyOrderUpdated(result.Order.Id);
+                await notificationService.NotifyOrderUpdated(result.Order.Id);
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);
@@ -225,12 +209,12 @@ public class PlaceExitOrdersCommand : IRequest<Result>
 
             if (successfulOrderCount > 0)
             {
-                _logger.LogInformation("Successfully placed {OrderCount} exit orders for bot {BotId}", successfulOrderCount, bot.Id);
+                logger.LogInformation("Successfully placed {OrderCount} exit orders for bot {BotId}", successfulOrderCount, bot.Id);
             }
 
             if (failedOrderCount > 0)
             {
-                _logger.LogWarning("Failed to place {OrderCount} exit orders for bot {BotId}", failedOrderCount, bot.Id);
+                logger.LogWarning("Failed to place {OrderCount} exit orders for bot {BotId}", failedOrderCount, bot.Id);
             }
 
             return;

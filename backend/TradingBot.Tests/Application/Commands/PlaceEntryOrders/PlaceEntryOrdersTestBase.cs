@@ -127,9 +127,8 @@ public abstract class PlaceEntryOrdersTestBase
         return Handler.Handle(command, cancellationToken);
     }
 
-    private class TestTradingNotificationService : TradingNotificationService
+    private class TestTradingNotificationService() : TradingNotificationService(null, null)
     {
-        public TestTradingNotificationService() : base(null, null) { }
         public Task NotifyOrderUpdated(string orderId) => Task.CompletedTask;
     }
 } 

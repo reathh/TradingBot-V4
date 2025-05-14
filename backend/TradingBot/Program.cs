@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using TradingBot.Data;
+using TradingBot.Data.Interceptors;
 using TradingBot.Services;
 using System.Text.Json.Serialization;
 using MediatR;
@@ -26,9 +27,20 @@ builder.Services.AddSignalR();
 // Register the notification service as a singleton
 builder.Services.AddSingleton<TradingNotificationService>();
 
+// Register the slow query interceptor
+builder.Services.AddSingleton<SlowQueryInterceptor>();
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-builder.Services.AddDbContext<TradingBotDbContext>(options => options.UseNpgsql(connectionString));
+// Register DB context with interceptor
+builder.Services.AddDbContext<TradingBotDbContext>((serviceProvider, options) => 
+{
+    options.UseNpgsql(connectionString);
+    
+    // Get the registered interceptor from the service provider
+    var interceptor = serviceProvider.GetRequiredService<SlowQueryInterceptor>();
+    options.AddInterceptors(interceptor);
+});
 
 // Register TimeProvider as a singleton
 builder.Services.AddSingleton(TimeProvider.System);

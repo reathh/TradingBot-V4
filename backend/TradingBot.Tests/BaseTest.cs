@@ -109,9 +109,10 @@ public abstract class BaseTest
         return order;
     }
 
-    private class TestTradingNotificationService : TradingNotificationService
+    private class TestTradingNotificationService() : TradingNotificationService(
+        new Moq.Mock<Microsoft.AspNetCore.SignalR.IHubContext<TradingBot.Services.TradingHub, TradingBot.Services.ITradingHubClient>>().Object,
+        new Moq.Mock<Microsoft.Extensions.Logging.ILogger<TradingNotificationService>>().Object)
     {
-        public TestTradingNotificationService() : base(new Moq.Mock<Microsoft.AspNetCore.SignalR.IHubContext<TradingBot.Services.TradingHub, TradingBot.Services.ITradingHubClient>>().Object, new Moq.Mock<Microsoft.Extensions.Logging.ILogger<TradingNotificationService>>().Object) { }
         public override Task NotifyOrderUpdated(string orderId) => Task.CompletedTask;
     }
 }

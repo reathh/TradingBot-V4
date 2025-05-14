@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using TradingBot.Application.Commands.PlaceExitOrders;
 using TradingBot.Services;
-using Models;
 using TradingBot.Application.Common;
 
 public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
