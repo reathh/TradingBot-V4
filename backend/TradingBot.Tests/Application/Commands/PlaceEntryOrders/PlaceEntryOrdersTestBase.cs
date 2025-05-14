@@ -18,6 +18,7 @@ public abstract class PlaceEntryOrdersTestBase
     protected readonly Mock<IExchangeApi> ExchangeApiMock;
     protected readonly Mock<IExchangeApiRepository> ExchangeApiRepositoryMock;
     protected readonly Mock<ILogger<PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler>> LoggerMock;
+    protected readonly TradingNotificationService NotificationServiceStub;
     protected readonly TradingBotDbContext DbContext;
     protected readonly PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler Handler;
 
@@ -29,6 +30,7 @@ public abstract class PlaceEntryOrdersTestBase
         ExchangeApiMock = new Mock<IExchangeApi>();
         ExchangeApiRepositoryMock = new Mock<IExchangeApiRepository>();
         LoggerMock = new Mock<ILogger<PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler>>();
+        NotificationServiceStub = new TestTradingNotificationService();
 
         // Configure the repository mock to return the exchange API mock
         ExchangeApiRepositoryMock.Setup(x => x.GetExchangeApi(It.IsAny<Bot>()))
@@ -42,6 +44,7 @@ public abstract class PlaceEntryOrdersTestBase
         Handler = new PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler(
             DbContext,
             ExchangeApiRepositoryMock.Object,
+            NotificationServiceStub,
             LoggerMock.Object);
     }
     
@@ -122,5 +125,11 @@ public abstract class PlaceEntryOrdersTestBase
     protected Task<Result> HandleCommand(PlaceEntryOrdersCommand command, CancellationToken cancellationToken)
     {
         return Handler.Handle(command, cancellationToken);
+    }
+
+    private class TestTradingNotificationService : TradingNotificationService
+    {
+        public TestTradingNotificationService() : base(null, null) { }
+        public Task NotifyOrderUpdated(string orderId) => Task.CompletedTask;
     }
 } 

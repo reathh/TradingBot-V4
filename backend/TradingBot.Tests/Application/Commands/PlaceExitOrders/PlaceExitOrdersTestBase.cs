@@ -17,11 +17,13 @@ public abstract class PlaceExitOrdersTestBase : BaseTest
     protected new readonly PlaceExitOrdersCommand.PlaceExitOrdersCommandHandler Handler;
     protected new readonly Mock<ILogger<PlaceExitOrdersCommand.PlaceExitOrdersCommandHandler>> LoggerMock;
     protected readonly Mock<ISymbolInfoCache> SymbolInfoCacheMock;
+    protected readonly TradingNotificationService NotificationServiceStub;
 
     protected PlaceExitOrdersTestBase()
     {
         LoggerMock = new Mock<ILogger<PlaceExitOrdersCommand.PlaceExitOrdersCommandHandler>>();
         SymbolInfoCacheMock = new Mock<ISymbolInfoCache>();
+        NotificationServiceStub = new TestTradingNotificationService();
         var defaultSymbolInfo = new SymbolInfo(0.00001m, 0.00001m, 5);
         SymbolInfoCacheMock.Setup(x => x.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(defaultSymbolInfo);
@@ -29,6 +31,7 @@ public abstract class PlaceExitOrdersTestBase : BaseTest
             DbContext,
             ExchangeApiRepositoryMock.Object,
             SymbolInfoCacheMock.Object,
+            NotificationServiceStub,
             LoggerMock.Object);
     }
 
@@ -162,5 +165,11 @@ public abstract class PlaceExitOrdersTestBase : BaseTest
             It.IsAny<bool>(),
             It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    private class TestTradingNotificationService : TradingNotificationService
+    {
+        public TestTradingNotificationService() : base(null, null) { }
+        public Task NotifyOrderUpdated(string orderId) => Task.CompletedTask;
     }
 }
