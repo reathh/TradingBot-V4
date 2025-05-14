@@ -26,16 +26,9 @@ builder.Services.AddSignalR();
 // Register the notification service as a singleton
 builder.Services.AddSingleton<TradingNotificationService>();
 
-if (builder.Environment.IsDevelopment())
-{
-    builder.Services.AddDbContext<TradingBotDbContext>(options => options.UseInMemoryDatabase("TradingBot"));
-}
-else
-{
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-    builder.Services.AddDbContext<TradingBotDbContext>(options => options.UseNpgsql(connectionString));
-}
+builder.Services.AddDbContext<TradingBotDbContext>(options => options.UseNpgsql(connectionString));
 
 // Register TimeProvider as a singleton
 builder.Services.AddSingleton(TimeProvider.System);
@@ -61,7 +54,9 @@ builder.Services.Scan(scan => scan
 // Register hosted services as IHostedService
 builder.Services.Scan(scan => scan
     .FromAssemblyOf<Program>()
-    .AddClasses(classes => classes.AssignableTo<IHostedService>().Where(c => c != typeof(BackgroundJobProcessor)))
+    .AddClasses(classes => classes
+        .AssignableTo<IHostedService>()
+        .Where(c => c != typeof(BackgroundJobProcessor)))
     .AsImplementedInterfaces()
     .WithSingletonLifetime());
 
@@ -74,7 +69,8 @@ builder.Services.AddHostedService(provider => (BackgroundJobProcessor)provider.G
 builder
     .Services
     .AddControllers()
-    .AddJsonOptions(options => {
+    .AddJsonOptions(options =>
+    {
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
@@ -86,16 +82,14 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<TradingBotDbContext>();
-    
-    if (!app.Environment.IsDevelopment())
-    {
-        dbContext.Database.Migrate();
-    }
-    else
+
+    dbContext.Database.Migrate();
+
+    DataSeeder.SeedDatabase(dbContext);
+
+    if (app.Environment.IsDevelopment())
     {
         app.MapOpenApi();
-        
-        DataSeeder.SeedDatabase(dbContext);
     }
 }
 
