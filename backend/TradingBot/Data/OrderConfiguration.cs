@@ -14,6 +14,10 @@ namespace TradingBot.Data
             // Indexes to speed up frequent filtering on order creation date and status
             builder.HasIndex(o => o.CreatedAt);
             builder.HasIndex(o => new { o.CreatedAt, o.Status });
+
+            // Additional indexes to optimise entry & exit order command queries
+            builder.HasIndex(o => o.Status);
+            builder.HasIndex(o => new { o.Status, o.QuantityFilled });
         }
     }
 }

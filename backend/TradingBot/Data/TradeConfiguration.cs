@@ -21,6 +21,13 @@ namespace TradingBot.Data
                     .WithMany(b => b.Trades)
                     .HasForeignKey(t => t.BotId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+            // Indexes to improve performance of entry/exit order queries
+            // 1. Composite index to quickly find trades for a bot that still need exit orders (ExitOrderId is NULL)
+            builder.HasIndex(t => new { t.BotId, t.ExitOrderId });
+
+            // 2. Index to speed up joins from trades to their entry orders
+            builder.HasIndex(t => t.EntryOrderId);
         }
     }
 }
