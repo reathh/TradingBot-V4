@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using TradingBot.Data;
 using TradingBot.Services;
 using System.Text.Json.Serialization;
+using MediatR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,6 +47,9 @@ builder.Services.AddSingleton<IExchangeApiRepository, BinanceExchangeApiReposito
 
 // Register MediatR
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<Program>());
+
+// Register pipeline behaviors
+builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TradingBot.Application.Common.RequestTimingBehavior<,>));
 
 // Register all services with implemented interfaces as transient, except for IHostedService
 builder.Services.Scan(scan => scan

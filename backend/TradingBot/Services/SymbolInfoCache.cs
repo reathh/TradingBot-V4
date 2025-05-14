@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using Binance.Net.Clients;
 using Binance.Net.Objects.Models.Spot;
-using CryptoExchange.Net.Objects;
 
 namespace TradingBot.Services;
 

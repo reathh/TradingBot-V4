@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TradingBot.Data;
 using TradingBot.Models;
-using System.Linq.Expressions;
 
 namespace TradingBot.Controllers
 {
