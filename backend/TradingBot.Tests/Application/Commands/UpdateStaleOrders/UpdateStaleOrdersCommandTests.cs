@@ -142,16 +142,9 @@ public class UpdateStaleOrdersCommandTests : BaseTest
         var staleOrder = CreateOrder(bot, 100m, 1m, true);
         staleOrder.LastUpdated = _currentTime.AddMinutes(-15);
 
-        // Add the order to the database
-        DbContext.Orders.Add(staleOrder);
-        await DbContext.SaveChangesAsync();
-
-        // Create trade and link to bot
         var staleTrade = new Trade(staleOrder);
         bot.Trades.Add(staleTrade);
-
-        // Add trade to database
-        DbContext.Trades.Add(staleTrade);
+        
         await DbContext.SaveChangesAsync();
 
         // Setup mock to throw an exception

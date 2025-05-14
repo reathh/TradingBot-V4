@@ -50,7 +50,6 @@ public class UpdateStaleOrdersCommandHandler : BaseCommandHandler<UpdateStaleOrd
         // Fetch only stale orders, and get the associated bot via EntryTrade or ExitTrades
         var staleOrders = await _dbContext.Orders
             .Where(o => o.Status != OrderStatus.Filled && o.Status != OrderStatus.Canceled && o.LastUpdated < cutoffTime)
-            .Where(o => o.EntryTrade != null || o.ExitTrades.Any()) // Only include orders with a trade
             .Select(o => new
             {
                 Order = o,
