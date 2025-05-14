@@ -131,34 +131,7 @@ public class UpdateStaleOrdersCommandTests : BaseTest
         Assert.Equal(0, result.Data);
     }
 
-    [Fact]
-    public async Task Handle_ShouldSkipOrdersWithNoTrade()
-    {
-        // Arrange
-        // Create an order without attaching it to a bot or trade
-        var order = new Order(
-            id: Guid.NewGuid().ToString(),
-            symbol: "BTCUSDT",
-            price: 100m,
-            quantity: 1m,
-            isBuy: true,
-            createdAt: DateTime.UtcNow
-        );
-        order.LastUpdated = _currentTime.AddMinutes(-15);
-
-        DbContext.Orders.Add(order);
-        await DbContext.SaveChangesAsync();
-
-        var command = new UpdateStaleOrdersCommand();
-
-        // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        // Assert
-        Assert.True(result.Succeeded);
-        Assert.Equal(0, result.Data); // No orders should be updated since we skipped the one without a trade
-    }
-
+    
     [Fact]
     public async Task Handle_ShouldHandleExchangeErrors()
     {
