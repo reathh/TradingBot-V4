@@ -11,42 +11,27 @@ public class VerifyBalancesCommand : IRequest<Result>
 {
     public class VerifyBalancesCommandHandler : BaseCommandHandler<VerifyBalancesCommand>
     {
-        private readonly IDbContextFactory<TradingBotDbContext> _dbContextFactory;
+        private readonly TradingBotDbContext _dbContext;
         private readonly IExchangeApiRepository _exchangeApiRepository;
         private readonly ILogger<VerifyBalancesCommandHandler> _logger;
         private readonly int _maxRetries = 5;
         private readonly TimeSpan _delayBetweenChecks = TimeSpan.FromSeconds(5);
 
         public VerifyBalancesCommandHandler(
-            IDbContextFactory<TradingBotDbContext> dbContextFactory,
+            TradingBotDbContext dbContext,
             IExchangeApiRepository exchangeApiRepository,
             ILogger<VerifyBalancesCommandHandler> logger)
             : base(logger)
         {
-            _dbContextFactory = dbContextFactory;
+            _dbContext = dbContext;
             _exchangeApiRepository = exchangeApiRepository;
             _logger = logger;
-        }
-
-        // Convenience constructor used by existing unit tests
-        internal VerifyBalancesCommandHandler(
-            TradingBotDbContext dbContext,
-            IExchangeApiRepository exchangeApiRepository,
-            ILogger<VerifyBalancesCommandHandler> logger)
-            : this(new SingleDbContextFactory(dbContext), exchangeApiRepository, logger)
-        {
-        }
-
-        private sealed class SingleDbContextFactory(TradingBotDbContext ctx) : IDbContextFactory<TradingBotDbContext>
-        {
-            public TradingBotDbContext CreateDbContext() => ctx;
         }
 
         protected override async Task<Result> HandleCore(VerifyBalancesCommand request, CancellationToken cancellationToken)
         {
             // Fetch enabled bot IDs at the start
-            using var dbContext = _dbContextFactory.CreateDbContext();
-            var enabledBotIds = await dbContext.Bots
+            var enabledBotIds = await _dbContext.Bots
                 .Where(b => b.Enabled)
                 .Select(b => b.Id)
                 .ToListAsync(cancellationToken);
@@ -63,8 +48,7 @@ public class VerifyBalancesCommand : IRequest<Result>
                     while (attemptCount < _maxRetries)
                     {
                         attemptCount++;
-                        using var context = _dbContextFactory.CreateDbContext();
-                        var botWithBalance = await context.Bots
+                        var botWithBalance = await _dbContext.Bots
                             .Where(b => b.Id == botId && b.Enabled)
                             .Select(b => new
                             {
@@ -116,7 +100,7 @@ public class VerifyBalancesCommand : IRequest<Result>
                             {
                                 _logger.LogCritical("Balance verification failed for bot {BotId} after {MaxRetries} attempts. Bot disabled.", bot.Id, _maxRetries);
                                 bot.Enabled = false;
-                                await context.SaveChangesAsync(cancellationToken);
+                                await _dbContext.SaveChangesAsync(cancellationToken);
                                 errorBag.Add($"Balance verification failed for bot {bot.Id}: Expected {expectedBalance}, Actual {actualBalance}");
                             }
                         }
@@ -128,7 +112,7 @@ public class VerifyBalancesCommand : IRequest<Result>
                             {
                                 _logger.LogCritical("Balance verification failed for bot {BotId} due to exceptions. Bot disabled.", bot.Id);
                                 bot.Enabled = false;
-                                await context.SaveChangesAsync(cancellationToken);
+                                await _dbContext.SaveChangesAsync(cancellationToken);
                                 errorBag.Add($"Balance verification failed for bot {bot.Id}: {ex.Message}");
                             }
 

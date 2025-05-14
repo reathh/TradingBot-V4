@@ -14,35 +14,26 @@ public class PlaceExitOrdersCommand : IRequest<Result>
 {
     public required TickerDto Ticker { get; set; }
 
-    public class PlaceExitOrdersCommandHandler(
-        IDbContextFactory<TradingBotDbContext> dbContextFactory,
-        IExchangeApiRepository exchangeApiRepository,
-        ISymbolInfoCache symbolInfoCache,
-        TradingNotificationService notificationService,
-        ILogger<PlaceExitOrdersCommandHandler> logger) : BaseCommandHandler<PlaceExitOrdersCommand>(logger)
+    public class PlaceExitOrdersCommandHandler : BaseCommandHandler<PlaceExitOrdersCommand>
     {
-        // Convenience constructor for unit tests (DbContext, repository, cache, logger)
-        internal PlaceExitOrdersCommandHandler(
+        private readonly TradingBotDbContext _dbContext;
+        private readonly IExchangeApiRepository _exchangeApiRepository;
+        private readonly ISymbolInfoCache _symbolInfoCache;
+        private readonly TradingNotificationService _notificationService;
+        private readonly ILogger<PlaceExitOrdersCommandHandler> _logger;
+
+        public PlaceExitOrdersCommandHandler(
             TradingBotDbContext dbContext,
             IExchangeApiRepository exchangeApiRepository,
             ISymbolInfoCache symbolInfoCache,
-            ILogger<PlaceExitOrdersCommandHandler> logger)
-            : this(new SingleDbContextFactory(dbContext), exchangeApiRepository, symbolInfoCache, new NullTradingNotificationService(), logger)
+            TradingNotificationService notificationService,
+            ILogger<PlaceExitOrdersCommandHandler> logger) : base(logger)
         {
-        }
-
-        // Minimal IDbContextFactory wrapper around a pre-created DbContext instance (used in tests)
-        private sealed class SingleDbContextFactory(TradingBotDbContext context) : IDbContextFactory<TradingBotDbContext>
-        {
-            public TradingBotDbContext CreateDbContext() => context;
-        }
-
-        // No-op implementation so unit tests don't have to provide SignalR infrastructure
-        private sealed class NullTradingNotificationService : TradingNotificationService
-        {
-            public NullTradingNotificationService() : base(null!, NullLogger<TradingNotificationService>.Instance) { }
-
-            public new Task NotifyOrderUpdated(string orderId) => Task.CompletedTask;
+            _dbContext = dbContext;
+            _exchangeApiRepository = exchangeApiRepository;
+            _symbolInfoCache = symbolInfoCache;
+            _notificationService = notificationService;
+            _logger = logger;
         }
 
         protected override async Task<Result> HandleCore(PlaceExitOrdersCommand request, CancellationToken cancellationToken)
@@ -50,10 +41,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
             var currentAsk = request.Ticker.Ask;
             var currentBid = request.Ticker.Bid;
 
-            // Fetch only bots with suitable trades, and only the relevant trades for each bot
-            await using var queryContext = dbContextFactory.CreateDbContext();
-
-            var botsWithTrades = await queryContext
+            var botsWithTrades = await _dbContext
                 .Bots
                 .AsNoTracking()
                 .Where(bot => bot.Enabled)
@@ -126,44 +114,28 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                 async (botWithTrades, token) =>
                 {
                     var bot = botWithTrades.Bot;
-
-                    var consolidatedTrades = botWithTrades
-                        .ConsolidatedTrades
-                        .Select(t => t.Trade)
-                        .ToList();
-
-                    var advanceTrades = botWithTrades
-                        .AdvanceTrades
-                        .Select(t => t.Trade)
-                        .ToList();
-
+                    var consolidatedTrades = botWithTrades.ConsolidatedTrades.Select(t => t.Trade).ToList();
+                    var advanceTrades = botWithTrades.AdvanceTrades.Select(t => t.Trade).ToList();
                     if (consolidatedTrades.Count == 0 && advanceTrades.Count == 0)
                     {
                         return;
                     }
-
                     try
                     {
-                        await using var scopedContext = dbContextFactory.CreateDbContext();
-
-                        scopedContext.Attach(bot);
-
-                        // Ensure that the context is tracking the trades we are about to modify
+                        _dbContext.Attach(bot);
                         if (consolidatedTrades.Count > 0)
                         {
-                            scopedContext.AttachRange(consolidatedTrades);
+                            _dbContext.AttachRange(consolidatedTrades);
                         }
-
                         if (advanceTrades.Count > 0)
                         {
-                            scopedContext.AttachRange(advanceTrades);
+                            _dbContext.AttachRange(advanceTrades);
                         }
-
-                        await PlaceExitOrders(scopedContext, bot, request.Ticker, consolidatedTrades, advanceTrades, token);
+                        await PlaceExitOrders(_dbContext, bot, request.Ticker, consolidatedTrades, advanceTrades, token);
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError(ex, "Failed to place exit orders for bot {BotId}", bot.Id);
+                        _logger.LogError(ex, "Failed to place exit orders for bot {BotId}", bot.Id);
                         errors.Add($"Failed to place exit orders for bot {bot.Id}: {ex.Message}");
                     }
                 });
@@ -180,8 +152,8 @@ public class PlaceExitOrdersCommand : IRequest<Result>
             CancellationToken cancellationToken)
         {
             var currentPrice = bot.IsLong ? ticker.Ask : ticker.Bid;
-            var exchangeApi = exchangeApiRepository.GetExchangeApi(bot);
-            var symbolInfo = await symbolInfoCache.GetAsync(bot.Symbol, cancellationToken);
+            var exchangeApi = _exchangeApiRepository.GetExchangeApi(bot);
+            var symbolInfo = await _symbolInfoCache.GetAsync(bot.Symbol, cancellationToken);
             var orderTasks = new List<(Task<Order> OrderTask, List<Trade> AssociatedTrades)>();
 
             // Prepare consolidated exit order for eligible trades
@@ -232,7 +204,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Failed to place exit order for bot {BotId}", bot.Id);
+                    _logger.LogError(ex, "Failed to place exit order for bot {BotId}", bot.Id);
 
                     return (Order: null!, Trades: item.AssociatedTrades, Success: false);
                 }
@@ -245,7 +217,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                 {
                     trade.ExitOrder = result.Order;
 
-                    logger.LogInformation("Bot {BotId} placed exit {Side} order at {Price} for trade with entry price {EntryPrice}",
+                    _logger.LogInformation("Bot {BotId} placed exit {Side} order at {Price} for trade with entry price {EntryPrice}",
                         bot.Id,
                         result.Order.IsBuy ? "buy" : "sell",
                         result.Order.Price,
@@ -253,7 +225,7 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                 }
                 
                 // Notify about the new exit order
-                await notificationService.NotifyOrderUpdated(result.Order.Id);
+                await _notificationService.NotifyOrderUpdated(result.Order.Id);
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);
@@ -263,12 +235,12 @@ public class PlaceExitOrdersCommand : IRequest<Result>
 
             if (successfulOrderCount > 0)
             {
-                logger.LogInformation("Successfully placed {OrderCount} exit orders for bot {BotId}", successfulOrderCount, bot.Id);
+                _logger.LogInformation("Successfully placed {OrderCount} exit orders for bot {BotId}", successfulOrderCount, bot.Id);
             }
 
             if (failedOrderCount > 0)
             {
-                logger.LogWarning("Failed to place {OrderCount} exit orders for bot {BotId}", failedOrderCount, bot.Id);
+                _logger.LogWarning("Failed to place {OrderCount} exit orders for bot {BotId}", failedOrderCount, bot.Id);
             }
 
             return;

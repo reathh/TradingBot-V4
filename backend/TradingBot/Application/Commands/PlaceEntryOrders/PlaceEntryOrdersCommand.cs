@@ -14,17 +14,28 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
 {
     public required TickerDto Ticker { get; init; }
 
-    public class PlaceEntryOrdersCommandHandler(
-        IDbContextFactory<TradingBotDbContext> dbContextFactory,
-        IExchangeApiRepository exchangeApiRepository,
-        TradingNotificationService notificationService,
-        ILogger<PlaceEntryOrdersCommandHandler> logger) : BaseCommandHandler<PlaceEntryOrdersCommand>(logger)
+    public class PlaceEntryOrdersCommandHandler : BaseCommandHandler<PlaceEntryOrdersCommand>
     {
+        private readonly TradingBotDbContext _dbContext;
+        private readonly IExchangeApiRepository _exchangeApiRepository;
+        private readonly TradingNotificationService _notificationService;
+        private readonly ILogger<PlaceEntryOrdersCommandHandler> _logger;
+
+        public PlaceEntryOrdersCommandHandler(
+            TradingBotDbContext dbContext,
+            IExchangeApiRepository exchangeApiRepository,
+            TradingNotificationService notificationService,
+            ILogger<PlaceEntryOrdersCommandHandler> logger) : base(logger)
+        {
+            _dbContext = dbContext;
+            _exchangeApiRepository = exchangeApiRepository;
+            _notificationService = notificationService;
+            _logger = logger;
+        }
+
         protected override async Task<Result> HandleCore(PlaceEntryOrdersCommand request, CancellationToken cancellationToken)
         {
-            await using var queryContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-
-            var botsWithQuantities = await queryContext
+            var botsWithQuantities = await _dbContext
                 .Bots
                 .AsNoTracking()
                 .Where(b => b.Enabled)
@@ -83,12 +94,10 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                 {
                     try
                     {
-                        await using var scopedContext = await dbContextFactory.CreateDbContextAsync(token);
+                        // Attach the detached bot entity to the context so that EF tracks changes
+                        _dbContext.Attach(botWithQuantity.Bot);
 
-                        // Attach the detached bot entity to the new context so that EF tracks changes
-                        scopedContext.Attach(botWithQuantity.Bot);
-
-                        await PlaceOrders(scopedContext,
+                        await PlaceOrders(_dbContext,
                             botWithQuantity.Bot,
                             request.Ticker,
                             botWithQuantity.CatchUpQuantity,
@@ -97,7 +106,7 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError(ex,
+                        _logger.LogError(ex,
                             "Failed to place orders for bot {BotId} with quantity {Quantity}",
                             botWithQuantity.Bot.Id,
                             botWithQuantity.CatchUpQuantity);
@@ -120,7 +129,7 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
             int openTradesCount,
             CancellationToken cancellationToken)
         {
-            var exchangeApi = exchangeApiRepository.GetExchangeApi(bot);
+            var exchangeApi = _exchangeApiRepository.GetExchangeApi(bot);
 
             var currentPrice = bot.IsLong ? ticker.Bid : ticker.Ask;
             var stepDirection = bot.IsLong ? 1 : -1;
@@ -151,7 +160,7 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                     var trade = new Trade(order);
                     bot.Trades.Add(trade);
 
-                    logger.LogInformation("Bot {BotId} placed {Side} order at {Price} for {Quantity} units ({OrderId})",
+                    _logger.LogInformation("Bot {BotId} placed {Side} order at {Price} for {Quantity} units ({OrderId})",
                         bot.Id,
                         order.IsBuy ? "buy" : "sell",
                         order.Price,
@@ -159,11 +168,11 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                         order.Id);
 
                     // Notify about the new order
-                    await notificationService.NotifyOrderUpdated(order.Id);
+                    await _notificationService.NotifyOrderUpdated(order.Id);
                 }
 
                 await dbContext.SaveChangesAsync(cancellationToken);
-                logger.LogInformation("Successfully placed {OrderCount} entry orders for bot {BotId}", orders.Length, bot.Id);
+                _logger.LogInformation("Successfully placed {OrderCount} entry orders for bot {BotId}", orders.Length, bot.Id);
             }
             else
             {
@@ -173,7 +182,7 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                 var trade = new Trade(order);
                 bot.Trades.Add(trade);
 
-                logger.LogInformation("Bot {BotId} placed {Side} order at {Price} for {Quantity} units ({OrderId})",
+                _logger.LogInformation("Bot {BotId} placed {Side} order at {Price} for {Quantity} units ({OrderId})",
                     bot.Id,
                     order.IsBuy ? "buy" : "sell",
                     order.Price,
@@ -181,41 +190,11 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                     order.Id);
 
                 // Notify about the new order
-                await notificationService.NotifyOrderUpdated(order.Id);
+                await _notificationService.NotifyOrderUpdated(order.Id);
 
                 await dbContext.SaveChangesAsync(cancellationToken);
-                logger.LogInformation("Successfully placed 1 entry order for bot {BotId}", bot.Id);
+                _logger.LogInformation("Successfully placed 1 entry order for bot {BotId}", bot.Id);
             }
-        }
-
-        // Convenience constructor used only from unit tests that still rely on the old signature (DbContext, Repository, Logger)
-        internal PlaceEntryOrdersCommandHandler(
-            TradingBotDbContext dbContext,
-            IExchangeApiRepository exchangeApiRepository,
-            ILogger<PlaceEntryOrdersCommandHandler> logger) : this(new SingleDbContextFactory(dbContext),
-            exchangeApiRepository,
-            new NullTradingNotificationService(),
-            logger)
-        {
-        }
-
-        // Minimal IDbContextFactory wrapper around a pre-created DbContext instance (used in tests)
-        private sealed class SingleDbContextFactory(TradingBotDbContext context) : IDbContextFactory<TradingBotDbContext>
-        {
-            public TradingBotDbContext CreateDbContext()
-                => context;
-        }
-
-        // No-op implementation so unit tests don't have to provide a SignalR hub
-        private sealed class NullTradingNotificationService : TradingNotificationService
-        {
-            public NullTradingNotificationService() : base(null!, NullLogger<TradingNotificationService>.Instance)
-            {
-            }
-
-            // Hide base implementation; no-op
-            public new Task NotifyOrderUpdated(string orderId)
-                => Task.CompletedTask;
         }
     }
 }

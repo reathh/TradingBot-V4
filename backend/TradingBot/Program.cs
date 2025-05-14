@@ -29,14 +29,12 @@ builder.Services.AddSingleton<TradingNotificationService>();
 if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddDbContext<TradingBotDbContext>(options => options.UseInMemoryDatabase("TradingBot"));
-    builder.Services.AddDbContextFactory<TradingBotDbContext>(options => options.UseInMemoryDatabase("TradingBot"));
 }
 else
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
     builder.Services.AddDbContext<TradingBotDbContext>(options => options.UseNpgsql(connectionString));
-    builder.Services.AddDbContextFactory<TradingBotDbContext>(options => options.UseNpgsql(connectionString));
 }
 
 // Register TimeProvider as a singleton
