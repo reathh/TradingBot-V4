@@ -27,23 +27,35 @@ services:
     networks:
       - tradingbot_network
 
-  # Add the tradingbot service when ready
-  # tradingbot:
-  #   build:
-  #     context: .
-  #     dockerfile: backend/Dockerfile
-  #   container_name: tradingbot_api
-  #   depends_on:
-  #     - postgres
-  #     - seq
-  #   ports:
-  #     - "5000:5000"
-  #   environment:
-  #     - ASPNETCORE_ENVIRONMENT=Development
-  #     - ConnectionStrings__DefaultConnection=Server=postgres;Port=5432;Database=TradingBot;User Id=postgres;Password=yourpassword;
-  #     - Seq__ServerUrl=http://seq:80
-  #   networks:
-  #     - tradingbot_network
+  backend:
+    build:
+      context: ./backend
+      dockerfile: TradingBot/Dockerfile
+    container_name: tradingbot_api
+    depends_on:
+      - postgres
+      - seq
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=postgres;Port=5432;Database=TradingBot;User Id=postgres;Password=yourpassword;
+      - Seq__ServerUrl=http://seq:80
+    networks:
+      - tradingbot_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tradingbot_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - tradingbot_network
 
 volumes:
   postgres_data:
