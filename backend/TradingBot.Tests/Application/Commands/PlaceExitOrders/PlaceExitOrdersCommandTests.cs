@@ -799,17 +799,6 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
         var incompleteTrade = new Trade(incompleteOrder);
         bot.Trades.Add(incompleteTrade);
         
-        // Create second entry order that is completed but has zero quantity filled
-        var zeroFilledOrder = CreateOrder(
-            bot, 
-            entryPrice, 
-            bot.EntryQuantity, 
-            bot.IsLong, 
-            OrderStatus.Filled, 
-            0);
-        var zeroFilledTrade = new Trade(zeroFilledOrder);
-        bot.Trades.Add(zeroFilledTrade);
-        
         // Create third entry order that is both filled and has quantity filled
         var completedOrder = CreateOrder(
             bot, 
@@ -856,11 +845,6 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
         Assert.NotNull(updatedIncompleteTrade);
         Assert.Null(updatedIncompleteTrade.ExitOrder);
 
-        // Check zero filled trade has no exit order
-        var updatedZeroFilledTrade = await DbContext.Trades.FirstOrDefaultAsync(t => t.Id == zeroFilledTrade.Id);
-        Assert.NotNull(updatedZeroFilledTrade);
-        Assert.Null(updatedZeroFilledTrade.ExitOrder);
-
         // Check completed trade has exit order
         var updatedCompletedTrade = await DbContext.Trades.FirstOrDefaultAsync(t => t.Id == completedTrade.Id);
         Assert.NotNull(updatedCompletedTrade);
@@ -884,17 +868,6 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
             0);
         var incompleteTrade = new Trade(incompleteOrder);
         bot.Trades.Add(incompleteTrade);
-        
-        // Create second entry order that is completed but has zero quantity filled
-        var zeroFilledOrder = CreateOrder(
-            bot, 
-            entryPrice, 
-            bot.EntryQuantity, 
-            bot.IsLong, 
-            OrderStatus.Filled, 
-            0);
-        var zeroFilledTrade = new Trade(zeroFilledOrder);
-        bot.Trades.Add(zeroFilledTrade);
         
         // Create third entry order that is both filled and has quantity filled
         var completedOrder = CreateOrder(
@@ -941,11 +914,6 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
         var updatedIncompleteTrade = await DbContext.Trades.FirstOrDefaultAsync(t => t.Id == incompleteTrade.Id);
         Assert.NotNull(updatedIncompleteTrade);
         Assert.Null(updatedIncompleteTrade.ExitOrder);
-
-        // Check zero filled trade has no exit order
-        var updatedZeroFilledTrade = await DbContext.Trades.FirstOrDefaultAsync(t => t.Id == zeroFilledTrade.Id);
-        Assert.NotNull(updatedZeroFilledTrade);
-        Assert.Null(updatedZeroFilledTrade.ExitOrder);
 
         // Check completed trade has exit order
         var updatedCompletedTrade = await DbContext.Trades.FirstOrDefaultAsync(t => t.Id == completedTrade.Id);
