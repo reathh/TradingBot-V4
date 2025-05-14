@@ -236,14 +236,15 @@ public class PlaceExitOrdersBasicTests : PlaceExitOrdersTestBase
         Assert.NotNull(updatedIncompleteTrade);
         Assert.Null(updatedIncompleteTrade.ExitOrder);
         
-        // Check zero filled trade has no exit order
-        var updatedZeroFilledTrade = await DbContext.Trades.FirstOrDefaultAsync(t => t.Id == zeroFilledTrade.Id);
-        Assert.NotNull(updatedZeroFilledTrade);
-        Assert.Null(updatedZeroFilledTrade.ExitOrder);
-        
-        // Check completed trade has exit order
-        var updatedCompletedTrade = await DbContext.Trades.FirstOrDefaultAsync(t => t.Id == completedTrade.Id);
-        Assert.NotNull(updatedCompletedTrade);
-        Assert.NotNull(updatedCompletedTrade.ExitOrder);
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            var updatedZeroFilledTrade = await context.Trades.FirstOrDefaultAsync(t => t.Id == zeroFilledTrade.Id);
+            Assert.NotNull(updatedZeroFilledTrade);
+            Assert.Null(updatedZeroFilledTrade.ExitOrder);
+            // Check completed trade has exit order
+            var updatedCompletedTrade = await context.Trades.FirstOrDefaultAsync(t => t.Id == completedTrade.Id);
+            Assert.NotNull(updatedCompletedTrade);
+            Assert.NotNull(updatedCompletedTrade.ExitOrder);
+        }
     }
 }

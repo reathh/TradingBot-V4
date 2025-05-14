@@ -170,7 +170,10 @@ public class PlaceExitOrdersAdvanceTests : PlaceExitOrdersTestBase
             
         // Set a specific ExitOrdersInAdvance value
         bot.ExitOrdersInAdvance = 1; // Only place 1 advance exit order
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
         
         // Create trades with different entry prices
         var entryPrices = new[] { 100m, 99m, 98m, 97m };

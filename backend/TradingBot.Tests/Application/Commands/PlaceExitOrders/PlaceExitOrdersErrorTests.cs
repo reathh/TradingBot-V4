@@ -155,8 +155,11 @@ public class PlaceExitOrdersErrorTests : PlaceExitOrdersTestBase
     public async Task Handle_ShouldNotFailWithEmptyDatabase()
     {
         // Arrange - ensure database is empty
-        await DbContext.Database.EnsureDeletedAsync();
-        await DbContext.Database.EnsureCreatedAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.Database.EnsureDeletedAsync();
+            await context.Database.EnsureCreatedAsync();
+        }
         
         var ticker = CreateTestTicker(100m, 101m);
         var command = new PlaceExitOrdersCommand { Ticker = ticker };

@@ -40,10 +40,13 @@ public class PlaceEntryOrdersBasicTests : BaseTest
             It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
-        var savedTrade = await DbContext.Trades.FirstOrDefaultAsync();
-        Assert.NotNull(savedTrade);
-        Assert.Equal(expectedOrder.Price, savedTrade.EntryOrder.Price);
-        Assert.Equal(expectedOrder.Quantity, savedTrade.EntryOrder.Quantity);
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            var savedTrade = await context.Trades.FirstOrDefaultAsync();
+            Assert.NotNull(savedTrade);
+            Assert.Equal(expectedOrder.Price, savedTrade.EntryOrder.Price);
+            Assert.Equal(expectedOrder.Quantity, savedTrade.EntryOrder.Quantity);
+        }
     }
 
     [Fact]

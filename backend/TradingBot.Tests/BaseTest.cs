@@ -4,6 +4,7 @@ using Moq;
 using TradingBot.Application.Commands.PlaceEntryOrders;
 using TradingBot.Data;
 using TradingBot.Services;
+using TradingBot.Tests.Helpers;
 
 namespace TradingBot.Tests;
 
@@ -14,7 +15,8 @@ public abstract class BaseTest
     protected readonly Mock<IExchangeApi> ExchangeApiMock;
     protected readonly Mock<IExchangeApiRepository> ExchangeApiRepositoryMock;
     protected readonly Mock<ILogger<PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler>> LoggerMock;
-    protected readonly TradingBotDbContext DbContext;
+    protected readonly string DbName;
+    protected readonly TestDbContextFactory DbContextFactory;
     protected readonly PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler Handler;
 
     private readonly Random _random = new();
@@ -29,14 +31,13 @@ public abstract class BaseTest
         ExchangeApiRepositoryMock.Setup(x => x.GetExchangeApi(It.IsAny<Bot>()))
             .Returns(ExchangeApiMock.Object);
 
-        var options = new DbContextOptionsBuilder<TradingBotDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-
-        DbContext = new TradingBotDbContext(options);
+        DbName = Guid.NewGuid().ToString();
+        DbContextFactory = new TestDbContextFactory(DbName);
+        var notificationService = new TestTradingNotificationService();
         Handler = new PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler(
-            DbContext,
+            DbContextFactory,
             ExchangeApiRepositoryMock.Object,
+            notificationService,
             LoggerMock.Object);
     }
 
@@ -69,8 +70,9 @@ public abstract class BaseTest
             Trades = []
         };
 
-        DbContext.Bots.Add(bot);
-        await DbContext.SaveChangesAsync();
+        using var context = DbContextFactory.CreateDbContext();
+        context.Bots.Add(bot);
+        await context.SaveChangesAsync();
         return bot;
     }
 
@@ -105,4 +107,10 @@ public abstract class BaseTest
         
         return order;
     }
+}
+
+public class TestTradingNotificationService : TradingBot.Services.TradingNotificationService
+{
+    public TestTradingNotificationService() : base(null, null) { }
+    public new Task NotifyOrderUpdated(string orderId) => Task.CompletedTask;
 }

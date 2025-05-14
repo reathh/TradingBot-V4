@@ -5,6 +5,7 @@ using TradingBot.Application.Commands.PlaceEntryOrders;
 using TradingBot.Application.Common;
 using TradingBot.Data;
 using TradingBot.Services;
+using TradingBot.Tests.Helpers;
 
 namespace TradingBot.Tests.Application.Commands.PlaceEntryOrders;
 
@@ -18,7 +19,8 @@ public abstract class PlaceEntryOrdersTestBase
     protected readonly Mock<IExchangeApi> ExchangeApiMock;
     protected readonly Mock<IExchangeApiRepository> ExchangeApiRepositoryMock;
     protected readonly Mock<ILogger<PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler>> LoggerMock;
-    protected readonly TradingBotDbContext DbContext;
+    protected readonly string DbName;
+    protected readonly TestDbContextFactory DbContextFactory;
     protected readonly PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler Handler;
 
     private readonly Random _random = new();
@@ -34,14 +36,13 @@ public abstract class PlaceEntryOrdersTestBase
         ExchangeApiRepositoryMock.Setup(x => x.GetExchangeApi(It.IsAny<Bot>()))
             .Returns(ExchangeApiMock.Object);
 
-        var options = new DbContextOptionsBuilder<TradingBotDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-
-        DbContext = new TradingBotDbContext(options);
+        DbName = Guid.NewGuid().ToString();
+        DbContextFactory = new TestDbContextFactory(DbName);
+        var notificationService = new TestTradingNotificationService();
         Handler = new PlaceEntryOrdersCommand.PlaceEntryOrdersCommandHandler(
-            DbContext,
+            DbContextFactory,
             ExchangeApiRepositoryMock.Object,
+            notificationService,
             LoggerMock.Object);
     }
     
@@ -72,8 +73,9 @@ public abstract class PlaceEntryOrdersTestBase
             Trades = []
         };
 
-        DbContext.Bots.Add(bot);
-        await DbContext.SaveChangesAsync();
+        using var context = DbContextFactory.CreateDbContext();
+        context.Bots.Add(bot);
+        await context.SaveChangesAsync();
         return bot;
     }
 
@@ -114,8 +116,9 @@ public abstract class PlaceEntryOrdersTestBase
         var entryOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong, status);
         
         var trade = new Trade(entryOrder);
+        using var context = DbContextFactory.CreateDbContext();
         bot.Trades.Add(trade);
-        await DbContext.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return trade;
     }
 
@@ -123,4 +126,10 @@ public abstract class PlaceEntryOrdersTestBase
     {
         return Handler.Handle(command, cancellationToken);
     }
+}
+
+public class TestTradingNotificationService : TradingBot.Services.TradingNotificationService
+{
+    public TestTradingNotificationService() : base(null, null) { }
+    public new Task NotifyOrderUpdated(string orderId) => Task.CompletedTask;
 } 

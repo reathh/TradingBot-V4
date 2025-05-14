@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using TradingBot.Application.Commands.UpdateStaleOrders;
 using TradingBot.Services;
+using TradingBot.Tests.Helpers;
 
 public class UpdateStaleOrdersCommandTests : BaseTest
 {
@@ -14,6 +15,8 @@ public class UpdateStaleOrdersCommandTests : BaseTest
     private readonly Mock<IExchangeApiRepository> _exchangeApiRepositoryMock;
     private readonly Mock<IExchangeApi> _exchangeApiMock;
     private readonly Mock<TimeProvider> _timeProviderMock;
+    private readonly string _dbName;
+    private readonly TestDbContextFactory _dbContextFactory;
     private readonly DateTime _currentTime = new(2023, 1, 1, 12, 0, 0, DateTimeKind.Utc);
 
     public UpdateStaleOrdersCommandTests()
@@ -33,10 +36,15 @@ public class UpdateStaleOrdersCommandTests : BaseTest
             .Setup(x => x.GetUtcNow())
             .Returns(new DateTimeOffset(_currentTime));
 
+        _dbName = Guid.NewGuid().ToString();
+        _dbContextFactory = new TestDbContextFactory(_dbName);
+        var notificationService = new TestTradingNotificationService();
+        using var context = _dbContextFactory.CreateDbContext();
         _handler = new UpdateStaleOrdersCommandHandler(
-            DbContext,
+            context,
             _exchangeApiRepositoryMock.Object,
             _timeProviderMock.Object,
+            notificationService,
             _loggerMock.Object);
     }
 
@@ -59,8 +67,11 @@ public class UpdateStaleOrdersCommandTests : BaseTest
         closedOrder.LastUpdated = _currentTime.AddMinutes(-20);
 
         // Add the orders to the database
-        DbContext.Orders.AddRange(staleOrder, recentOrder, closedOrder);
-        await DbContext.SaveChangesAsync();
+        using (var context = _dbContextFactory.CreateDbContext())
+        {
+            context.Orders.AddRange(staleOrder, recentOrder, closedOrder);
+            await context.SaveChangesAsync();
+        }
 
         // Create trades for each order and link them to the bot
         var staleTrade = new Trade(staleOrder);
@@ -73,8 +84,11 @@ public class UpdateStaleOrdersCommandTests : BaseTest
         bot.Trades.Add(closedTrade);
 
         // Add trades to database
-        DbContext.Trades.AddRange(staleTrade, recentTrade, closedTrade);
-        await DbContext.SaveChangesAsync();
+        using (var context = _dbContextFactory.CreateDbContext())
+        {
+            context.Trades.AddRange(staleTrade, recentTrade, closedTrade);
+            await context.SaveChangesAsync();
+        }
 
         // Setup mock to return order status
         _exchangeApiMock
@@ -100,20 +114,26 @@ public class UpdateStaleOrdersCommandTests : BaseTest
         Assert.Equal(1, result.Data); // Only 1 order should be updated
 
         // Verify order was updated in database with data from exchange
-        var updatedOrder = await DbContext.Orders.FirstOrDefaultAsync(o => o.Id == staleOrder.Id);
-        Assert.NotNull(updatedOrder);
-        Assert.Equal(_currentTime, updatedOrder.LastUpdated);
-        Assert.Equal(staleOrder.Quantity * 0.5m, updatedOrder.QuantityFilled); // Verify quantity filled was updated
-        Assert.Equal(101m, updatedOrder.AverageFillPrice); // Verify price was updated
+        using (var context = _dbContextFactory.CreateDbContext())
+        {
+            var updatedOrder = await context.Orders.FirstOrDefaultAsync(o => o.Id == staleOrder.Id);
+            Assert.NotNull(updatedOrder);
+            Assert.Equal(_currentTime, updatedOrder.LastUpdated);
+            Assert.Equal(staleOrder.Quantity * 0.5m, updatedOrder.QuantityFilled); // Verify quantity filled was updated
+            Assert.Equal(101m, updatedOrder.AverageFillPrice); // Verify price was updated
+        }
 
         // Verify other orders were not updated
-        var nonUpdatedOrder = await DbContext.Orders.FirstOrDefaultAsync(o => o.Id == recentOrder.Id);
-        Assert.NotNull(nonUpdatedOrder);
-        Assert.Equal(_currentTime.AddMinutes(-5), nonUpdatedOrder.LastUpdated);
+        using (var context = _dbContextFactory.CreateDbContext())
+        {
+            var nonUpdatedOrder = await context.Orders.FirstOrDefaultAsync(o => o.Id == recentOrder.Id);
+            Assert.NotNull(nonUpdatedOrder);
+            Assert.Equal(_currentTime.AddMinutes(-5), nonUpdatedOrder.LastUpdated);
 
-        var nonUpdatedClosedOrder = await DbContext.Orders.FirstOrDefaultAsync(o => o.Id == closedOrder.Id);
-        Assert.NotNull(nonUpdatedClosedOrder);
-        Assert.Equal(_currentTime.AddMinutes(-20), nonUpdatedClosedOrder.LastUpdated);
+            var nonUpdatedClosedOrder = await context.Orders.FirstOrDefaultAsync(o => o.Id == closedOrder.Id);
+            Assert.NotNull(nonUpdatedClosedOrder);
+            Assert.Equal(_currentTime.AddMinutes(-20), nonUpdatedClosedOrder.LastUpdated);
+        }
     }
 
     [Fact]
@@ -145,8 +165,11 @@ public class UpdateStaleOrdersCommandTests : BaseTest
         );
         order.LastUpdated = _currentTime.AddMinutes(-15);
 
-        DbContext.Orders.Add(order);
-        await DbContext.SaveChangesAsync();
+        using (var context = _dbContextFactory.CreateDbContext())
+        {
+            context.Orders.Add(order);
+            await context.SaveChangesAsync();
+        }
 
         var command = new UpdateStaleOrdersCommand();
 
@@ -169,16 +192,22 @@ public class UpdateStaleOrdersCommandTests : BaseTest
         staleOrder.LastUpdated = _currentTime.AddMinutes(-15);
 
         // Add the order to the database
-        DbContext.Orders.Add(staleOrder);
-        await DbContext.SaveChangesAsync();
+        using (var context = _dbContextFactory.CreateDbContext())
+        {
+            context.Orders.Add(staleOrder);
+            await context.SaveChangesAsync();
+        }
 
         // Create trade and link to bot
         var staleTrade = new Trade(staleOrder);
         bot.Trades.Add(staleTrade);
 
         // Add trade to database
-        DbContext.Trades.Add(staleTrade);
-        await DbContext.SaveChangesAsync();
+        using (var context = _dbContextFactory.CreateDbContext())
+        {
+            context.Trades.Add(staleTrade);
+            await context.SaveChangesAsync();
+        }
 
         // Setup mock to throw an exception
         _exchangeApiMock
@@ -195,9 +224,12 @@ public class UpdateStaleOrdersCommandTests : BaseTest
         Assert.Equal(0, result.Data); // Should still succeed but with 0 orders updated
 
         // Verify order LastUpdated was still updated (to prevent continuous retries)
-        var updatedOrder = await DbContext.Orders.FirstOrDefaultAsync(o => o.Id == staleOrder.Id);
-        Assert.NotNull(updatedOrder);
-        Assert.Equal(_currentTime, updatedOrder.LastUpdated);
+        using (var context = _dbContextFactory.CreateDbContext())
+        {
+            var updatedOrder = await context.Orders.FirstOrDefaultAsync(o => o.Id == staleOrder.Id);
+            Assert.NotNull(updatedOrder);
+            Assert.Equal(_currentTime, updatedOrder.LastUpdated);
+        }
 
         // Verify the error was logged
         _loggerMock.Verify(
@@ -209,4 +241,10 @@ public class UpdateStaleOrdersCommandTests : BaseTest
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
+}
+
+public class TestTradingNotificationService : TradingBot.Services.TradingNotificationService
+{
+    public TestTradingNotificationService() : base(null, null) { }
+    public new Task NotifyOrderUpdated(string orderId) => Task.CompletedTask;
 }

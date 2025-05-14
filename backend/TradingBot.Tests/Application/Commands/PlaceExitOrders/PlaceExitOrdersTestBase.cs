@@ -4,9 +4,11 @@ using TradingBot.Application.Commands.PlaceExitOrders;
 using TradingBot.Data;
 using TradingBot.Services;
 using TradingBot.Application.Common;
+using TradingBot.Tests.Helpers;
 
 namespace TradingBot.Tests.Application.Commands.PlaceExitOrders;
 
+using Microsoft.EntityFrameworkCore;
 using Models;
 
 /// <summary>
@@ -17,6 +19,8 @@ public abstract class PlaceExitOrdersTestBase : BaseTest
     protected new readonly PlaceExitOrdersCommand.PlaceExitOrdersCommandHandler Handler;
     protected new readonly Mock<ILogger<PlaceExitOrdersCommand.PlaceExitOrdersCommandHandler>> LoggerMock;
     protected readonly Mock<ISymbolInfoCache> SymbolInfoCacheMock;
+    protected readonly string DbName;
+    protected readonly TestDbContextFactory DbContextFactory;
 
     protected PlaceExitOrdersTestBase()
     {
@@ -25,10 +29,14 @@ public abstract class PlaceExitOrdersTestBase : BaseTest
         var defaultSymbolInfo = new SymbolInfo(0.00001m, 0.00001m, 5);
         SymbolInfoCacheMock.Setup(x => x.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(defaultSymbolInfo);
+        DbName = Guid.NewGuid().ToString();
+        DbContextFactory = new TestDbContextFactory(DbName);
+        var notificationService = new TestTradingNotificationService();
         Handler = new PlaceExitOrdersCommand.PlaceExitOrdersCommandHandler(
-            DbContext,
+            DbContextFactory,
             ExchangeApiRepositoryMock.Object,
             SymbolInfoCacheMock.Object,
+            notificationService,
             LoggerMock.Object);
     }
 
@@ -70,8 +78,8 @@ public abstract class PlaceExitOrdersTestBase : BaseTest
             entryQuantity: entryQuantity,
             placeOrdersInAdvance: placeOrdersInAdvance,
             ordersInAdvance: ordersInAdvance);
-            
-        await DbContext.SaveChangesAsync();
+        using var context = DbContextFactory.CreateDbContext();
+        await context.SaveChangesAsync();
         return bot;
     }
 
@@ -89,8 +97,9 @@ public abstract class PlaceExitOrdersTestBase : BaseTest
             bot.EntryQuantity);
             
         var trade = new Trade(entryOrder);
+        using var context = DbContextFactory.CreateDbContext();
         bot.Trades.Add(trade);
-        await DbContext.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return trade;
     }
 
@@ -163,4 +172,10 @@ public abstract class PlaceExitOrdersTestBase : BaseTest
             It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
+}
+
+public class TestTradingNotificationService : TradingBot.Services.TradingNotificationService
+{
+    public TestTradingNotificationService() : base(null, null) { }
+    public new Task NotifyOrderUpdated(string orderId) => Task.CompletedTask;
 }

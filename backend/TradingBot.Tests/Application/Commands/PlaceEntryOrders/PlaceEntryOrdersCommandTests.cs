@@ -38,10 +38,13 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Once);
 
-        var savedTrade = await DbContext.Trades.FirstOrDefaultAsync();
-        Assert.NotNull(savedTrade);
-        Assert.Equal(expectedOrder.Price, savedTrade.EntryOrder.Price);
-        Assert.Equal(expectedOrder.Quantity, savedTrade.EntryOrder.Quantity);
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            var savedTrade = await context.Trades.FirstOrDefaultAsync();
+            Assert.NotNull(savedTrade);
+            Assert.Equal(expectedOrder.Price, savedTrade.EntryOrder.Price);
+            Assert.Equal(expectedOrder.Quantity, savedTrade.EntryOrder.Quantity);
+        }
     }
 
     [Fact]
@@ -172,8 +175,11 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Exactly(3));
 
-        var savedTrades = await DbContext.Trades.ToListAsync();
-        Assert.Equal(3, savedTrades.Count);
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            var savedTrades = await context.Trades.ToListAsync();
+            Assert.Equal(3, savedTrades.Count);
+        }
 
         // Now update the bot to have 5 orders in advance
         ExchangeApiMock.Reset();
@@ -224,8 +230,11 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Check that we now have 5 trades total
-        savedTrades = await DbContext.Trades.ToListAsync();
-        Assert.Equal(5, savedTrades.Count);
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            var savedTrades = await context.Trades.ToListAsync();
+            Assert.Equal(5, savedTrades.Count);
+        }
     }
 
     [Fact]
@@ -270,8 +279,11 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Exactly(3));
 
-        var savedTrades = await DbContext.Trades.ToListAsync();
-        Assert.Equal(3, savedTrades.Count);
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            var savedTrades = await context.Trades.ToListAsync();
+            Assert.Equal(3, savedTrades.Count);
+        }
 
         // Now update the bot to have 5 orders in advance
         ExchangeApiMock.Reset();
@@ -322,8 +334,11 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Check that we now have 5 trades total
-        savedTrades = await DbContext.Trades.ToListAsync();
-        Assert.Equal(5, savedTrades.Count);
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            var savedTrades = await context.Trades.ToListAsync();
+            Assert.Equal(5, savedTrades.Count);
+        }
     }
 
     [Fact]
@@ -649,8 +664,11 @@ public class PlaceEntryOrdersCommandTests : BaseTest
             It.IsAny<OrderType>(),
             It.IsAny<CancellationToken>()), Times.Exactly(2));
 
-        var savedTrades = await DbContext.Trades.ToListAsync();
-        Assert.Equal(2, savedTrades.Count);
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            var savedTrades = await context.Trades.ToListAsync();
+            Assert.Equal(2, savedTrades.Count);
+        }
     }
 
     [Fact]

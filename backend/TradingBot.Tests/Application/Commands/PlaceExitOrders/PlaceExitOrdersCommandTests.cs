@@ -26,7 +26,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
             
         var trade = new Trade(entryOrder);
         bot.Trades.Add(trade);
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // Create ticker with price that reaches exit step
         var exitPrice = 101m; // Up for long
@@ -80,7 +83,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
             
         var trade = new Trade(entryOrder);
         bot.Trades.Add(trade);
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // Create ticker with price that reaches exit step
         var exitPrice = 100m; // Down for short
@@ -128,7 +134,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
         var entryOrder = CreateOrder(bot, entryPrice, bot.EntryQuantity, bot.IsLong, OrderStatus.Filled);
         var trade = new Trade(entryOrder);
         bot.Trades.Add(trade);
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // Create ticker with price that doesn't reach exit step
         var ticker = CreateTicker(100.5m, 100.8m); // Both below exit price of 101
@@ -158,7 +167,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
         entryOrder.QuantityFilled = entryOrder.Quantity;
         var trade = new Trade(entryOrder);
         bot.Trades.Add(trade);
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // Create ticker with price that doesn't reach exit step
         var ticker = CreateTicker(100.3m, 100.5m); // Both above exit price of 100
@@ -188,10 +200,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
         entryOrder.QuantityFilled = entryOrder.Quantity;
         var trade = new Trade(entryOrder);
         bot.Trades.Add(trade);
-
-        // Disable the bot
-        bot.Enabled = false;
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         var ticker = CreateTicker(100.5m, 101m);
         var command = new PlaceExitOrdersCommand { Ticker = ticker };
@@ -226,7 +238,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
             bot.Trades.Add(trade);
             trades.Add(trade);
         }
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // Create ticker with price that reaches exit step for all trades
         var ticker = CreateTicker(100.5m, 101m); // Exit at 101 for long (entry + exitStep)
@@ -277,7 +292,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
             bot.Trades.Add(trade);
             trades.Add(trade);
         }
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // Create ticker with price that reaches exit step for all trades
         var ticker = CreateTicker(100m, 100.5m); // Exit at 100 for short (entry - exitStep)
@@ -331,7 +349,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
             bot.Trades.Add(trade);
             trades.Add(trade);
         }
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // Create ticker with price that doesn't reach exit step yet
         var ticker = CreateTicker(100.5m, 100.8m); // Below exit threshold for all (100 + 1 = 101)
@@ -377,7 +398,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
         {
             trades[i].ExitOrder = advanceOrders[i];
         }
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // Verify all trades have exit orders (advance orders)
         var updatedTrades = await DbContext.Trades.Include(t => t.ExitOrder).ToListAsync();
@@ -408,7 +432,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
             bot.Trades.Add(trade);
             trades.Add(trade);
         }
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // Create ticker with price that reaches exit step only for the first trade
         var ticker = CreateTicker(100.5m, 101.1m); // Only trade with entry price 100 is eligible (100 + exitStep <= 101.1)
@@ -455,7 +482,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
         trades[0].ExitOrder = consolidatedOrder;
         trades[1].ExitOrder = advanceOrders[0];
         trades[2].ExitOrder = advanceOrders[1];
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // Verify all trades have exit orders
         var updatedTrades = await DbContext.Trades.Include(t => t.ExitOrder).ToListAsync();
@@ -475,7 +505,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
             
         // Set a specific ExitOrdersInAdvance value
         bot.ExitOrdersInAdvance = 1; // Only place 1 advance exit order
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // Create trades with different entry prices
         // None are eligible for immediate exit
@@ -486,7 +519,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
             var trade = new Trade(entryOrder);
             bot.Trades.Add(trade);
         }
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // Create ticker with price that doesn't reach exit step
         var ticker = CreateTicker(100.5m, 100.8m); // Below exit threshold (100 + 1 = 101)
@@ -538,7 +574,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
             bot.Trades.Add(trade);
             trades.Add(trade);
         }
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // Create ticker with price that reaches exit step for all trades
         var ticker = CreateTicker(100m, 100.5m); // All trades are eligible (entry - exitStep >= 100)
@@ -582,7 +621,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
         entryOrder.QuantityFilled = entryOrder.Quantity;
         var trade = new Trade(entryOrder);
         bot.Trades.Add(trade);
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // Create ticker with price that reaches exit step
         var ticker = bot.IsLong
@@ -634,7 +676,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
             var trade = new Trade(entryOrder);
             bot.Trades.Add(trade);
         }
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // Create ticker with price that reaches exit step
         var ticker = CreateTicker(100.5m, 101m);
@@ -686,7 +731,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
         entryOrder.QuantityFilled = entryOrder.Quantity;
         var trade = new Trade(entryOrder);
         bot.Trades.Add(trade);
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // Create ticker with price exactly at exit step
         var ticker = bot.IsLong
@@ -731,7 +779,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
         entryOrder.QuantityFilled = entryOrder.Quantity;
         var trade = new Trade(entryOrder);
         bot.Trades.Add(trade);
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // Create ticker with price that doesn't yet reach exit step
         var ticker = bot.IsLong
@@ -754,7 +805,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
 
         // Now reduce exit step to 0.5
         bot.ExitStep = 0.5m;
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // Setup mock for exit order
         var exitPrice = bot.IsLong ? 100.5m : 100.5m;
@@ -820,7 +874,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
         var completedTrade = new Trade(completedOrder);
         bot.Trades.Add(completedTrade);
 
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // Create ticker with price that reaches exit step
         var exitPrice = 101m;
@@ -906,7 +963,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
         var completedTrade = new Trade(completedOrder);
         bot.Trades.Add(completedTrade);
 
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         // Create ticker with price that reaches exit step
         var exitPrice = 100m;
@@ -974,7 +1034,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
         entryOrder.Fee = 0.0000001m; // Fee that causes dust
         var trade = new Trade(entryOrder);
         bot.Trades.Add(trade);
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         var ticker = CreateTicker(10000m, 10001m);
         var command = new PlaceExitOrdersCommand { Ticker = ticker };
@@ -1029,7 +1092,10 @@ public class PlaceExitOrdersCommandTests : PlaceExitOrdersTestBase
         entryOrder.Fee = fee;
         var trade = new Trade(entryOrder);
         bot.Trades.Add(trade);
-        await DbContext.SaveChangesAsync();
+        using (var context = DbContextFactory.CreateDbContext())
+        {
+            await context.SaveChangesAsync();
+        }
 
         var ticker = CreateTicker(10000m, 10001m);
         var command = new PlaceExitOrdersCommand { Ticker = ticker };

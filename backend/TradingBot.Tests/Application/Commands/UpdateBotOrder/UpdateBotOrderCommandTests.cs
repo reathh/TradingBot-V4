@@ -5,12 +5,15 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using TradingBot.Application.Commands.UpdateBotOrder;
+using TradingBot.Tests.Helpers;
 
 public class UpdateBotOrderCommandTests : BaseTest
 {
     private readonly UpdateBotOrderCommandHandler _handler;
     private readonly Mock<ILogger<UpdateBotOrderCommandHandler>> _loggerMock;
     private readonly Mock<TimeProvider> _timeProviderMock;
+    private readonly TestDbContextFactory _dbContextFactory;
+    private readonly string _dbName;
 
     public UpdateBotOrderCommandTests()
     {
@@ -22,7 +25,11 @@ public class UpdateBotOrderCommandTests : BaseTest
             .Setup(x => x.GetUtcNow())
             .Returns(new DateTimeOffset(DateTime.UtcNow));
 
-        _handler = new UpdateBotOrderCommandHandler(DbContext, _loggerMock.Object, _timeProviderMock.Object);
+        _dbName = Guid.NewGuid().ToString();
+        _dbContextFactory = new TestDbContextFactory(_dbName);
+        var notificationService = new TestTradingNotificationService();
+        using var context = _dbContextFactory.CreateDbContext();
+        _handler = new UpdateBotOrderCommandHandler(context, _loggerMock.Object, _timeProviderMock.Object, notificationService);
     }
 
     [Fact]
@@ -32,8 +39,11 @@ public class UpdateBotOrderCommandTests : BaseTest
         var bot = await CreateBot();
         var order = CreateOrder(bot, 100m, 1m, true, OrderStatus.New, 0); // Initial state: not filled, not closed
         
-        DbContext.Orders.Add(order);
-        await DbContext.SaveChangesAsync();
+        using (var context = _dbContextFactory.CreateDbContext())
+        {
+            context.Orders.Add(order);
+            await context.SaveChangesAsync();
+        }
 
         // Create OrderUpdate indicating filled status
         var orderUpdate = new OrderUpdate(
@@ -57,11 +67,14 @@ public class UpdateBotOrderCommandTests : BaseTest
         Assert.True(result);
 
         // Verify order was updated in database
-        var updatedOrder = await DbContext.Orders.FirstOrDefaultAsync(o => o.Id == order.Id);
-        Assert.NotNull(updatedOrder);
-        Assert.Equal(orderUpdate.QuantityFilled, updatedOrder!.QuantityFilled);
-        Assert.Equal(orderUpdate.AverageFillPrice, updatedOrder.AverageFillPrice);
-        Assert.Equal(orderUpdate.Status, updatedOrder.Status);
+        using (var context = _dbContextFactory.CreateDbContext())
+        {
+            var updatedOrder = await context.Orders.FirstOrDefaultAsync(o => o.Id == order.Id);
+            Assert.NotNull(updatedOrder);
+            Assert.Equal(orderUpdate.QuantityFilled, updatedOrder!.QuantityFilled);
+            Assert.Equal(orderUpdate.AverageFillPrice, updatedOrder.AverageFillPrice);
+            Assert.Equal(orderUpdate.Status, updatedOrder.Status);
+        }
     }
 
     [Fact]
@@ -108,8 +121,11 @@ public class UpdateBotOrderCommandTests : BaseTest
         var order = CreateOrder(bot, 100m, 1m, true, OrderStatus.New, 0);
         order.Id = "order-id";
         
-        DbContext.Orders.Add(order);
-        await DbContext.SaveChangesAsync();
+        using (var context = _dbContextFactory.CreateDbContext())
+        {
+            context.Orders.Add(order);
+            await context.SaveChangesAsync();
+        }
 
         var orderUpdate = new OrderUpdate(
             Id: "order-id",  // This matches the order Id
@@ -132,9 +148,18 @@ public class UpdateBotOrderCommandTests : BaseTest
         Assert.True(result);
 
         // Verify order was updated in database
-        var updatedOrder = await DbContext.Orders.FirstOrDefaultAsync(o => o.Id == "order-id");
-        Assert.NotNull(updatedOrder);
-        Assert.Equal(orderUpdate.QuantityFilled, updatedOrder!.QuantityFilled);
-        Assert.Equal(orderUpdate.Status, updatedOrder.Status);
+        using (var context = _dbContextFactory.CreateDbContext())
+        {
+            var updatedOrder = await context.Orders.FirstOrDefaultAsync(o => o.Id == "order-id");
+            Assert.NotNull(updatedOrder);
+            Assert.Equal(orderUpdate.QuantityFilled, updatedOrder!.QuantityFilled);
+            Assert.Equal(orderUpdate.Status, updatedOrder.Status);
+        }
     }
+}
+
+public class TestTradingNotificationService : TradingBot.Services.TradingNotificationService
+{
+    public TestTradingNotificationService() : base(null, null) { }
+    public new Task NotifyOrderUpdated(string orderId) => Task.CompletedTask;
 }
