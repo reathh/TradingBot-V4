@@ -11,12 +11,12 @@ namespace TradingBot.Data
             builder.Property(o => o.AverageFillPrice)
                 .HasColumnType("numeric(18,8)");
 
-            builder.HasIndex(o => o.CreatedAt);
-            builder.HasIndex(o => new { o.Status, o.CreatedAt });
-            builder.HasIndex(o => o.Status);
-
-            // Composite index accelerates lookups where orders are filtered by status and compared by price
-            builder.HasIndex(o => new { o.Status, o.Price });
+            // builder.HasIndex(o => o.CreatedAt);
+            // builder.HasIndex(o => new { o.Status, o.CreatedAt });
+            // builder.HasIndex(o => o.Status);
+            //
+            // // Composite index accelerates lookups where orders are filtered by status and compared by price
+            // builder.HasIndex(o => new { o.Status, o.Price });
         }
     }
 }
