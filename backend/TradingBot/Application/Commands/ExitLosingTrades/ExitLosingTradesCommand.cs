@@ -46,6 +46,10 @@ public class ExitLosingTradesCommand : IRequest<Result>
                                         // Short: price moved up >= threshold
                                         (!bot.IsLong &&
                                          currentAsk >= (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) * (1 + bot.StopLossPercent / 100m))))
+                                         .Select(t => new {
+                                            Trade = t,
+                                            t.EntryOrder
+                                         })
                         .ToList()
                 })
                 .Where(x => x.LossTrades.Any())
@@ -68,7 +72,8 @@ public class ExitLosingTradesCommand : IRequest<Result>
                 async (botWithTrades, token) =>
                 {
                     var bot = botWithTrades.Bot;
-                    var trades = botWithTrades.LossTrades;
+                    botWithTrades.LossTrades.ForEach(t => t.Trade.EntryOrder = t.EntryOrder);
+                    var trades = botWithTrades.LossTrades.Select(t => t.Trade).ToList();
 
                     try
                     {
