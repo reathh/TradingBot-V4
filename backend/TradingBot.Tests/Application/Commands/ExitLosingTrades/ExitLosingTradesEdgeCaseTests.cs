@@ -54,6 +54,7 @@ public class ExitLosingTradesEdgeCaseTests : ExitLosingTradesTestBase
         var entryPrice = 100m;
         var stopLossPercent = 1.0m;
         var currentBid = 98.5m; // Below stop loss threshold
+        var currentAsk = currentBid + 0.2m; // 98.7
 
         // Create bot and trade
         var bot = await CreateStopLossBot(isLong: true, stopLossPercent: stopLossPercent);
@@ -70,8 +71,8 @@ public class ExitLosingTradesEdgeCaseTests : ExitLosingTradesTestBase
         // Expected rounded quantity (0.01234 + 0.05678 - 0.0001 - 0.0002) = 0.06882, rounded to 0.068
         var expectedQuantity = 0.068m;
         
-        // Setup exit order mock
-        var exitOrder = CreateOrder(bot, currentBid, expectedQuantity, false);
+        // Setup exit order mock - long exits at ask price
+        var exitOrder = CreateOrder(bot, currentAsk, expectedQuantity, false);
         ExchangeApiMock.Setup(x => x.PlaceOrder(
                 It.IsAny<Bot>(),
                 It.IsAny<decimal>(),
@@ -81,7 +82,7 @@ public class ExitLosingTradesEdgeCaseTests : ExitLosingTradesTestBase
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(exitOrder);
         
-        var ticker = CreateTicker(currentBid, currentBid + 0.2m);
+        var ticker = CreateTicker(currentBid, currentAsk);
         var command = new ExitLosingTradesCommand { Ticker = ticker };
 
         // Act
@@ -94,7 +95,7 @@ public class ExitLosingTradesEdgeCaseTests : ExitLosingTradesTestBase
         VerifyExitOrderPlaced(
             bot, 
             Times.Once(), 
-            expectedPrice: currentBid,
+            expectedPrice: currentAsk,
             expectedQuantity: expectedQuantity,
             expectedIsBuy: false);
     }

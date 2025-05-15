@@ -39,7 +39,6 @@ public class ExitLosingTradesCommand : IRequest<Result>
                         .Where(t => t.ExitOrder == null &&
                                     t.EntryOrder.Status == OrderStatus.Filled &&
                                     (
-
                                         // Long: price moved down >= threshold
                                         (bot.IsLong &&
                                          currentBid <= (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) * (1 - bot.StopLossPercent / 100m)) ||
@@ -73,7 +72,7 @@ public class ExitLosingTradesCommand : IRequest<Result>
 
                     try
                     {
-                        await ExitLossTrades(dbContext, bot, request.Ticker, trades, token);
+                        await ExitLossTrades(bot, request.Ticker, trades, token);
                     }
                     catch (Exception ex)
                     {
@@ -85,7 +84,7 @@ public class ExitLosingTradesCommand : IRequest<Result>
             return errors.IsEmpty ? Result.Success : Result.Failure(errors);
         }
 
-        private async Task ExitLossTrades(TradingBotDbContext dbContext, Bot bot, TickerDto ticker, IList<Trade> trades, CancellationToken cancellationToken)
+        private async Task ExitLossTrades(Bot bot, TickerDto ticker, IList<Trade> trades, CancellationToken cancellationToken)
         {
             var symbolInfo = await symbolInfoCache.GetAsync(bot.Symbol, cancellationToken);
 
@@ -104,7 +103,8 @@ public class ExitLosingTradesCommand : IRequest<Result>
                 return;
             }
 
-            var exitPrice = bot.IsLong ? ticker.Bid : ticker.Ask;
+            
+            var exitPrice = bot.IsLong ? ticker.Ask : ticker.Bid;
             var isBuy = !bot.IsLong;
 
             var exchangeApi = exchangeApiRepository.GetExchangeApi(bot);

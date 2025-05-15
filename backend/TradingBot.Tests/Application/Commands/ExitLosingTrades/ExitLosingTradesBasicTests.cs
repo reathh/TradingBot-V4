@@ -20,13 +20,17 @@ public class ExitLosingTradesBasicTests : ExitLosingTradesTestBase
         var stopLossPercent = 1.0m; // 1% stop loss
         var stopLossPrice = entryPrice * (1 - stopLossPercent / 100m); // 99.0
         var currentBid = stopLossPrice - 0.1m; // 98.9 - just below stop loss
+        var currentAsk = currentBid + 0.2m; // 99.1 - ask price for the ticker
 
         // Create bot and trade
         var bot = await CreateStopLossBot(isLong: true, stopLossPercent: stopLossPercent);
         var trade = await CreateFilledTrade(bot, entryPrice, bot.EntryQuantity);
         
+        // For long positions exiting, we should use ask price for limit maker orders
+        var exitPrice = currentAsk;
+        
         // Setup exit order mock
-        var exitOrder = CreateOrder(bot, currentBid, bot.EntryQuantity, false);
+        var exitOrder = CreateOrder(bot, exitPrice, bot.EntryQuantity, false);
         ExchangeApiMock.Setup(x => x.PlaceOrder(
                 It.IsAny<Bot>(),
                 It.IsAny<decimal>(),
@@ -37,7 +41,7 @@ public class ExitLosingTradesBasicTests : ExitLosingTradesTestBase
             .ReturnsAsync(exitOrder);
         
         // Create ticker with price below stop loss
-        var ticker = CreateTicker(currentBid, currentBid + 0.2m);
+        var ticker = CreateTicker(currentBid, currentAsk);
         var command = new ExitLosingTradesCommand { Ticker = ticker };
 
         // Act
@@ -46,11 +50,11 @@ public class ExitLosingTradesBasicTests : ExitLosingTradesTestBase
         // Assert
         Assert.True(result.Succeeded);
         
-        // Verify exit order placed at the bid price (for a long position)
+        // Verify exit order placed at the ask price (for a long position using limit maker)
         VerifyExitOrderPlaced(
             bot, 
             Times.Once(), 
-            expectedPrice: currentBid,
+            expectedPrice: exitPrice,
             expectedQuantity: bot.EntryQuantity,
             expectedIsBuy: false);
             
@@ -68,13 +72,17 @@ public class ExitLosingTradesBasicTests : ExitLosingTradesTestBase
         var stopLossPercent = 1.0m; // 1% stop loss
         var stopLossPrice = entryPrice * (1 + stopLossPercent / 100m); // 101.0
         var currentAsk = stopLossPrice + 0.1m; // 101.1 - just above stop loss
+        var currentBid = currentAsk - 0.2m; // 100.9 - bid price for the ticker
 
         // Create bot and trade
         var bot = await CreateStopLossBot(isLong: false, stopLossPercent: stopLossPercent);
         var trade = await CreateFilledTrade(bot, entryPrice, bot.EntryQuantity);
         
+        // For short positions exiting, we should use bid price for limit maker orders
+        var exitPrice = currentBid;
+        
         // Setup exit order mock
-        var exitOrder = CreateOrder(bot, currentAsk, bot.EntryQuantity, true);
+        var exitOrder = CreateOrder(bot, exitPrice, bot.EntryQuantity, true);
         ExchangeApiMock.Setup(x => x.PlaceOrder(
                 It.IsAny<Bot>(),
                 It.IsAny<decimal>(),
@@ -85,7 +93,7 @@ public class ExitLosingTradesBasicTests : ExitLosingTradesTestBase
             .ReturnsAsync(exitOrder);
         
         // Create ticker with price above stop loss
-        var ticker = CreateTicker(currentAsk - 0.2m, currentAsk);
+        var ticker = CreateTicker(currentBid, currentAsk);
         var command = new ExitLosingTradesCommand { Ticker = ticker };
 
         // Act
@@ -94,11 +102,11 @@ public class ExitLosingTradesBasicTests : ExitLosingTradesTestBase
         // Assert
         Assert.True(result.Succeeded);
         
-        // Verify exit order placed at the ask price (for a short position)
+        // Verify exit order placed at the bid price (for a short position using limit maker)
         VerifyExitOrderPlaced(
             bot, 
             Times.Once(), 
-            expectedPrice: currentAsk,
+            expectedPrice: exitPrice,
             expectedQuantity: bot.EntryQuantity,
             expectedIsBuy: true);
             

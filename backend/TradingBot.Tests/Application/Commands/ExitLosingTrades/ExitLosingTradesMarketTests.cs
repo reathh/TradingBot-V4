@@ -18,7 +18,8 @@ public class ExitLosingTradesMarketTests : ExitLosingTradesTestBase
     {
         // Arrange - simulating a flash crash with price dropping 10%
         var entryPrice = 50000m; // BTC price in USD
-        var crashedPrice = entryPrice * 0.9m; // 10% flash crash
+        var crashedBid = entryPrice * 0.9m; // 10% flash crash
+        var crashedAsk = crashedBid * 1.001m; // Slightly higher ask price
         var stopLossPercent = 1.0m; // 1% stop loss
         
         // Create bot with different trades at various price points
@@ -32,8 +33,8 @@ public class ExitLosingTradesMarketTests : ExitLosingTradesTestBase
         
         var totalQuantity = 0.04m;
         
-        // Setup exit order mock
-        var exitOrder = CreateOrder(bot, crashedPrice, totalQuantity, false);
+        // Setup exit order mock - long exits at ask price
+        var exitOrder = CreateOrder(bot, crashedAsk, totalQuantity, false);
         ExchangeApiMock.Setup(x => x.PlaceOrder(
                 It.IsAny<Bot>(),
                 It.IsAny<decimal>(),
@@ -44,7 +45,7 @@ public class ExitLosingTradesMarketTests : ExitLosingTradesTestBase
             .ReturnsAsync(exitOrder);
         
         // Create ticker with flash crash price
-        var ticker = CreateTicker(crashedPrice, crashedPrice + 10m);
+        var ticker = CreateTicker(crashedBid, crashedAsk);
         var command = new ExitLosingTradesCommand { Ticker = ticker };
 
         // Act
@@ -57,7 +58,7 @@ public class ExitLosingTradesMarketTests : ExitLosingTradesTestBase
         VerifyExitOrderPlaced(
             bot, 
             Times.Once(), 
-            expectedPrice: crashedPrice,
+            expectedPrice: crashedAsk, // Long bot exits at ask price
             expectedQuantity: totalQuantity,
             expectedIsBuy: false);
             
@@ -75,7 +76,8 @@ public class ExitLosingTradesMarketTests : ExitLosingTradesTestBase
     {
         // Arrange - simulating a short squeeze with price rising 10%
         var entryPrice = 50000m; // BTC price in USD
-        var squeezedPrice = entryPrice * 1.1m; // 10% short squeeze
+        var squeezedAsk = entryPrice * 1.1m; // 10% short squeeze
+        var squeezedBid = squeezedAsk * 0.999m; // Slightly lower bid price
         var stopLossPercent = 1.0m; // 1% stop loss
         
         // Create bot with different trades at various price points
@@ -89,8 +91,8 @@ public class ExitLosingTradesMarketTests : ExitLosingTradesTestBase
         
         var totalQuantity = 0.04m;
         
-        // Setup exit order mock
-        var exitOrder = CreateOrder(bot, squeezedPrice, totalQuantity, true);
+        // Setup exit order mock - short exits at bid price
+        var exitOrder = CreateOrder(bot, squeezedBid, totalQuantity, true);
         ExchangeApiMock.Setup(x => x.PlaceOrder(
                 It.IsAny<Bot>(),
                 It.IsAny<decimal>(),
@@ -101,7 +103,7 @@ public class ExitLosingTradesMarketTests : ExitLosingTradesTestBase
             .ReturnsAsync(exitOrder);
         
         // Create ticker with short squeeze price
-        var ticker = CreateTicker(squeezedPrice - 10m, squeezedPrice);
+        var ticker = CreateTicker(squeezedBid, squeezedAsk);
         var command = new ExitLosingTradesCommand { Ticker = ticker };
 
         // Act
@@ -114,7 +116,7 @@ public class ExitLosingTradesMarketTests : ExitLosingTradesTestBase
         VerifyExitOrderPlaced(
             bot, 
             Times.Once(), 
-            expectedPrice: squeezedPrice,
+            expectedPrice: squeezedBid, // Short bot exits at bid price
             expectedQuantity: totalQuantity,
             expectedIsBuy: true);
             
@@ -186,8 +188,9 @@ public class ExitLosingTradesMarketTests : ExitLosingTradesTestBase
         var shortTrade = await CreateFilledTrade(shortBot, entryPrice, 0.01m);
         
         // Setup exit orders for both bots
-        var longExitOrder = CreateOrder(longBot, bidPrice, 0.01m, false);
-        var shortExitOrder = CreateOrder(shortBot, askPrice, 0.01m, true);
+        // Long bot should exit at ask price, short bot should exit at bid price
+        var longExitOrder = CreateOrder(longBot, askPrice, 0.01m, false);
+        var shortExitOrder = CreateOrder(shortBot, bidPrice, 0.01m, true);
         
         ExchangeApiMock.SetupSequence(x => x.PlaceOrder(
                 It.IsAny<Bot>(),
@@ -210,8 +213,9 @@ public class ExitLosingTradesMarketTests : ExitLosingTradesTestBase
         Assert.True(result.Succeeded);
         
         // Verify both bots placed exit orders at the appropriate side of the spread
-        VerifyExitOrderPlaced(longBot, Times.Once(), expectedPrice: bidPrice); // Long exits at bid
-        VerifyExitOrderPlaced(shortBot, Times.Once(), expectedPrice: askPrice); // Short exits at ask
+        // Long bot sells at ask, short bot buys at bid (for limit maker orders)
+        VerifyExitOrderPlaced(longBot, Times.Once(), expectedPrice: askPrice); // Long exits at ask
+        VerifyExitOrderPlaced(shortBot, Times.Once(), expectedPrice: bidPrice); // Short exits at bid
             
         // Verify both trades were updated with exit orders
         var longBotTrades = await DbContext.Trades.Where(t => t.BotId == longBot.Id).Include(t => t.ExitOrder).ToListAsync();

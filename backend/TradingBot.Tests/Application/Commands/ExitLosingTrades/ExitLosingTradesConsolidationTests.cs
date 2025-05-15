@@ -21,6 +21,7 @@ public class ExitLosingTradesConsolidationTests : ExitLosingTradesTestBase
         var stopLossPercent = 1.0m; // 1% stop loss
         var stopLossPrice = entryPrice * (1 - stopLossPercent / 100m); // 99.0
         var currentBid = stopLossPrice - 0.1m; // 98.9 - just below stop loss
+        var currentAsk = currentBid + 0.2m; // 99.1 - ask price
         
         // Create a bot with 3 trades at the same price point
         var bot = await CreateStopLossBot(isLong: true, stopLossPercent: stopLossPercent);
@@ -31,8 +32,8 @@ public class ExitLosingTradesConsolidationTests : ExitLosingTradesTestBase
         
         var totalQuantity = 0.03m; // Sum of all trade quantities
         
-        // Setup exit order mock
-        var exitOrder = CreateOrder(bot, currentBid, totalQuantity, false);
+        // Setup exit order mock - long bot exits at ask price
+        var exitOrder = CreateOrder(bot, currentAsk, totalQuantity, false);
         ExchangeApiMock.Setup(x => x.PlaceOrder(
                 It.IsAny<Bot>(),
                 It.IsAny<decimal>(),
@@ -43,7 +44,7 @@ public class ExitLosingTradesConsolidationTests : ExitLosingTradesTestBase
             .ReturnsAsync(exitOrder);
         
         // Create ticker with price below stop loss
-        var ticker = CreateTicker(currentBid, currentBid + 0.2m);
+        var ticker = CreateTicker(currentBid, currentAsk);
         var command = new ExitLosingTradesCommand { Ticker = ticker };
 
         // Act
@@ -56,7 +57,7 @@ public class ExitLosingTradesConsolidationTests : ExitLosingTradesTestBase
         VerifyExitOrderPlaced(
             bot, 
             Times.Once(), 
-            expectedPrice: currentBid,
+            expectedPrice: currentAsk,
             expectedQuantity: totalQuantity,
             expectedIsBuy: false);
             
