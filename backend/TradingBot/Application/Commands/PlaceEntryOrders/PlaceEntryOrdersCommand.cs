@@ -154,7 +154,6 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                 }
 
                 await dbContext.SaveChangesAsync(cancellationToken);
-                logger.LogInformation("Successfully placed {OrderCount} entry orders for bot {BotId}", orders.Length, bot.Id);
             }
             else
             {
@@ -164,7 +163,7 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                 var trade = new Trade(order);
                 bot.Trades.Add(trade);
 
-                logger.LogInformation("Bot {BotId} placed {Side} order at {Price} for {Quantity} units ({OrderId})",
+                logger.LogInformation("Bot {BotId} placed entry {Side} order at {Price} for {Quantity} units ({OrderId})",
                     bot.Id,
                     order.IsBuy ? "buy" : "sell",
                     order.Price,
@@ -175,7 +174,6 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                 await notificationService.NotifyOrderUpdated(order.Id);
 
                 await dbContext.SaveChangesAsync(cancellationToken);
-                logger.LogInformation("Successfully placed 1 entry order for bot {BotId}", bot.Id);
             }
         }
     }

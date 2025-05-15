@@ -97,12 +97,22 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                 async (botWithTrades, token) =>
                 {
                     var bot = botWithTrades.Bot;
-                    var consolidatedTrades = botWithTrades.ConsolidatedTrades.Select(t => t.Trade).ToList();
-                    var advanceTrades = botWithTrades.AdvanceTrades.Select(t => t.Trade).ToList();
+
+                    var consolidatedTrades = botWithTrades
+                        .ConsolidatedTrades
+                        .Select(t => t.Trade)
+                        .ToList();
+
+                    var advanceTrades = botWithTrades
+                        .AdvanceTrades
+                        .Select(t => t.Trade)
+                        .ToList();
+
                     if (consolidatedTrades.Count == 0 && advanceTrades.Count == 0)
                     {
                         return;
                     }
+
                     try
                     {
                         await PlaceExitOrders(dbContext, bot, request.Ticker, consolidatedTrades, advanceTrades, token);
@@ -185,32 +195,28 @@ public class PlaceExitOrdersCommand : IRequest<Result>
             }));
 
             // Process successful orders
-            foreach (var result in orderResults.Where(r => r.Success && r.Order != null))
+            foreach (var result in orderResults.Where(r => r.Success))
             {
                 foreach (var trade in result.Trades)
                 {
                     trade.ExitOrder = result.Order;
 
-                    logger.LogInformation("Bot {BotId} placed exit {Side} order at {Price} for trade with entry price {EntryPrice}",
+                    logger.LogInformation("Bot {BotId} placed exit {Side} order at {Price} for {Quantity} units ({OrderId})",
                         bot.Id,
                         result.Order.IsBuy ? "buy" : "sell",
-                        result.Order.Price,
-                        trade.EntryOrder.AverageFillPrice ?? trade.EntryOrder.Price);
+                        result.Order.AverageFillPrice is > 0 ? result.Order.AverageFillPrice : result.Order.Price,
+                        trade.EntryOrder.QuantityFilled,
+                        result.Order.Id);
                 }
-                
+
                 // Notify about the new exit order
                 await notificationService.NotifyOrderUpdated(result.Order.Id);
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            var successfulOrderCount = orderResults.Count(r => r.Success && r.Order != null);
+            var successfulOrderCount = orderResults.Count(r => r.Success);
             var failedOrderCount = orderResults.Length - successfulOrderCount;
-
-            if (successfulOrderCount > 0)
-            {
-                logger.LogInformation("Successfully placed {OrderCount} exit orders for bot {BotId}", successfulOrderCount, bot.Id);
-            }
 
             if (failedOrderCount > 0)
             {

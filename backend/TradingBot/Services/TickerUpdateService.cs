@@ -6,6 +6,7 @@ using TradingBot.Data;
 using TradingBot.Application.Commands.SaveTicker;
 using TradingBot.Application.Commands.PlaceEntryOrders;
 using TradingBot.Application.Commands.PlaceExitOrders;
+using TradingBot.Application.Commands.ExitLossTrades;
 
 namespace TradingBot.Services;
 
@@ -151,6 +152,7 @@ public class TickerUpdateService(IServiceProvider serviceProvider, ILogger<Ticke
 
             backgroundJobProcessor.Enqueue(new PlaceEntryOrdersCommand { Ticker = tickerDto });
             backgroundJobProcessor.Enqueue(new PlaceExitOrdersCommand { Ticker = tickerDto });
+            // backgroundJobProcessor.Enqueue(new ExitLossTradesCommand { Ticker = tickerDto });
         }
         catch (Exception ex)
         {

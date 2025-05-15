@@ -6,7 +6,7 @@ namespace TradingBot.Application.Common
     public class RequestTimingBehavior<TRequest, TResponse>(ILogger<RequestTimingBehavior<TRequest, TResponse>> logger) : IPipelineBehavior<TRequest, TResponse>
         where TRequest : IRequest<TResponse>
     {
-        private const double WarningThresholdSeconds = 0.2;
+        private const double WarningThresholdSeconds = 1;
 
         public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
         {
