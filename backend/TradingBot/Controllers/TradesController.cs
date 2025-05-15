@@ -23,8 +23,7 @@ namespace TradingBot.Controllers
             // Base query – only completed trades (exit filled)
             var baseQuery = context.Trades
                 .Where(t => t.ExitOrder != null &&
-                            t.ExitOrder.Status == OrderStatus.Filled &&
-                            t.ExitOrder.QuantityFilled > 0);
+                            t.ExitOrder.Status == OrderStatus.Filled);
 
             if (botId.HasValue)
             {
@@ -121,7 +120,6 @@ namespace TradingBot.Controllers
             var baseQuery = context.Trades
                 .Where(t => t.ExitOrder != null &&
                             t.ExitOrder.Status == OrderStatus.Filled &&
-                            t.ExitOrder.QuantityFilled > 0 &&
                             t.ExitOrder.CreatedAt >= startDate &&
                             t.ExitOrder.CreatedAt <= endDate);
 
