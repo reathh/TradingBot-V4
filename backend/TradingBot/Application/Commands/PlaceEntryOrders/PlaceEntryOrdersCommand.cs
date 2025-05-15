@@ -163,11 +163,12 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                 var trade = new Trade(order);
                 bot.Trades.Add(trade);
 
-                logger.LogInformation("Bot {BotId} placed entry {Side} order at {Price} for {Quantity} units ({OrderId})",
+                logger.LogInformation("Bot {BotId} placed entry {Side} order at {Price} for {Quantity} units because price was {CurrentPrice} ({OrderId})",
                     bot.Id,
                     order.IsBuy ? "buy" : "sell",
-                    order.Price,
+                    order.AverageFillPrice > 0m ? order.AverageFillPrice : order.Price,
                     order.Quantity,
+                    currentPrice,
                     order.Id);
 
                 // Notify about the new order

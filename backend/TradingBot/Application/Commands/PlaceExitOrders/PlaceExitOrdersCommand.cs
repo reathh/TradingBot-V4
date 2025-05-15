@@ -201,11 +201,12 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                 {
                     trade.ExitOrder = result.Order;
 
-                    logger.LogInformation("Bot {BotId} placed exit {Side} order at {Price} for {Quantity} units ({OrderId})",
+                    logger.LogInformation("Bot {BotId} placed exit {Side} order at {Price} for {Quantity} units because price was {Price} ({OrderId})",
                         bot.Id,
                         result.Order.IsBuy ? "buy" : "sell",
                         result.Order.AverageFillPrice is > 0 ? result.Order.AverageFillPrice : result.Order.Price,
                         trade.EntryOrder.QuantityFilled,
+                        currentPrice,
                         result.Order.Id);
                 }
 
