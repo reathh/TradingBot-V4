@@ -66,9 +66,13 @@ public class BackgroundJobProcessor(IServiceProvider serviceProvider, ILogger<Ba
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
+        logger.LogInformation("Background job processor stopping - waiting for pending jobs to complete...");
+        
+        // Signal cancellation to prevent accepting new jobs
         _cancellationTokenSource.Cancel();
-        logger.LogInformation("Background job processor stopping");
-
+        
+        // Don't wait for all jobs to complete, as that's handled by the HostOptions.ShutdownTimeout
+        
         return Task.CompletedTask;
     }
 

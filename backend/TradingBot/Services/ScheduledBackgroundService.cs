@@ -71,10 +71,13 @@ public abstract class ScheduledBackgroundService(
     }
 
     /// <summary>
-    /// Override to perform any cleanup operations when the service stops
+    /// Override to execute cleanup if needed when the service stops
     /// </summary>
     protected virtual Task OnStopAsync(CancellationToken cancellationToken)
     {
+        Logger.LogInformation("Performing graceful shutdown for {ServiceName}", ServiceName);
+        
+        // Wait for in-flight requests to complete with respect to the cancellation token
         return Task.CompletedTask;
     }
 

@@ -104,6 +104,13 @@ builder
 
 builder.Services.AddOpenApi();
 
+// Add graceful shutdown options
+builder.Services.Configure<HostOptions>(options =>
+{
+    // Allow 30 seconds for graceful shutdown to complete in-flight requests
+    options.ShutdownTimeout = TimeSpan.FromSeconds(30);
+});
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())

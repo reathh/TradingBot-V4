@@ -194,34 +194,46 @@ public class PlaceExitOrdersCommand : IRequest<Result>
                 }
             }));
 
-            // Process successful orders
-            foreach (var result in orderResults.Where(r => r.Success))
+            // Process successful orders within a transaction
+            using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+            try
             {
-                foreach (var trade in result.Trades)
+                // Process successful orders
+                foreach (var result in orderResults.Where(r => r.Success))
                 {
-                    trade.ExitOrder = result.Order;
+                    foreach (var trade in result.Trades)
+                    {
+                        trade.ExitOrder = result.Order;
 
-                    logger.LogInformation("Bot {BotId} placed exit {Side} order at {Price} for {Quantity} units because price was {Price} ({OrderId})",
-                        bot.Id,
-                        result.Order.IsBuy ? "buy" : "sell",
-                        result.Order.AverageFillPrice is > 0 ? result.Order.AverageFillPrice : result.Order.Price,
-                        trade.EntryOrder.QuantityFilled,
-                        currentPrice,
-                        result.Order.Id);
+                        logger.LogInformation("Bot {BotId} placed exit {Side} order at {Price} for {Quantity} units because price was {Price} ({OrderId})",
+                            bot.Id,
+                            result.Order.IsBuy ? "buy" : "sell",
+                            result.Order.AverageFillPrice is > 0 ? result.Order.AverageFillPrice : result.Order.Price,
+                            trade.EntryOrder.QuantityFilled,
+                            currentPrice,
+                            result.Order.Id);
+                    }
+
+                    // Notify about the new exit order
+                    await notificationService.NotifyOrderUpdated(result.Order.Id);
                 }
 
-                // Notify about the new exit order
-                await notificationService.NotifyOrderUpdated(result.Order.Id);
+                await dbContext.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+
+                var successfulOrderCount = orderResults.Count(r => r.Success);
+                var failedOrderCount = orderResults.Length - successfulOrderCount;
+
+                if (failedOrderCount > 0)
+                {
+                    logger.LogWarning("Failed to place {OrderCount} exit orders for bot {BotId}", failedOrderCount, bot.Id);
+                }
             }
-
-            await dbContext.SaveChangesAsync(cancellationToken);
-
-            var successfulOrderCount = orderResults.Count(r => r.Success);
-            var failedOrderCount = orderResults.Length - successfulOrderCount;
-
-            if (failedOrderCount > 0)
+            catch (Exception ex)
             {
-                logger.LogWarning("Failed to place {OrderCount} exit orders for bot {BotId}", failedOrderCount, bot.Id);
+                logger.LogError(ex, "Error saving exit orders for bot {BotId}", bot.Id);
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
             }
 
             return;
