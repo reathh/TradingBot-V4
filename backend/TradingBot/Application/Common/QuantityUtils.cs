@@ -1,6 +1,6 @@
 namespace TradingBot.Application.Common;
 
-using TradingBot.Services;
+using Services;
 
 public static class QuantityUtils
 {

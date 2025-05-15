@@ -1,19 +1,18 @@
+namespace TradingBot.Application.Commands.ExitLosingTrades;
+
 using System.Collections.Concurrent;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using TradingBot.Application.Common;
-using TradingBot.Data;
-using TradingBot.Services;
-
-namespace TradingBot.Application.Commands.ExitLossTrades;
-
+using Common;
+using Data;
 using Models;
+using Services;
 
 /// <summary>
 /// Exits trades that have moved against the entry price by more than a predefined percentage.
 /// A single consolidated order is placed per-bot for all trades that should be exited on loss.
 /// </summary>
-public class ExitLossTradesCommand : IRequest<Result>
+public class ExitLosingTradesCommand : IRequest<Result>
 {
     public required TickerDto Ticker { get; init; }
 
@@ -22,9 +21,9 @@ public class ExitLossTradesCommand : IRequest<Result>
         IExchangeApiRepository exchangeApiRepository,
         ISymbolInfoCache symbolInfoCache,
         TradingNotificationService notificationService,
-        ILogger<ExitLossTradesCommandHandler> logger) : BaseCommandHandler<ExitLossTradesCommand>(logger)
+        ILogger<ExitLossTradesCommandHandler> logger) : BaseCommandHandler<ExitLosingTradesCommand>(logger)
     {
-        protected override async Task<Result> HandleCore(ExitLossTradesCommand request, CancellationToken cancellationToken)
+        protected override async Task<Result> HandleCore(ExitLosingTradesCommand request, CancellationToken cancellationToken)
         {
             var currentAsk = request.Ticker.Ask;
             var currentBid = request.Ticker.Bid;
@@ -40,11 +39,14 @@ public class ExitLossTradesCommand : IRequest<Result>
                         .Where(t => t.ExitOrder == null &&
                                     t.EntryOrder.Status == OrderStatus.Filled &&
                                     (
+
                                         // Long: price moved down >= threshold
-                                        (bot.IsLong && currentBid <= (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) * (1 - bot.StopLossPercent / 100m)) ||
+                                        (bot.IsLong &&
+                                         currentBid <= (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) * (1 - bot.StopLossPercent / 100m)) ||
+
                                         // Short: price moved up >= threshold
-                                        (!bot.IsLong && currentAsk >= (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) * (1 + bot.StopLossPercent / 100m))
-                                    ))
+                                        (!bot.IsLong &&
+                                         currentAsk >= (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) * (1 + bot.StopLossPercent / 100m))))
                         .ToList()
                 })
                 .Where(x => x.LossTrades.Any())
@@ -53,13 +55,17 @@ public class ExitLossTradesCommand : IRequest<Result>
             if (botsWithLossTrades.Count == 0)
             {
                 logger.LogTrace("No trades require loss exits at this ticker update");
+
                 return Result.Success;
             }
 
             ConcurrentBag<string> errors = [];
 
             await Parallel.ForEachAsync(botsWithLossTrades,
-                new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
+                new ParallelOptions
+                {
+                    MaxDegreeOfParallelism = Environment.ProcessorCount
+                },
                 async (botWithTrades, token) =>
                 {
                     var bot = botWithTrades.Bot;
@@ -79,12 +85,7 @@ public class ExitLossTradesCommand : IRequest<Result>
             return errors.IsEmpty ? Result.Success : Result.Failure(errors);
         }
 
-        private async Task ExitLossTrades(
-            TradingBotDbContext dbContext,
-            Bot bot,
-            TickerDto ticker,
-            IList<Trade> trades,
-            CancellationToken cancellationToken)
+        private async Task ExitLossTrades(TradingBotDbContext dbContext, Bot bot, TickerDto ticker, IList<Trade> trades, CancellationToken cancellationToken)
         {
             var symbolInfo = await symbolInfoCache.GetAsync(bot.Symbol, cancellationToken);
 
@@ -92,12 +93,14 @@ public class ExitLossTradesCommand : IRequest<Result>
             decimal totalQty = trades.Sum(t =>
             {
                 var net = t.EntryOrder.QuantityFilled - t.EntryOrder.Fee;
+
                 return QuantityUtils.RoundDownToStep(net, symbolInfo);
             });
 
             if (totalQty < symbolInfo.MinQty)
             {
                 logger.LogDebug("Bot {BotId} loss-exit skipped – total quantity {Qty} below minQty {MinQty}", bot.Id, totalQty, symbolInfo.MinQty);
+
                 return;
             }
 
@@ -106,6 +109,7 @@ public class ExitLossTradesCommand : IRequest<Result>
 
             var exchangeApi = exchangeApiRepository.GetExchangeApi(bot);
             Order order;
+
             try
             {
                 order = await exchangeApi.PlaceOrder(bot, exitPrice, totalQty, isBuy, bot.ExitOrderType, cancellationToken);
@@ -113,6 +117,7 @@ public class ExitLossTradesCommand : IRequest<Result>
             catch (Exception ex)
             {
                 logger.LogError(ex, "Bot {BotId}: failed to place loss-exit order", bot.Id);
+
                 throw;
             }
 
@@ -135,4 +140,4 @@ public class ExitLossTradesCommand : IRequest<Result>
             await notificationService.NotifyOrderUpdated(order.Id);
         }
     }
-} 
+}

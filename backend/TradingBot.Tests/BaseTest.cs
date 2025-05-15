@@ -110,8 +110,8 @@ public abstract class BaseTest
     }
 
     private class TestTradingNotificationService() : TradingNotificationService(
-        new Moq.Mock<Microsoft.AspNetCore.SignalR.IHubContext<TradingBot.Services.TradingHub, TradingBot.Services.ITradingHubClient>>().Object,
-        new Moq.Mock<Microsoft.Extensions.Logging.ILogger<TradingNotificationService>>().Object)
+        new Mock<Microsoft.AspNetCore.SignalR.IHubContext<TradingHub, ITradingHubClient>>().Object,
+        new Mock<ILogger<TradingNotificationService>>().Object)
     {
         public override Task NotifyOrderUpdated(string orderId) => Task.CompletedTask;
     }
