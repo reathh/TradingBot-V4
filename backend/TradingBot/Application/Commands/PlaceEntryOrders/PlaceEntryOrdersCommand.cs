@@ -139,7 +139,10 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
 
                 foreach (var order in orders)
                 {
-                    var trade = new Trade(order);
+                    var trade = new Trade(order)
+                    {
+                        AvailableCapital = bot.AvailableCapital
+                    };
                     bot.Trades.Add(trade);
 
                     logger.LogInformation("Bot {BotId} placed {Side} order at {Price} for {Quantity} units ({OrderId})",
@@ -160,7 +163,10 @@ public class PlaceEntryOrdersCommand : IRequest<Result>
                 // Standard behavior for bots without PlaceOrdersInAdvance
                 var order = await exchangeApi.PlaceOrder(bot, currentPrice, quantity, bot.IsLong, bot.EntryOrderType, cancellationToken);
 
-                var trade = new Trade(order);
+                var trade = new Trade(order)
+                {
+                    AvailableCapital = bot.AvailableCapital
+                };
                 bot.Trades.Add(trade);
 
                 logger.LogInformation("Bot {BotId} placed entry {Side} order at {Price} for {Quantity} units because price was {CurrentPrice} ({OrderId})",

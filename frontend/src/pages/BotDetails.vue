@@ -181,6 +181,20 @@
                 </div>
               </div>
 
+              <div class="row">
+                <div class="col-md-6">
+                  <el-form-item label="Available Capital" required>
+                    <el-input
+                      v-model.number="bot.availableCapital"
+                      type="number"
+                      step="0.01"
+                      placeholder="Available capital"
+                      @input="formatNumberInput($event, 'availableCapital')"
+                    ></el-input>
+                  </el-form-item>
+                </div>
+              </div>
+
               <el-form-item>
                 <el-checkbox v-model="bot.placeOrdersInAdvance">Place orders in advance</el-checkbox>
               </el-form-item>
@@ -301,6 +315,7 @@ const bot = ref({
   entryStep: 0.01,
   entryQuantity: 0,
   startingBaseAmount: 0,
+  availableCapital: 0,
   startFromMaxPrice: false,
   stopLossEnabled: false,
   stopLossPercent: 1.0,

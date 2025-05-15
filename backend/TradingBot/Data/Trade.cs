@@ -18,5 +18,6 @@ namespace TradingBot.Data
         public int BotId { get; set; }
         public Bot Bot { get; set; } = null!;
         public bool StopLossExit { get; set; } = false;
+        public decimal AvailableCapital { get; set; } = 0;
     }
 }
