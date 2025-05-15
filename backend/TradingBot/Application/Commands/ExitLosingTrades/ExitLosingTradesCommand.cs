@@ -129,6 +129,7 @@ public class ExitLosingTradesCommand : IRequest<Result>
             foreach (var trade in trades)
             {
                 trade.ExitOrder = order;
+                trade.StopLossExit = true;
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);

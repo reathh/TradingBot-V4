@@ -17,5 +17,6 @@ namespace TradingBot.Data
         public Order? ExitOrder { get; set; }
         public int BotId { get; set; }
         public Bot Bot { get; set; } = null!;
+        public bool StopLossExit { get; set; } = false;
     }
 }
