@@ -181,19 +181,29 @@ function viewOrderDetails(order) {
 }
 
 function getStatusLabel(order) {
-  if (order.canceled) return 'Canceled';
-  if (order.closed) return 'Closed';
-  if (order.quantityFilled > 0 && order.quantityFilled < order.quantity) return 'Partially Filled';
-  if (order.quantityFilled === order.quantity) return 'Filled';
-  return 'Open';
+  switch (order.status) {
+    case 'New': return 'Open';
+    case 'PartiallyFilled': return 'Partially Filled';
+    case 'Filled': return 'Filled';
+    case 'Canceled': return 'Canceled';
+    case 'Rejected': return 'Rejected';
+    case 'Expired': return 'Expired';
+    case 'PendingCancel': return 'Pending Cancel';
+    default: return 'Unknown';
+  }
 }
 
 function getStatusType(order) {
-  if (order.canceled) return 'danger';
-  if (order.closed) return 'info';
-  if (order.quantityFilled > 0 && order.quantityFilled < order.quantity) return 'warning';
-  if (order.quantityFilled === order.quantity) return 'success';
-  return 'primary';
+  switch (order.status) {
+    case 'New': return 'primary';
+    case 'PartiallyFilled': return 'warning';
+    case 'Filled': return 'success';
+    case 'Canceled': return 'danger';
+    case 'Rejected': return 'danger';
+    case 'Expired': return 'info';
+    case 'PendingCancel': return 'warning';
+    default: return 'info';
+  }
 }
 
 const fetchOrderData = async (params) => {
