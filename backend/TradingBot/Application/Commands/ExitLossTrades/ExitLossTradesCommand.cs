@@ -24,9 +24,6 @@ public class ExitLossTradesCommand : IRequest<Result>
         TradingNotificationService notificationService,
         ILogger<ExitLossTradesCommandHandler> logger) : BaseCommandHandler<ExitLossTradesCommand>(logger)
     {
-        // Percentage move (e.g. 0.01 => 1 %) after which we liquidate the position
-        private const decimal LossThreshold = 0.01m;
-
         protected override async Task<Result> HandleCore(ExitLossTradesCommand request, CancellationToken cancellationToken)
         {
             var currentAsk = request.Ticker.Ask;
@@ -44,9 +41,9 @@ public class ExitLossTradesCommand : IRequest<Result>
                                     t.EntryOrder.Status == OrderStatus.Filled &&
                                     (
                                         // Long: price moved down >= threshold
-                                        (bot.IsLong && currentBid <= (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) * (1 - LossThreshold)) ||
+                                        (bot.IsLong && currentBid <= (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) * (1 - bot.StopLossPercent / 100m)) ||
                                         // Short: price moved up >= threshold
-                                        (!bot.IsLong && currentAsk >= (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) * (1 + LossThreshold))
+                                        (!bot.IsLong && currentAsk >= (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price) * (1 + bot.StopLossPercent / 100m))
                                     ))
                         .ToList()
                 })

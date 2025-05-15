@@ -186,8 +186,31 @@
               </el-form-item>
 
               <el-form-item>
-                <el-checkbox v-model="bot.stopLossEnabled">Enable stop-loss (liquidate positions after 1% move against position)</el-checkbox>
+                <el-checkbox v-model="bot.stopLossEnabled">Enable stop-loss (liquidate positions on loss)</el-checkbox>
               </el-form-item>
+
+              <div v-if="bot.stopLossEnabled" class="row ml-1 mb-3">
+                <div class="col-md-4">
+                  <el-form-item label="Stop Loss Percentage" required>
+                    <el-input
+                      v-model.number="bot.stopLossPercent"
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      max="50"
+                      placeholder="Stop loss (%)"
+                      @input="formatNumberInput($event, 'stopLossPercent')"
+                    >
+                      <template #suffix>%</template>
+                    </el-input>
+                  </el-form-item>
+                </div>
+                <div class="col-md-8 d-flex align-items-center">
+                  <div class="text-muted">
+                    Exit trades when price moves this percentage against the position.
+                  </div>
+                </div>
+              </div>
 
               <template v-if="bot.placeOrdersInAdvance">
                 <div class="row">
@@ -280,6 +303,7 @@ const bot = ref({
   startingBaseAmount: 0,
   startFromMaxPrice: false,
   stopLossEnabled: false,
+  stopLossPercent: 1.0,
   entryOrdersInAdvance: 100,
   exitOrdersInAdvance: 100,
   tradingMode: 'Spot',

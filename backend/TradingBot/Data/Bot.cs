@@ -22,6 +22,7 @@ namespace TradingBot.Data
         public decimal EntryQuantity { get; set; }
         public decimal StartingBaseAmount { get; set; } = 0;
         public bool StopLossEnabled { get; set; } = false;
+        public decimal StopLossPercent { get; set; } = 1.0m;
         public bool StartFromMaxPrice
         {
             get; set
