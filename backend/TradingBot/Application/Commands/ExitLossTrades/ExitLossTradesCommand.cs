@@ -34,7 +34,7 @@ public class ExitLossTradesCommand : IRequest<Result>
 
             var botsWithLossTrades = await dbContext
                 .Bots
-                .Where(b => b.Enabled)
+                .Where(b => b.Enabled && b.StopLossEnabled)
                 .Select(bot => new
                 {
                     Bot = bot,

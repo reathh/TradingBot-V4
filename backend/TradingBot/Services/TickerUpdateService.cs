@@ -152,7 +152,7 @@ public class TickerUpdateService(IServiceProvider serviceProvider, ILogger<Ticke
 
             backgroundJobProcessor.Enqueue(new PlaceEntryOrdersCommand { Ticker = tickerDto });
             backgroundJobProcessor.Enqueue(new PlaceExitOrdersCommand { Ticker = tickerDto });
-            // backgroundJobProcessor.Enqueue(new ExitLossTradesCommand { Ticker = tickerDto });
+            backgroundJobProcessor.Enqueue(new ExitLossTradesCommand { Ticker = tickerDto });
         }
         catch (Exception ex)
         {

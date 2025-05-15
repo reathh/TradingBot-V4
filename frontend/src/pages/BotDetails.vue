@@ -185,6 +185,10 @@
                 <el-checkbox v-model="bot.placeOrdersInAdvance">Place orders in advance</el-checkbox>
               </el-form-item>
 
+              <el-form-item>
+                <el-checkbox v-model="bot.stopLossEnabled">Enable stop-loss (liquidate positions after 1% move against position)</el-checkbox>
+              </el-form-item>
+
               <template v-if="bot.placeOrdersInAdvance">
                 <div class="row">
                   <div class="col-md-6">
@@ -275,6 +279,7 @@ const bot = ref({
   entryQuantity: 0,
   startingBaseAmount: 0,
   startFromMaxPrice: false,
+  stopLossEnabled: false,
   entryOrdersInAdvance: 100,
   exitOrdersInAdvance: 100,
   tradingMode: 'Spot',
