@@ -1,5 +1,5 @@
+using FakeItEasy;
 using Microsoft.EntityFrameworkCore;
-using Moq;
 using TradingBot.Application.Commands.ExitLosingTrades;
 using TradingBot.Application.Common;
 using TradingBot.Data;
@@ -8,7 +8,7 @@ using TradingBot.Models;
 namespace TradingBot.Tests.Application.Commands.ExitLosingTrades;
 
 /// <summary>
-/// Basic tests for ExitLosingTrades command functionality
+/// Basic tests for ExitLosingTrades command functionality using FakeItEasy
 /// </summary>
 public class ExitLosingTradesBasicTests : ExitLosingTradesTestBase
 {
@@ -28,17 +28,17 @@ public class ExitLosingTradesBasicTests : ExitLosingTradesTestBase
         
         // For long positions exiting, we should use ask price for limit maker orders
         var exitPrice = currentAsk;
-        
-        // Setup exit order mock
         var exitOrder = CreateOrder(bot, exitPrice, bot.EntryQuantity, false);
-        ExchangeApiMock.Setup(x => x.PlaceOrder(
-                It.IsAny<Bot>(),
-                It.IsAny<decimal>(),
-                It.IsAny<decimal>(),
-                It.IsAny<bool>(),
-                It.IsAny<OrderType>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(exitOrder);
+        
+        // Setup fake API with strict expectations
+        A.CallTo(() => ExchangeApiFake.PlaceOrder(
+                A<Bot>.That.Matches(b => b.Id == bot.Id),
+                A<decimal>.That.IsEqualTo(exitPrice),
+                A<decimal>.That.IsEqualTo(bot.EntryQuantity),
+                A<bool>.That.IsEqualTo(false),
+                A<OrderType>.Ignored,
+                A<CancellationToken>.Ignored))
+            .Returns(exitOrder);
         
         // Create ticker with price below stop loss
         var ticker = CreateTicker(currentBid, currentAsk);
@@ -50,13 +50,15 @@ public class ExitLosingTradesBasicTests : ExitLosingTradesTestBase
         // Assert
         Assert.True(result.Succeeded);
         
-        // Verify exit order placed at the ask price (for a long position using limit maker)
-        VerifyExitOrderPlaced(
-            bot, 
-            Times.Once(), 
-            expectedPrice: exitPrice,
-            expectedQuantity: bot.EntryQuantity,
-            expectedIsBuy: false);
+        // Verify exit order placed with exact parameters
+        A.CallTo(() => ExchangeApiFake.PlaceOrder(
+                A<Bot>.That.Matches(b => b.Id == bot.Id),
+                A<decimal>.That.IsEqualTo(exitPrice),
+                A<decimal>.That.IsEqualTo(bot.EntryQuantity),
+                A<bool>.That.IsEqualTo(false),
+                A<OrderType>.Ignored,
+                A<CancellationToken>.Ignored))
+            .MustHaveHappenedOnceExactly();
             
         // Verify trade was updated with exit order
         var savedTrade = await DbContext.Trades.Include(t => t.ExitOrder).FirstAsync();
@@ -80,17 +82,17 @@ public class ExitLosingTradesBasicTests : ExitLosingTradesTestBase
         
         // For short positions exiting, we should use bid price for limit maker orders
         var exitPrice = currentBid;
-        
-        // Setup exit order mock
         var exitOrder = CreateOrder(bot, exitPrice, bot.EntryQuantity, true);
-        ExchangeApiMock.Setup(x => x.PlaceOrder(
-                It.IsAny<Bot>(),
-                It.IsAny<decimal>(),
-                It.IsAny<decimal>(),
-                It.IsAny<bool>(),
-                It.IsAny<OrderType>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(exitOrder);
+        
+        // Setup fake API with strict expectations
+        A.CallTo(() => ExchangeApiFake.PlaceOrder(
+                A<Bot>.That.Matches(b => b.Id == bot.Id),
+                A<decimal>.That.IsEqualTo(exitPrice),
+                A<decimal>.That.IsEqualTo(bot.EntryQuantity),
+                A<bool>.That.IsEqualTo(true),
+                A<OrderType>.Ignored,
+                A<CancellationToken>.Ignored))
+            .Returns(exitOrder);
         
         // Create ticker with price above stop loss
         var ticker = CreateTicker(currentBid, currentAsk);
@@ -102,13 +104,15 @@ public class ExitLosingTradesBasicTests : ExitLosingTradesTestBase
         // Assert
         Assert.True(result.Succeeded);
         
-        // Verify exit order placed at the bid price (for a short position using limit maker)
-        VerifyExitOrderPlaced(
-            bot, 
-            Times.Once(), 
-            expectedPrice: exitPrice,
-            expectedQuantity: bot.EntryQuantity,
-            expectedIsBuy: true);
+        // Verify exit order placed with exact parameters
+        A.CallTo(() => ExchangeApiFake.PlaceOrder(
+                A<Bot>.That.Matches(b => b.Id == bot.Id),
+                A<decimal>.That.IsEqualTo(exitPrice),
+                A<decimal>.That.IsEqualTo(bot.EntryQuantity),
+                A<bool>.That.IsEqualTo(true),
+                A<OrderType>.Ignored,
+                A<CancellationToken>.Ignored))
+            .MustHaveHappenedOnceExactly();
             
         // Verify trade was updated with exit order
         var savedTrade = await DbContext.Trades.Include(t => t.ExitOrder).FirstAsync();
@@ -139,7 +143,14 @@ public class ExitLosingTradesBasicTests : ExitLosingTradesTestBase
         Assert.True(result.Succeeded);
         
         // Verify no exit order was placed
-        VerifyExitOrderPlaced(bot, Times.Never());
+        A.CallTo(() => ExchangeApiFake.PlaceOrder(
+                A<Bot>.Ignored,
+                A<decimal>.Ignored,
+                A<decimal>.Ignored,
+                A<bool>.Ignored,
+                A<OrderType>.Ignored,
+                A<CancellationToken>.Ignored))
+            .MustNotHaveHappened();
         
         // Verify trade wasn't updated
         var savedTrade = await DbContext.Trades.FirstAsync();
@@ -171,7 +182,14 @@ public class ExitLosingTradesBasicTests : ExitLosingTradesTestBase
         Assert.True(result.Succeeded);
         
         // Verify no exit order was placed
-        VerifyExitOrderPlaced(bot, Times.Never());
+        A.CallTo(() => ExchangeApiFake.PlaceOrder(
+                A<Bot>.Ignored,
+                A<decimal>.Ignored,
+                A<decimal>.Ignored,
+                A<bool>.Ignored,
+                A<OrderType>.Ignored,
+                A<CancellationToken>.Ignored))
+            .MustNotHaveHappened();
         
         // Verify trade wasn't updated
         var savedTrade = await DbContext.Trades.FirstAsync();
@@ -203,10 +221,67 @@ public class ExitLosingTradesBasicTests : ExitLosingTradesTestBase
         Assert.True(result.Succeeded);
         
         // Verify no exit order was placed
-        VerifyExitOrderPlaced(bot, Times.Never());
+        A.CallTo(() => ExchangeApiFake.PlaceOrder(
+                A<Bot>.Ignored,
+                A<decimal>.Ignored,
+                A<decimal>.Ignored,
+                A<bool>.Ignored,
+                A<OrderType>.Ignored,
+                A<CancellationToken>.Ignored))
+            .MustNotHaveHappened();
         
         // Verify trade wasn't updated
         var savedTrade = await DbContext.Trades.FirstAsync();
         Assert.Null(savedTrade.ExitOrder);
+    }
+    
+    [Fact]
+    public async Task Handle_ShouldVerifyOrderTypeIsUsed_WhenExitingTrade()
+    {
+        // Arrange
+        var entryPrice = 100m;
+        var stopLossPercent = 1.0m; // 1% stop loss
+        var currentBid = entryPrice * (1 - stopLossPercent / 100m) - 0.1m; // Just below stop loss
+        var currentAsk = currentBid + 0.2m;
+        
+        // Create bot and set a specific order type
+        var bot = await CreateStopLossBot(isLong: true, stopLossPercent: stopLossPercent);
+        bot.ExitOrderType = OrderType.Market;
+        await DbContext.SaveChangesAsync();
+        
+        var trade = await CreateFilledTrade(bot, entryPrice, bot.EntryQuantity);
+        
+        var exitPrice = currentAsk;
+        var exitOrder = CreateOrder(bot, exitPrice, bot.EntryQuantity, false);
+        
+        // Setup fake API with strict expectations including the order type
+        A.CallTo(() => ExchangeApiFake.PlaceOrder(
+                A<Bot>.That.Matches(b => b.Id == bot.Id),
+                A<decimal>.That.IsEqualTo(exitPrice),
+                A<decimal>.That.IsEqualTo(bot.EntryQuantity),
+                A<bool>.That.IsEqualTo(false),
+                A<OrderType>.That.IsEqualTo(OrderType.Market),
+                A<CancellationToken>.Ignored))
+            .Returns(exitOrder);
+        
+        // Create ticker with price below stop loss
+        var ticker = CreateTicker(currentBid, currentAsk);
+        var command = new ExitLosingTradesCommand { Ticker = ticker };
+
+        // Act
+        var result = await Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.Succeeded);
+        
+        // Verify exit order placed with exact parameters including order type
+        A.CallTo(() => ExchangeApiFake.PlaceOrder(
+                A<Bot>.That.Matches(b => b.Id == bot.Id),
+                A<decimal>.That.IsEqualTo(exitPrice),
+                A<decimal>.That.IsEqualTo(bot.EntryQuantity),
+                A<bool>.That.IsEqualTo(false),
+                A<OrderType>.That.IsEqualTo(OrderType.Market),
+                A<CancellationToken>.Ignored))
+            .MustHaveHappenedOnceExactly();
     }
 } 

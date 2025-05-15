@@ -1,5 +1,5 @@
+using FakeItEasy;
 using Microsoft.Extensions.Logging;
-using Moq;
 using TradingBot.Application.Commands.ExitLosingTrades;
 using TradingBot.Application.Common;
 using TradingBot.Data;
@@ -10,29 +10,40 @@ namespace TradingBot.Tests.Application.Commands.ExitLosingTrades;
 using Models;
 
 /// <summary>
-/// Base class for all ExitLosingTrades command tests
+/// Base class for all ExitLosingTrades command tests using FakeItEasy
 /// </summary>
 public abstract class ExitLosingTradesTestBase : BaseTest
 {
     protected readonly ExitLosingTradesCommand.ExitLossTradesCommandHandler Handler;
-    protected readonly Mock<ILogger<ExitLosingTradesCommand.ExitLossTradesCommandHandler>> LoggerMock;
-    protected readonly Mock<ISymbolInfoCache> SymbolInfoCacheMock;
+    protected readonly ILogger<ExitLosingTradesCommand.ExitLossTradesCommandHandler> LoggerFake;
+    protected readonly ISymbolInfoCache SymbolInfoCacheFake;
     protected readonly TradingNotificationService NotificationServiceStub;
+    protected readonly IExchangeApiRepository ExchangeApiRepositoryFake;
+    protected readonly IExchangeApi ExchangeApiFake;
 
     protected ExitLosingTradesTestBase()
     {
-        LoggerMock = new Mock<ILogger<ExitLosingTradesCommand.ExitLossTradesCommandHandler>>();
-        SymbolInfoCacheMock = new Mock<ISymbolInfoCache>();
+        // Set up fake dependencies
+        LoggerFake = A.Fake<ILogger<ExitLosingTradesCommand.ExitLossTradesCommandHandler>>();
+        SymbolInfoCacheFake = A.Fake<ISymbolInfoCache>();
         NotificationServiceStub = new TestTradingNotificationService();
+        ExchangeApiRepositoryFake = A.Fake<IExchangeApiRepository>();
+        ExchangeApiFake = A.Fake<IExchangeApi>();
+        
+        // Configure default behaviors
         var defaultSymbolInfo = new SymbolInfo(0.00001m, 0.00001m, 5);
-        SymbolInfoCacheMock.Setup(x => x.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(defaultSymbolInfo);
+        A.CallTo(() => SymbolInfoCacheFake.GetAsync(A<string>.Ignored, A<CancellationToken>.Ignored))
+            .Returns(defaultSymbolInfo);
+        A.CallTo(() => ExchangeApiRepositoryFake.GetExchangeApi(A<Bot>.Ignored))
+            .Returns(ExchangeApiFake);
+        
+        // Create handler with fake dependencies
         Handler = new ExitLosingTradesCommand.ExitLossTradesCommandHandler(
             DbContext,
-            ExchangeApiRepositoryMock.Object,
-            SymbolInfoCacheMock.Object,
+            ExchangeApiRepositoryFake,
+            SymbolInfoCacheFake,
             NotificationServiceStub,
-            LoggerMock.Object);
+            LoggerFake);
     }
 
     /// <summary>
@@ -79,19 +90,19 @@ public abstract class ExitLosingTradesTestBase : BaseTest
     }
 
     /// <summary>
-    /// Setup exit order mock for the exchange API
+    /// Setup exit order for the exchange API
     /// </summary>
-    protected void SetupExitOrder(Bot bot, decimal price, decimal quantity)
+    protected void SetupExitOrder(Bot bot, decimal price, decimal quantity, bool isBuy)
     {
-        var order = CreateOrder(bot, price, quantity, !bot.IsLong);
-        ExchangeApiMock.Setup(x => x.PlaceOrder(
-                It.IsAny<Bot>(),
-                It.IsAny<decimal>(),
-                It.IsAny<decimal>(),
-                It.IsAny<bool>(),
-                It.IsAny<OrderType>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(order);
+        var order = CreateOrder(bot, price, quantity, isBuy);
+        A.CallTo(() => ExchangeApiFake.PlaceOrder(
+                A<Bot>.Ignored,
+                A<decimal>.Ignored,
+                A<decimal>.Ignored,
+                A<bool>.Ignored,
+                A<OrderType>.Ignored,
+                A<CancellationToken>.Ignored))
+            .Returns(order);
     }
 
     /// <summary>
@@ -99,14 +110,14 @@ public abstract class ExitLosingTradesTestBase : BaseTest
     /// </summary>
     protected void SetupExitOrderFailure(string errorMessage)
     {
-        ExchangeApiMock.Setup(x => x.PlaceOrder(
-                It.IsAny<Bot>(),
-                It.IsAny<decimal>(),
-                It.IsAny<decimal>(),
-                It.IsAny<bool>(),
-                It.IsAny<OrderType>(),
-                It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new Exception(errorMessage));
+        A.CallTo(() => ExchangeApiFake.PlaceOrder(
+                A<Bot>.Ignored,
+                A<decimal>.Ignored,
+                A<decimal>.Ignored,
+                A<bool>.Ignored,
+                A<OrderType>.Ignored,
+                A<CancellationToken>.Ignored))
+            .Throws(new Exception(errorMessage));
     }
 
     /// <summary>
@@ -114,18 +125,35 @@ public abstract class ExitLosingTradesTestBase : BaseTest
     /// </summary>
     protected void VerifyExitOrderPlaced(
         Bot bot, 
-        Times times, 
-        decimal? expectedPrice = null,
-        decimal? expectedQuantity = null,
-        bool? expectedIsBuy = null)
+        decimal expectedPrice,
+        decimal expectedQuantity,
+        bool expectedIsBuy,
+        OrderType expectedOrderType = OrderType.LimitMaker)
     {
-        ExchangeApiMock.Verify(x => x.PlaceOrder(
-            It.Is<Bot>(b => b.Id == bot.Id),
-            expectedPrice.HasValue ? It.Is<decimal>(p => p == expectedPrice.Value) : It.IsAny<decimal>(),
-            expectedQuantity.HasValue ? It.Is<decimal>(q => q == expectedQuantity.Value) : It.IsAny<decimal>(),
-            expectedIsBuy.HasValue ? It.Is<bool>(b => b == expectedIsBuy.Value) : It.IsAny<bool>(),
-            It.IsAny<OrderType>(),
-            It.IsAny<CancellationToken>()), times);
+        // Verify PlaceOrder was called with exact parameters
+        A.CallTo(() => ExchangeApiFake.PlaceOrder(
+            A<Bot>.That.Matches(b => b.Id == bot.Id),
+            A<decimal>.That.IsEqualTo(expectedPrice),
+            A<decimal>.That.IsEqualTo(expectedQuantity),
+            A<bool>.That.IsEqualTo(expectedIsBuy),
+            A<OrderType>.That.IsEqualTo(expectedOrderType),
+            A<CancellationToken>.Ignored))
+        .MustHaveHappenedOnceExactly();
+    }
+
+    /// <summary>
+    /// Verify that no exit order was placed
+    /// </summary>
+    protected void VerifyNoExitOrderPlaced()
+    {
+        A.CallTo(() => ExchangeApiFake.PlaceOrder(
+            A<Bot>.Ignored,
+            A<decimal>.Ignored,
+            A<decimal>.Ignored,
+            A<bool>.Ignored,
+            A<OrderType>.Ignored,
+            A<CancellationToken>.Ignored))
+        .MustNotHaveHappened();
     }
 
     /// <summary>
