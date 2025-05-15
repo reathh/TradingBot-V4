@@ -21,13 +21,6 @@ namespace TradingBot.Data
                     .WithMany(b => b.Trades)
                     .HasForeignKey(t => t.BotId)
                     .OnDelete(DeleteBehavior.Cascade);
-
-              builder.HasIndex(t => t.EntryOrderId)
-               .HasDatabaseName("IX_Trades_EntryOrderId");
-
-            builder.HasIndex(t => t.ExitOrderId)
-                    .HasDatabaseName("IX_Trades_ExitOrderId")
-                    .HasFilter("\"ExitOrderId\" IS NOT NULL");   // partial index – drop NULLs
         }
     }
 }
