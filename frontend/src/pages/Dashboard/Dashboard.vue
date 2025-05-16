@@ -136,16 +136,10 @@
       </Card>
     </div>
     <div class="col-lg-7">
-      <Card class="card">
-        <template #header>
-          <h5 class="card-title mb-0">Trading Activity</h5>
-        </template>
-        <div class="table-responsive">
-          <TradesTable 
-            :period="selectedInterval"
-          />
-        </div>
-      </Card>
+      <card class="card" :header-classes="{ 'text-right': isRTL }">
+        <h5 slot="header" class="card-title">Trades</h5>
+        <div class="table-responsive"><TradesTable :period="selectedInterval" /></div>
+      </card>
     </div>
     <div class="col-lg-12">
       <Card class="card">

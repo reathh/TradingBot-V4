@@ -4,9 +4,15 @@
   .el-date-editor {
     width: 100% !important;
   }
+  
+  .el-input__wrapper {
+    background-color: transparent;;   
+  }
+  
   .el-input__inner {
     @extend .form-control;
     width: 100%;
+    border: 0;
   }
   .el-select{
     width: 100%;
@@ -17,7 +23,7 @@
   .el-input-number{
     width: 100%;
     .plus-button{
-      @extend .btn-round, .btn-primary;
+      @extend .btn-round, .btn-primary; 
       padding: 0 !important;
       border: 0;
     }
@@ -31,4 +37,3 @@
     }
   }
 }
-

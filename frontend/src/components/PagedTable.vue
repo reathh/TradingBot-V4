@@ -1,98 +1,94 @@
 <template>
   <div>
-    <!-- Controls: Search, Page Size -->
-    <div class="d-flex justify-content-between mb-3" v-if="searchable || showPageSize">
-      <div class="d-flex align-items-center" v-if="showPageSize">
-        <span class="mr-2">Show</span>
-        <el-select
-          class="select-primary pagination-select"
-          v-model="localPageSize"
-          :placeholder="'Per page'"
-          @change="handlePageSizeChange"
-        >
-          <el-option
-            v-for="size in pageSizeOptions"
-            :key="size"
-            :label="size"
-            :value="size"
+    <card :card-body-classes="cardBodyClasses">
+      <h4 v-if="title" slot="header" class="card-title">{{ title }}</h4>
+      <div>
+        <!-- Controls: Search, Page Size -->
+        <div class="col-12 d-flex justify-content-center justify-content-sm-between flex-wrap">
+          <el-select
+            v-if="showPageSize"
+            class="select-primary mb-3 pagination-select"
+            v-model="localPageSize"
+            placeholder="Per page"
+            @change="handlePageSizeChange"
+          >
+            <el-option
+              v-for="size in pageSizeOptions"
+              :key="size"
+              :label="size"
+              :value="size"
+            />
+          </el-select>
+
+          <base-input v-if="searchable">
+            <el-input
+              type="search"
+              class="mb-3 search-input"
+              clearable
+              :prefix-icon="Search"
+              :placeholder="searchPlaceholder"
+              v-model="localSearchQuery"
+              aria-controls="datatables"
+            />
+          </base-input>
+        </div>
+
+        <!-- Table -->
+        <div v-if="effectiveLoading" class="text-center py-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+          </div>
+        </div>
+        <el-table v-else :data="displayedData">
+          <el-table-column
+            v-for="column in columns"
+            :key="column.label || column.key || column.prop"
+            :prop="column.prop || column.key"
+            :label="column.label"
+            :min-width="column.minWidth"
+            :align="column.align"
+            :sortable="sortable && column.sortable !== false ? 'custom' : false"
+            @sort-change="handleSort"
           />
-        </el-select>
-        <span class="ml-2">entries</span>
+          <slot name="actions" />
+        </el-table>
       </div>
-      <div class="form-group has-search mb-0" v-if="searchable">
-        <el-input
-          type="search"
-          class="search-input input-primary"
-          clearable
-          :prefix-icon="Search"
-          :placeholder="searchPlaceholder"
-          v-model="localSearchQuery"
+
+      <!-- Pagination Footer -->
+      <div
+        slot="footer"
+        class="col-12 d-flex justify-content-center justify-content-sm-between flex-wrap"
+      >
+        <div>
+          <p class="card-category">
+            <slot name="footer-info">
+              <span v-if="totalCount > 0">
+                Showing {{ displayedEntryStart }} to {{ displayedEntryEnd }} of {{ totalCount }} entries
+              </span>
+              <span v-else>
+                No entries found
+              </span>
+            </slot>
+          </p>
+        </div>
+        <base-pagination
+          class="pagination-no-border"
+          v-model="localCurrentPage" 
+          :per-page="localPageSize"
+          :total="totalCount"
+          @update:modelValue="handlePageChange"
         />
       </div>
-    </div>
-
-    <!-- Table -->
-    <div class="table-responsive">
-      <div v-if="effectiveLoading" class="text-center py-4">
-        <div class="spinner-border text-primary" role="status">
-          <span class="sr-only">Loading...</span>
-        </div>
-      </div>
-      <BaseTable
-        v-else
-        :data="displayedData"
-        :columns="columns"
-        :thead-classes="theadClasses"
-      >
-        <template #columns>
-          <th
-            v-for="column in columns"
-            :key="column.key || column.prop"
-            :class="{ 'text-right': column.align === 'right' }"
-            :style="sortable && column.sortable !== false ? 'cursor:pointer;' : ''"
-            @click="sortable && column.sortable !== false ? sortBy(column.key || column.prop) : null"
-          >
-            {{ column.label }}
-            <i
-              v-if="sortable && column.sortable !== false"
-              class="tim-icons"
-              :class="getSortIcon(column.key || column.prop)"
-            ></i>
-          </th>
-        </template>
-        <template #default="slotProps">
-          <slot name="row" v-bind="slotProps" />
-        </template>
-      </BaseTable>
-    </div>
-
-    <!-- Pagination Footer -->
-    <div class="d-flex justify-content-between align-items-center mt-3">
-      <div>
-        <slot name="footer-info">
-          <span v-if="totalCount > 0">
-            Showing {{ displayedEntryStart }} to {{ displayedEntryEnd }} of {{ totalCount }} entries
-          </span>
-          <span v-else>
-            No entries found
-          </span>
-        </slot>
-      </div>
-      <BasePagination
-        v-model="localCurrentPage" 
-        :per-page="localPageSize"
-        :total="totalCount"
-        @update:modelValue="handlePageChange"
-      />
-    </div>
+    </card>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted, defineExpose } from 'vue';
-import BaseTable from './BaseTable.vue';
-import BasePagination from './BasePagination.vue';
 import { Search } from '@element-plus/icons-vue';
+import BaseInput from "@/components/Inputs/BaseInput.vue";
+import Card from "@/components/Cards/Card.vue";
+import BasePagination from "@/components/BasePagination.vue";
 
 const props = defineProps({
   columns: { type: Array, required: true },
@@ -105,7 +101,9 @@ const props = defineProps({
   theadClasses: { type: String, default: 'text-primary' },
   showPageSize: { type: Boolean, default: true },
   serverSide: { type: Boolean, default: false },
-  isLoading: { type: Boolean, default: false }
+  isLoading: { type: Boolean, default: false },
+  title: { type: String, default: '' },
+  cardBodyClasses: { type: String, default: 'table-full-width' }
 });
 
 const emit = defineEmits(['update:page', 'update:pageSize', 'search', 'sort']);
@@ -154,38 +152,26 @@ async function handlePageSizeChange(pageSize) {
   await loadData({ page: 1, pageSize });
 }
 
-// Sorting (server-side only)
-function sortBy(key) {
-  if (props.serverSide) {
-    if (props.fetchData) {
-      if (localSortKey.value === key) {
-        localSortDirection.value = localSortDirection.value === 'asc' ? 'desc' : 'asc';
-      } else {
-        localSortKey.value = key;
-        localSortDirection.value = 'asc';
-      }
+// Sorting handling for Element-UI table
+function handleSort(sort) {
+  if (sort && sort.prop) {
+    localSortKey.value = sort.prop;
+    localSortDirection.value = sort.order === 'ascending' ? 'asc' : 'desc';
+    
+    if (props.serverSide) {
       loadData({
-        page: localCurrentPage.value,
-        pageSize: localPageSize.value,
-        sortKey: localSortKey.value,
+        sortKey: localSortKey.value, 
         sortDirection: localSortDirection.value
       });
-    } else {
-      emit('sort', { key, direction: localSortDirection.value === 'asc' ? 'desc' : 'asc' });
     }
-    return;
-  }
-  if (localSortKey.value === key) {
-    localSortDirection.value = localSortDirection.value === 'asc' ? 'desc' : 'asc';
   } else {
-    localSortKey.value = key;
+    localSortKey.value = '';
     localSortDirection.value = 'asc';
+    
+    if (props.serverSide) {
+      loadData();
+    }
   }
-}
-
-function getSortIcon(key) {
-  if (localSortKey.value !== key) return 'icon-minimal-down opacity-5';
-  return localSortDirection.value === 'asc' ? 'icon-minimal-up' : 'icon-minimal-down';
 }
 
 // Filtering (client-side only)
@@ -236,7 +222,9 @@ const displayedEntryEnd = computed(() => {
 // Watch for search query changes
 watch(localSearchQuery, () => {
   localCurrentPage.value = 1;
-  loadData({ page: 1 });
+  if (props.serverSide) {
+    loadData({ page: 1 });
+  }
 });
 
 // Initial load

@@ -8,35 +8,26 @@
     }"
   >
     <slot name="label">
-      <label v-if="label">{{ label }} <span v-if="required">*</span></label>
+      <label v-if="label"> {{ label }} {{ required ? '*' : '' }} </label>
     </slot>
-
-    <div class="mb-0" :class="{ 'input-group': hasIcon }">
+    <div class="mb-0" :class="{'input-group': hasIcon}">
       <slot name="addonLeft">
         <span v-if="addonLeftIcon" class="input-group-prepend">
-          <div class="input-group-text">
-            <i :class="addonLeftIcon"></i>
-          </div>
+          <div class="input-group-text"><i :class="addonLeftIcon"></i></div>
         </span>
       </slot>
-
       <slot>
         <input
+          :value="value"
           v-bind="$attrs"
+          v-on="listeners"
           class="form-control"
-          :value="modelValue"
-          @input="onInput"
-          @focus="onFocus"
-          @blur="onBlur"
           aria-describedby="addon-right addon-left"
         />
       </slot>
-
       <slot name="addonRight">
         <span v-if="addonRightIcon" class="input-group-append">
-          <div class="input-group-text">
-            <i :class="addonRightIcon"></i>
-          </div>
+          <div class="input-group-text"><i :class="addonRightIcon"></i></div>
         </span>
       </slot>
     </div>

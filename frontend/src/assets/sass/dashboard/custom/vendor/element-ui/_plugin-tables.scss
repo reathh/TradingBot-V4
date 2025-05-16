@@ -12,7 +12,7 @@
 }
 
 .el-table table td, .el-table table th.is-leaf {
-  border-bottom: none;
+  border-bottom: none !important;
 }
 
 .el-table.el-table--enable-row-hover table.el-table__body tr:hover > td {
@@ -56,7 +56,7 @@
 div.el-table,
 .el-table table tr,
 .el-table table thead th {
-  background-color: transparent;
+  background-color: transparent !important;
 }
 
 .table-shopping .el-table table {

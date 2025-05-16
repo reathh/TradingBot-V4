@@ -78,6 +78,10 @@
   }
 }
 
+.el-select__wrapper {
+    background-color: transparent !important;
+}
+
 @include select('default', $default);
 @include select('info', $info);
 @include select('primary', $primary);
