@@ -3,7 +3,7 @@
     <h4 v-if="title" class="card-title mb-3">{{ title }}</h4>
     <div>
       <!-- Controls: Search, Page Size -->
-      <div class="col-12 d-flex justify-content-center justify-content-sm-between flex-wrap">
+      <div class="col-12 d-flex flex-column flex-sm-row justify-content-sm-between align-items-sm-center">
         <el-select
           v-if="showPageSize"
           class="select-primary mb-3 pagination-select"
