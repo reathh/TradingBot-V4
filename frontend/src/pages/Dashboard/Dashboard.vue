@@ -300,8 +300,8 @@ const blueBarChartData = ref({ labels: [], datasets: [] });
 const blueBarChartExtraOptions = ref(chartConfigs.barChartOptions);
 const blueBarChartGradientStops = ref([1, 0.4, 0]);
 
-// Reactive date range (default last 24h)
-const dateRange = ref([new Date(Date.now() - 24 * 60 * 60 * 1000), new Date()]);
+// Reactive date range (default last 7 days)
+const dateRange = ref([new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), new Date()]);
 
 // Quick-select shortcuts similar to Seq
 const rangeShortcuts = [
