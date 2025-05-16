@@ -1,28 +1,26 @@
 <template>
   <ul class="pagination" :class="paginationClass">
     <li
-      class="page-item prev-page"
-      v-if="showArrows"
-      :class="{ disabled: modelValue === 1 }"
+        class="page-item prev-page"
+        v-if="showArrows"
+        :class="{ disabled: modelValue === 1 }"
     >
       <a class="page-link" aria-label="Previous" @click="prevPage">
         <i class="tim-icons icon-double-left" aria-hidden="true"></i>
       </a>
     </li>
-
     <li
-      v-for="item in range(minPage, maxPage)"
-      :key="item"
-      class="page-item"
-      :class="{ active: modelValue === item }"
+        class="page-item"
+        v-for="item in range(minPage, maxPage)"
+        :key="item"
+        :class="{ active: modelValue === item }"
     >
       <a class="page-link" @click="changePage(item)">{{ item }}</a>
     </li>
-
     <li
-      v-if="showArrows"
-      class="page-item next-page"
-      :class="{ disabled: modelValue === totalPages }"
+        v-if="showArrows"
+        class="page-item page-pre next-page"
+        :class="{ disabled: modelValue === totalPages }"
     >
       <a class="page-link" aria-label="Next" @click="nextPage">
         <i class="tim-icons icon-double-right" aria-hidden="true"></i>

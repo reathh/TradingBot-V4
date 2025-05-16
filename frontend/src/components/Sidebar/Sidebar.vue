@@ -86,12 +86,3 @@ const navItems = ref([
   },
 ]);
 </script>
-
-<style>
-@media (min-width: 992px) {
-  .navbar-search-form-mobile,
-  .nav-mobile-menu {
-    display: none;
-  }
-}
-</style>

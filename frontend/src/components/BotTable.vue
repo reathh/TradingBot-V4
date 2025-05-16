@@ -121,39 +121,3 @@ defineExpose({
   }
 });
 </script>
-
-<style>
-.text-success {
-  color: #00f2c3 !important;
-}
-
-.text-danger {
-  color: #fd5d93 !important;
-}
-
-.opacity-5 {
-  opacity: 0.5;
-}
-
-.pagination-select {
-  width: 80px !important;
-}
-
-/* Direct style override for the select background */
-.el-select .el-select__wrapper {
-  background-color: #27293d !important;
-}
-
-.white-content .el-select .el-select__wrapper {
-  background-color: #ffffff !important;
-}
-
-/* Force override for the fill-color-blank variable */
-:deep(.el-select) {
-  --el-fill-color-blank: #27293d !important;
-}
-
-.white-content :deep(.el-select) {
-  --el-fill-color-blank: #ffffff !important;
-}
-</style>

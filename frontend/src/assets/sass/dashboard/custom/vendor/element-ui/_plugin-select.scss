@@ -1,278 +1,86 @@
 @import "../../variables";
-
-// Base styling for all inputs including selects
-input, .el-select .el-input__wrapper, .el-input .el-input__wrapper {
-  background-color: #27293d !important;
-  box-shadow: 0 0 0 1px #2b3553 inset !important;
-  border-radius: 0.4285rem !important;
-  outline: none !important;
-}
-
-// Dark theme (default)
-.el-popper.el-select__popper {
-  background-color: #1e1e2f !important;
-  border: none !important;
-  
-  .el-select-dropdown__item {
-    color: rgba(255, 255, 255, 0.8) !important;
-    background-color: transparent !important;
-    
-    &:hover, &.hover {
-      background-color: rgba(225, 78, 202, 0.1) !important;
-    }
-    
-    &.selected {
-      background-color: #e14eca !important;
-      color: white !important;
-    }
-  }
-  
-  .el-scrollbar, .el-select-dropdown, .el-scrollbar__view {
-    background-color: #1e1e2f !important;
-  }
-}
-
-// Light theme overrides 
-.white-content {
-  input, .el-select .el-input__wrapper, .el-input .el-input__wrapper {
-    background-color: white !important;
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2) inset !important;
-  }
-  
-  .el-popper.el-select__popper {
-    background-color: white !important;
-    border: none !important;
-    
-    .el-select-dropdown__item {
-      color: #1e1e2f !important;
-      background-color: transparent !important;
-      
-      &:hover, &.hover {
-        background-color: rgba(0, 0, 0, 0.05) !important;
-      }
-      
-      &.selected {
-        background-color: #e14eca !important;
-        color: white !important;
-      }
-    }
-    
-    .el-scrollbar, .el-select-dropdown, .el-scrollbar__view {
-      background-color: white !important;
-    }
-  }
-}
-
-// Base mixins for select styling with different color variants
 @mixin select($type, $color) {
-  // Target the specific class for each color variant
   .select-#{$type}.el-select {
-    .el-input {
-      width: auto;
-      margin: 0;
-      
-      // Input wrapper styling (Element Plus specific)
-      .el-input__wrapper {
-        background-color: #27293d;
-        box-shadow: 0 0 0 1px #2b3553 inset;
-        border-radius: $border-radius-lg;
-        padding: 0 12px;
-        transition: box-shadow 0.15s ease;
-        margin: 0;
-        
-        // Hover and focus states
-        &:hover, &:focus-within, &.is-focus {
-          box-shadow: 0 0 0 1px $color inset;
-        }
-      }
-      
-      // The actual input field
-      .el-input__inner {
-        background-color: transparent;
-        color: $white;
-        border: none;
-        outline: none;
-        height: 36px;
-        line-height: 36px;
-        padding: 0;
-      }
-      
-      // Suffix container with dropdown icon
-      .el-input__suffix {
-        display: flex;
-        align-items: center;
-        
-        .el-input__icon {
-          color: $color;
-          height: 40px;
-          width: 30px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-      }
-      
-      // Hover effect - text and icon
-      &:hover {
-        .el-input__inner {
-          color: $white;
-        }
-        
-        .el-input__icon {
-          color: $color;
-        }
-      }
-    }
   }
-  
-  // Dropdown styling for items in popup
-  .select-#{$type}.el-select-dropdown__item {
-    color: rgba(255, 255, 255, 0.8);
-    
-    &:hover, &.hover {
-      background-color: rgba($color, 0.1);
+  .select-#{$type}.el-select .el-input  {
+    .el-input__suffix{
+      display: flex;
+      align-items: center;
     }
-    
-    &.selected {
-      background-color: $color;
-      color: $white;
-      font-weight: bold;
+    .el-input__icon{
+      border-radius:20px;
+      height: 40px;
+      width: 30px;
     }
-  }
-  
-  // Multiple select tag styling
-  .select-#{$type} .el-tag {
-    background-color: $color;
-    color: $white;
-    border: none;
-    
-    .el-tag__close {
+
+    input{
       background-color: transparent;
-      color: rgba(255, 255, 255, 0.8);
-      
-      &:hover {
-        background-color: $white;
-        color: $color;
+      border-width: 1px;
+      border-color: lighten($black,5%);
+      color: $color;
+    }
+    &:hover{
+      input{
+        border-color: $color !important;
       }
+    }
+
+    .el-input__icon{
+      color:$color;
+    }
+  }
+  .select-#{$type}{
+
+    .el-tag, .el-tag.el-tag--info {
+      line-height: 24px;
+      background-color: $color;
+      border: none;
+      .el-tag__close{
+        width: 20px;
+        height: 20px;
+        background-color: transparent;
+
+        &:hover {
+         background-color: white;
+         color: $color;
+        }
+
+        &:before {
+          margin-top: 2px;
+        }
+
+      }
+    }
+    &.el-select-dropdown__item.selected,
+    &.el-select-dropdown__item.selected.hover {
+      background-color: $color;
+      color: white;
+    }
+  }
+
+  .el-select-dropdown.is-multiple
+  .el-select-dropdown__item.selected{
+    &.select-#{$type}{
+      color: $color;
     }
   }
 }
 
-// Base styles for dropdown popper (common for all variants)
-.el-popper.el-select__popper {
-  background-color: #1e1e2f !important;
-  border: none !important;
-  border-radius: 4px !important;
-  box-shadow: 0 5px 25px 0 rgba(0, 0, 0, 0.3) !important;
-  
-  // Make sure the entire popper has the right background
-  .el-select-dropdown, .el-scrollbar, .el-select-dropdown__wrap {
-    background-color: #1e1e2f !important;
-  }
-  
-  .el-scrollbar__view, .el-select-dropdown__list {
-    background-color: #1e1e2f !important;
-    padding: 8px 0;
-  }
-  
-  // Target all dropdown items
-  .el-select-dropdown__item {
-    height: 40px !important;
-    line-height: 40px !important;
-    color: rgba(255, 255, 255, 0.8) !important;
-    font-size: 0.875rem !important;
-    background-color: transparent !important;
-    
-    &.hover, &:hover {
-      background-color: rgba(225, 78, 202, 0.1) !important;
-    }
-    
-    &.selected {
-      background-color: #e14eca !important;
-      color: #ffffff !important;
-      font-weight: bold !important;
-    }
-  }
-  
-  // Remove the white arrow
-  .el-popper__arrow {
-    display: none !important;
-  }
-  
-  // Remove any white borders
-  * {
-    border-color: #1e1e2f !important;
-  }
-}
-
-// Light theme overrides
-.white-content {
-  .el-select .el-input {
-    .el-input__wrapper {
-      background-color: $white;
-      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2) inset;
-    }
-    
-    .el-input__inner {
-      color: $black-states;
-    }
-    
-    .el-input__icon {
-      color: $dark-gray;
-    }
-    
-    &:hover {
-      .el-input__inner {
-        color: $black;
+.el-select .el-input {
+  &:hover {
+    .el-input__icon,
+    input {
+      &::placeholder {
+        color: white;
       }
-    }
-  }
-  
-  // Light theme dropdown styling
-  .el-popper.el-select__popper {
-    background-color: $white !important;
-    box-shadow: 0 5px 25px 0 rgba(0, 0, 0, 0.1) !important;
-    
-    // Make sure all elements have white background
-    .el-select-dropdown, .el-scrollbar, .el-select-dropdown__wrap {
-      background-color: $white !important;
-    }
-    
-    .el-scrollbar__view, .el-select-dropdown__list {
-      background-color: $white !important;
-    }
-    
-    .el-select-dropdown__item {
-      color: $black-states !important;
-      background-color: transparent !important;
-      
-      &:hover, &.hover {
-        background-color: rgba(0, 0, 0, 0.05) !important;
-      }
-      
-      &.selected {
-        background-color: $primary !important;
-        color: $white !important;
-      }
-    }
-    
-    // Remove any dark borders
-    * {
-      border-color: $white !important;
+      color: white;
     }
   }
 }
 
-// Apply styling to all color variants
 @include select('default', $default);
 @include select('info', $info);
 @include select('primary', $primary);
 @include select('success', $success);
 @include select('warning', $warning);
 @include select('danger', $danger);
-
-// Specific styling for pagination select
-.pagination-select {
-  width: 75px;
-  margin: 0 10px;
-}

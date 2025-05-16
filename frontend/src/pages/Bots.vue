@@ -340,17 +340,4 @@ function formatNumberInput(event, field) {
   }
 }
 </script>
-
-<style>
-.search-input {
-  width: 250px;
-}
-
-.pagination-select {
-  width: 100px;
-}
-
-.card-title {
-  margin-bottom: 0;
-}
-</style>
+<style scoped></style>
