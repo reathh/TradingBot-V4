@@ -305,7 +305,10 @@ namespace TradingBot.Controllers
 
             var groupedList = await groupedQuery.OrderBy(g => g.PeriodStart).ToListAsync();
 
-            var statsSeries = groupedList.Select(g => new StatsDto
+            // Fill in missing periods with zero values
+            var completeStatsList = FillMissingPeriods(groupedList, startDate.Value, endDate.Value, bucket);
+
+            var statsSeries = completeStatsList.Select(g => new StatsDto
             {
                 BotId = botId?.ToString(),
                 TimePeriod = g.PeriodStart.ToString("yyyy-MM-dd HH:mm"),
@@ -357,12 +360,95 @@ namespace TradingBot.Controllers
         private class ProfitAggregation
         {
             public DateTime PeriodStart { get; init; }
-            public decimal TotalProfit { get; init; }
-            public decimal QuoteVolume { get; init; }
-            public decimal AvailableCapital { get; init; }
-            public decimal BaseVolume { get; init; }
-            public int TradeCount { get; init; }
-            public int WinCount { get; init; }
+            public decimal TotalProfit { get; init; } = 0;
+            public decimal QuoteVolume { get; init; } = 0;
+            public decimal AvailableCapital { get; init; } = 0;
+            public decimal BaseVolume { get; init; } = 0;
+            public int TradeCount { get; init; } = 0;
+            public int WinCount { get; init; } = 0;
+        }
+
+        // Helper method to fill in missing periods with zero values
+        private List<ProfitAggregation> FillMissingPeriods(
+            List<ProfitAggregation> existingData,
+            DateTime startDate,
+            DateTime endDate,
+            TimeSpan interval)
+        {
+            var result = new List<ProfitAggregation>();
+            var current = NormalizeDate(startDate, interval);
+            var normalizedEnd = NormalizeDate(endDate, interval);
+
+            // Create a dictionary of existing data points by period start time
+            var existingByPeriod = existingData.ToDictionary(
+                g => g.PeriodStart,
+                g => g
+            );
+
+            // Generate all periods in the range
+            while (current <= normalizedEnd)
+            {
+                if (existingByPeriod.TryGetValue(current, out var existingPeriod))
+                {
+                    // Use existing data if available
+                    result.Add(existingPeriod);
+                }
+                else
+                {
+                    // Create a zero-value entry for this period
+                    result.Add(new ProfitAggregation
+                    {
+                        PeriodStart = current,
+                        TotalProfit = 0,
+                        QuoteVolume = 0,
+                        AvailableCapital = existingData.Any() ? existingData.OrderByDescending(e => e.PeriodStart).First().AvailableCapital : 0,
+                        BaseVolume = 0,
+                        TradeCount = 0,
+                        WinCount = 0
+                    });
+                }
+
+                current = current.Add(interval);
+            }
+
+            return result;
+        }
+
+        // Helper method to normalize a date to the start of its interval
+        private DateTime NormalizeDate(DateTime date, TimeSpan interval)
+        {
+            if (interval.TotalMinutes == 1)
+            {
+                return new DateTime(date.Year, date.Month, date.Day, date.Hour, date.Minute, 0, DateTimeKind.Utc);
+            }
+            else if (interval.TotalHours == 1)
+            {
+                return new DateTime(date.Year, date.Month, date.Day, date.Hour, 0, 0, DateTimeKind.Utc);
+            }
+            else if (interval.TotalDays == 1)
+            {
+                return new DateTime(date.Year, date.Month, date.Day, 0, 0, 0, DateTimeKind.Utc);
+            }
+            else if (interval.TotalDays == 7)
+            {
+                // For weekly, normalize to the Monday of the week
+                var dayOfWeek = (int)date.DayOfWeek;
+                var daysToSubtract = dayOfWeek == 0 ? 6 : dayOfWeek - 1; // Monday is 1
+                return new DateTime(date.Year, date.Month, date.Day, 0, 0, 0, DateTimeKind.Utc).AddDays(-daysToSubtract);
+            }
+            else if (interval.TotalDays >= 28 && interval.TotalDays <= 31)
+            {
+                // For monthly, normalize to the 1st of the month
+                return new DateTime(date.Year, date.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            }
+            else if (interval.TotalDays >= 365)
+            {
+                // For yearly, normalize to January 1st
+                return new DateTime(date.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            }
+            
+            // Default normalization
+            return new DateTime(date.Year, date.Month, date.Day, date.Hour, 0, 0, DateTimeKind.Utc);
         }
     }
 
