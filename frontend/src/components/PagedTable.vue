@@ -3,10 +3,11 @@
     <h4 v-if="title" class="card-title mb-3">{{ title }}</h4>
     <div>
       <!-- Controls: Search, Page Size -->
-      <div class="col-12 d-flex flex-column flex-sm-row justify-content-sm-between align-items-sm-center">
+      <div class="d-flex justify-content-between align-items-center w-100">
         <el-select
           v-if="showPageSize"
-          class="select-primary mb-3 pagination-select"
+          class="select-primary pagination-select mb-0 col-auto"
+          style="width: auto;"
           v-model="localPageSize"
           placeholder="Per page"
           @change="handlePageSizeChange"
@@ -20,10 +21,10 @@
           />
         </el-select>
 
-        <base-input v-if="searchable">
+        <base-input v-if="searchable" class="flex-fill ml-2">
           <el-input
             type="search"
-            class="mb-3 search-input"
+            class="mb-0 search-input w-100"
             clearable
             :prefix-icon="Search"
             :placeholder="searchPlaceholder"
@@ -69,7 +70,7 @@
       </div>
       <base-pagination
         class="pagination-no-border"
-        v-model="localCurrentPage" 
+        v-model="localCurrentPage"
         :per-page="localPageSize"
         :total="totalCount"
         @update:modelValue="handlePageChange"
@@ -160,17 +161,17 @@ function handleSort(sort) {
   if (sort && sort.prop) {
     localSortKey.value = sort.prop;
     localSortDirection.value = sort.order === 'ascending' ? 'asc' : 'desc';
-    
+
     if (props.serverSide) {
       loadData({
-        sortKey: localSortKey.value, 
+        sortKey: localSortKey.value,
         sortDirection: localSortDirection.value
       });
     }
   } else {
     localSortKey.value = '';
     localSortDirection.value = 'asc';
-    
+
     if (props.serverSide) {
       loadData();
     }
@@ -238,4 +239,4 @@ onMounted(() => {
 defineExpose({
   refresh: loadData
 });
-</script> 
+</script>
