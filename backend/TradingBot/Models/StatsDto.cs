@@ -22,6 +22,7 @@ namespace TradingBot.Models
 
     public enum TimeInterval
     {
+        Second,
         Minute,
         Hour,
         Day,

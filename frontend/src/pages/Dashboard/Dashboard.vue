@@ -318,27 +318,46 @@ const rangeShortcuts = [
 // Compute interval choices based on range length
 const intervalChoices = computed(() => {
   const [start, end] = dateRange.value;
+  if (!start || !end) return [];
+  
   const diffMs = Math.abs(end - start);
+  const diffMinutes = diffMs / (1000 * 60);
+  const diffHours = diffMs / (1000 * 60 * 60);
   const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  const diffMonths = diffDays / 30;
+  const diffYears = diffDays / 365;
 
-  if (diffDays < 1) {
+  if (diffMinutes <= 5) {
     return [
-      { label: 'Minutely', value: 'Minute' },
+      { label: 'Seconds', value: 'Second' },
+      { label: 'Minutes', value: 'Minute' }
+    ];
+  } else if (diffHours <= 1) {
+    return [
+      { label: 'Minutes', value: 'Minute' }
+    ];
+  } else if (diffHours < 24) {
+    return [
       { label: 'Hourly', value: 'Hour' }
     ];
-  } else if (diffDays < 7) {
+  } else if (diffDays <= 7) {
     return [
       { label: 'Hourly', value: 'Hour' },
       { label: 'Daily', value: 'Day' }
     ];
-  } else if (diffDays < 30) {
+  } else if (diffDays <= 30) {
     return [
       { label: 'Daily', value: 'Day' },
       { label: 'Weekly', value: 'Week' }
     ];
-  } else if (diffDays < 365) {
+  } else if (diffDays <= 90) {
     return [
       { label: 'Daily', value: 'Day' },
+      { label: 'Weekly', value: 'Week' },
+      { label: 'Monthly', value: 'Month' }
+    ];
+  } else if (diffDays <= 365) {
+    return [
       { label: 'Weekly', value: 'Week' },
       { label: 'Monthly', value: 'Month' }
     ];
@@ -351,6 +370,17 @@ const intervalChoices = computed(() => {
 });
 
 const selectedInterval = ref('Day');
+
+// Watch for changes in date range and adjust selected interval if needed
+watch(dateRange, () => {
+  // Get available interval options
+  const availableIntervals = intervalChoices.value.map(option => option.value);
+  
+  // If currently selected interval is not available, select the first available option
+  if (!availableIntervals.includes(selectedInterval.value) && availableIntervals.length > 0) {
+    selectedInterval.value = availableIntervals[0];
+  }
+}, { deep: true });
 
 // SignalR subscriptions
 let unsubscribeOrderUpdated;
@@ -384,6 +414,7 @@ const fetchStatsData = async () => {
         const start = item.periodStart || item.PeriodStart;
         // Format the label based on interval
         switch (selectedInterval.value) {
+          case 'Second': return new Date(start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
           case 'Minute': return new Date(start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
           case 'Hour': return new Date(start).toLocaleTimeString([], { hour: '2-digit' }) + ':00';
           case 'Day': return new Date(start).toLocaleDateString([], { day: 'numeric' });

@@ -133,6 +133,30 @@ namespace TradingBot.Controllers
 
             switch (interval)
             {
+                case TimeInterval.Second:
+                    groupedQuery = baseQuery
+                        .GroupBy(t => new { t.ExitOrder!.CreatedAt.Year, t.ExitOrder.CreatedAt.Month, t.ExitOrder.CreatedAt.Day, t.ExitOrder.CreatedAt.Hour, t.ExitOrder.CreatedAt.Minute, t.ExitOrder.CreatedAt.Second })
+                        .Select(g => new ProfitAggregation
+                        {
+                            PeriodStart = new DateTime(g.Key.Year, g.Key.Month, g.Key.Day, g.Key.Hour, g.Key.Minute, g.Key.Second, DateTimeKind.Utc),
+                            TotalProfit = Math.Round(
+                                g.Sum(t => ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                            (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                            (t.EntryOrder.Fee + t.ExitOrder.Fee)), 8),
+                            QuoteVolume = Math.Round(
+                                g.Sum(t => t.EntryOrder.Quantity *
+                                           (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)), 8),
+                            AvailableCapital = Math.Round(
+                                g.Select(t => t.AvailableCapital).FirstOrDefault(), 8),
+                            BaseVolume = Math.Round(
+                                g.Sum(t => t.EntryOrder.Quantity), 8),
+                            TradeCount = g.Count(),
+                            WinCount = g.Count(t => (((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
+                                                   (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
+                                                   (t.EntryOrder.Fee + t.ExitOrder.Fee)) > 0)
+                        });
+                    bucket = TimeSpan.FromSeconds(1);
+                    break;
                 case TimeInterval.Minute:
                     groupedQuery = baseQuery
                         .GroupBy(t => new { t.ExitOrder!.CreatedAt.Year, t.ExitOrder.CreatedAt.Month, t.ExitOrder.CreatedAt.Day, t.ExitOrder.CreatedAt.Hour, t.ExitOrder.CreatedAt.Minute })
@@ -417,7 +441,11 @@ namespace TradingBot.Controllers
         // Helper method to normalize a date to the start of its interval
         private DateTime NormalizeDate(DateTime date, TimeSpan interval)
         {
-            if (interval.TotalMinutes == 1)
+            if (interval.TotalSeconds == 1)
+            {
+                return new DateTime(date.Year, date.Month, date.Day, date.Hour, date.Minute, date.Second, DateTimeKind.Utc);
+            }
+            else if (interval.TotalMinutes == 1)
             {
                 return new DateTime(date.Year, date.Month, date.Day, date.Hour, date.Minute, 0, DateTimeKind.Utc);
             }
