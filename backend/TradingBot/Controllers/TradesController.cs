@@ -146,6 +146,8 @@ namespace TradingBot.Controllers
                             QuoteVolume = Math.Round(
                                 g.Sum(t => t.EntryOrder.Quantity *
                                            (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)), 8),
+                            AvailableCapital = Math.Round(
+                                g.Select(t => t.AvailableCapital).FirstOrDefault(), 8),
                             BaseVolume = Math.Round(
                                 g.Sum(t => t.EntryOrder.Quantity), 8),
                             TradeCount = g.Count(),
@@ -168,6 +170,8 @@ namespace TradingBot.Controllers
                             QuoteVolume = Math.Round(
                                 g.Sum(t => t.EntryOrder.Quantity *
                                            (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)), 8),
+                            AvailableCapital = Math.Round(
+                                g.Select(t => t.AvailableCapital).FirstOrDefault(), 8),
                             BaseVolume = Math.Round(
                                 g.Sum(t => t.EntryOrder.Quantity), 8),
                             TradeCount = g.Count(),
@@ -190,6 +194,8 @@ namespace TradingBot.Controllers
                             QuoteVolume = Math.Round(
                                 g.Sum(t => t.EntryOrder.Quantity *
                                            (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)), 8),
+                            AvailableCapital = Math.Round(
+                                g.Select(t => t.AvailableCapital).FirstOrDefault(), 8),
                             BaseVolume = Math.Round(
                                 g.Sum(t => t.EntryOrder.Quantity), 8),
                             TradeCount = g.Count(),
@@ -212,6 +218,8 @@ namespace TradingBot.Controllers
                             QuoteVolume = Math.Round(
                                 g.Sum(t => t.EntryOrder.Quantity *
                                            (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)), 8),
+                            AvailableCapital = Math.Round(
+                                g.Select(t => t.AvailableCapital).FirstOrDefault(), 8),
                             BaseVolume = Math.Round(
                                 g.Sum(t => t.EntryOrder.Quantity), 8),
                             TradeCount = g.Count(),
@@ -234,6 +242,8 @@ namespace TradingBot.Controllers
                             QuoteVolume = Math.Round(
                                 g.Sum(t => t.EntryOrder.Quantity *
                                            (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)), 8),
+                            AvailableCapital = Math.Round(
+                                g.Select(t => t.AvailableCapital).FirstOrDefault(), 8),
                             BaseVolume = Math.Round(
                                 g.Sum(t => t.EntryOrder.Quantity), 8),
                             TradeCount = g.Count(),
@@ -256,6 +266,8 @@ namespace TradingBot.Controllers
                             QuoteVolume = Math.Round(
                                 g.Sum(t => t.EntryOrder.Quantity *
                                            (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)), 8),
+                            AvailableCapital = Math.Round(
+                                g.Select(t => t.AvailableCapital).FirstOrDefault(), 8),
                             BaseVolume = Math.Round(
                                 g.Sum(t => t.EntryOrder.Quantity), 8),
                             TradeCount = g.Count(),
@@ -278,6 +290,8 @@ namespace TradingBot.Controllers
                             QuoteVolume = Math.Round(
                                 g.Sum(t => t.EntryOrder.Quantity *
                                            (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)), 8),
+                            AvailableCapital = Math.Round(
+                                g.Select(t => t.AvailableCapital).FirstOrDefault(), 8),
                             BaseVolume = Math.Round(
                                 g.Sum(t => t.EntryOrder.Quantity), 8),
                             TradeCount = g.Count(),
@@ -302,7 +316,7 @@ namespace TradingBot.Controllers
                 BaseVolume = g.BaseVolume,
                 TradeCount = g.TradeCount,
                 WinRate = g.TradeCount == 0 ? 0 : 100m * g.WinCount / g.TradeCount,
-                ProfitPct = g.QuoteVolume == 0 ? 0 : Math.Round(100m * g.TotalProfit / g.QuoteVolume, 8)
+                ProfitPct = g.AvailableCapital == 0 ? 0 : Math.Round(100m * g.TotalProfit / g.AvailableCapital, 8)
             }).ToList();
 
             // Calculate last 24h summary metrics (based on EndDate reference)
@@ -314,6 +328,8 @@ namespace TradingBot.Controllers
                 {
                     QuoteVolume = t.EntryOrder.Quantity * (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price),
                     BaseVolume = t.EntryOrder.Quantity,
+                    AvailableCapital = t.AvailableCapital,
+                    ExitTime = t.ExitOrder!.CreatedAt,
                     Profit = ((t.ExitOrder!.AverageFillPrice ?? t.ExitOrder.Price) -
                               (t.EntryOrder.AverageFillPrice ?? t.EntryOrder.Price)) * t.EntryOrder.Quantity -
                              (t.EntryOrder.Fee + t.ExitOrder.Fee)
@@ -322,8 +338,9 @@ namespace TradingBot.Controllers
 
             decimal quoteVol24h = lastDayAggregates.Sum(a => a.QuoteVolume);
             decimal baseVol24h  = lastDayAggregates.Sum(a => a.BaseVolume);
-            decimal roi24h      = lastDayAggregates.Sum(a =>
-                                    a.QuoteVolume == 0 ? 0 : 100m * a.Profit / a.QuoteVolume);
+            decimal availableCapital24h = lastDayAggregates.Any() ? lastDayAggregates.OrderByDescending(a => a.ExitTime).First().AvailableCapital : 0m;
+            decimal profit24h = lastDayAggregates.Sum(a => a.Profit);
+            decimal roi24h = availableCapital24h == 0 ? 0 : 100m * profit24h / availableCapital24h;
 
             var dashboard = new DashboardDto
             {
@@ -342,6 +359,7 @@ namespace TradingBot.Controllers
             public DateTime PeriodStart { get; init; }
             public decimal TotalProfit { get; init; }
             public decimal QuoteVolume { get; init; }
+            public decimal AvailableCapital { get; init; }
             public decimal BaseVolume { get; init; }
             public int TradeCount { get; init; }
             public int WinCount { get; init; }

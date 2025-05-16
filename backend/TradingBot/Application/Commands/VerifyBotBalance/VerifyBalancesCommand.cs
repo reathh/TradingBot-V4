@@ -14,7 +14,7 @@ public class VerifyBalancesCommand : IRequest<Result>
         IExchangeApiRepository exchangeApiRepository,
         ILogger<VerifyBalancesCommandHandler> logger) : BaseCommandHandler<VerifyBalancesCommand>(logger)
     {
-        private readonly int _maxRetries = 5;
+        private readonly int _maxRetries = 10;
         private readonly TimeSpan _delayBetweenChecks = TimeSpan.FromSeconds(5);
 
         protected override async Task<Result> HandleCore(VerifyBalancesCommand request, CancellationToken cancellationToken)
