@@ -74,7 +74,6 @@
           </el-table-column>
         </el-table>
       </div>
-      </el-table>
     </div>
 
     <!-- Pagination Footer -->
