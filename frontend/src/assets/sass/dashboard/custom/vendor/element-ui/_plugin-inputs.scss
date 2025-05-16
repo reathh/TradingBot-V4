@@ -128,6 +128,253 @@
   }
 }
 
+// Dark theme styles for el-date-editor (input part)
+.el-date-editor {
+  // Styles for the main wrapper of the date editor
+  &.el-input__wrapper {
+    background-color: #27293d !important; // Ensure dark background
+    box-shadow: 0 0 0 1px #2b3553 inset !important; // Ensure dark border/shadow
+    border-radius: $border-radius-lg;
+    border: none; // Override any stray borders
+
+    &:hover,
+    &.is-focus,
+    &:focus-within {
+      box-shadow: 0 0 0 1px $primary inset !important; // Use primary color for focus highlight
+    }
+  }
+
+  // Styles for the actual input fields within the date editor
+  .el-range-input {
+    background-color: transparent;
+    color: $white;
+    padding: 0;
+    margin: 0;
+    border: none;
+    outline: none;
+    height: auto; // Allow Element Plus to control height naturally based on context
+
+    &::placeholder {
+      color: rgba($white, 0.7);
+    }
+  }
+
+  // For single date pickers that might use el-input__inner
+  .el-input__inner {
+    background-color: transparent !important;
+    color: $white !important;
+    border: none !important;
+    box-shadow: none !important;
+    height: auto; // Allow Element Plus to control height
+
+    &::placeholder {
+      color: rgba($white, 0.7);
+    }
+  }
+
+  // Styling for icons and separator text
+  .el-input__icon,
+  .el-range__icon,
+  .el-range__close-icon {
+    color: rgba($white, 0.7);
+    display: flex;
+    align-items: center;
+    &:hover {
+      color: $white;
+    }
+  }
+
+  .el-range-separator {
+    color: rgba($white, 0.7);
+    display: flex;
+    align-items: center;
+    padding: 0 5px; // Spacing around separator
+  }
+}
+
+// Dark theme styles for el-picker-panel (popup/calendar part)
+.el-picker-panel,
+.el-date-picker,
+.el-date-range-picker {
+  background-color: #27293d;
+  border: 1px solid #2b3553;
+  color: $white;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1); // Standard popper shadow, adjust if needed
+
+  .el-picker-panel__header {
+    color: $white;
+    border-bottom: 1px solid #2b3553; // Separator for header
+
+    button {
+      color: $white;
+      &:hover {
+        color: $primary;
+      }
+    }
+    .el-picker-panel__icon-btn {
+         color: $white !important; // Element Plus uses specific class
+         &:hover {
+            color: $primary !important;
+         }
+    }
+    .el-date-picker__header-label, .el-month-picker__header-label, .el-year-picker__header-label {
+      color: $white;
+      &:hover {
+        color: $primary;
+      }
+    }
+  }
+
+  .el-picker-panel__content {
+    // Day/month/year cells
+    .el-date-table th {
+      color: rgba($white, 0.7);
+      border-bottom: 1px solid lighten(#2b3553, 10%);
+    }
+
+    .el-date-table td, .el-month-table td, .el-year-table td {
+      .el-date-table-cell, .cell { // Element Plus uses .el-date-table-cell for date cells
+        color: $white;
+        background-color: transparent;
+        border-radius: $border-radius-sm; // Rounded corners for cells
+
+        &:hover {
+          background-color: lighten(#27293d, 10%);
+          color: $primary;
+        }
+      }
+      &.today .el-date-table-cell {
+          .el-date-table-cell__text{ // Element Plus wraps text in span
+            color: $primary !important;
+            font-weight: bold;
+          }
+      }
+      &.selected .el-date-table-cell,
+      &.start-date .el-date-table-cell,
+      &.end-date .el-date-table-cell {
+        background-color: $primary !important;
+        color: $white !important;
+        .el-date-table-cell__text{
+             color: $white !important;
+        }
+      }
+      &.in-range .el-date-table-cell {
+        background-color: rgba($primary, 0.2) !important;
+        .el-date-table-cell__text{
+            color: $white !important;
+        }
+        &:hover {
+            background-color: rgba($primary, 0.3) !important;
+        }
+      }
+      &.disabled .el-date-table-cell {
+          background-color: transparent;
+          color: rgba($white, 0.4);
+          cursor: not-allowed;
+      }
+    }
+  }
+
+  .el-picker-panel__footer {
+    background-color: darken(#27293d, 3%);
+    border-top: 1px solid #2b3553;
+    .el-button {
+      color: $white; // Default for non-primary text buttons
+      &.el-button--text { // Element Plus class for text button
+          color: $white;
+          &:hover {
+              color: $primary;
+          }
+      }
+      &.el-button--primary {
+        // Assuming $primary button styles are handled globally or by Element Plus variables
+        // If not, add specific styles here:
+        // background-color: $primary;
+        // border-color: $primary;
+        // color: $white;
+      }
+    }
+  }
+
+  .el-picker-panel__sidebar {
+    background-color: darken(#27293d, 5%);
+    border-right: 1px solid #2b3553;
+    .el-picker-panel__shortcut {
+      color: $white;
+      &:hover {
+        background-color: lighten(#27293d, 5%);
+        color: $primary; // Or use theme's link hover color
+      }
+    }
+  }
+
+  // Popper arrow
+  .el-popper__arrow::before {
+    background-color: #27293d;
+    border: 1px solid #2b3553; // Match panel border, might need to adjust based on arrow direction
+  }
+   // For time part in datetime pickers
+  .el-time-panel {
+    background-color: #27293d;
+    border: 1px solid #2b3553; // Consistent border
+    color: $white;
+
+    .el-time-spinner__item {
+      color: rgba($white, 0.7);
+      &:hover {
+        background-color: lighten(#27293d, 5%);
+        color: $white;
+      }
+      &.active, &.is-active { // Element Plus uses is-active
+        color: $primary;
+        font-weight: bold;
+      }
+    }
+    .el-time-panel__footer {
+      border-top: 1px solid #2b3553;
+      .el-button--text {
+          color: $white;
+          &:hover {
+              color: $primary;
+          }
+      }
+    }
+    .el-time-panel__btn.confirm {
+        color: $primary; // Or use primary button style
+        &:hover {
+            color: lighten($primary, 10%);
+        }
+    }
+  }
+}
+
+// For popper arrows, ensuring correct color (Element Plus specific)
+.el-popper.is-customized .el-popper__arrow::before { // Use a more specific selector if you customize popper class
+  background: #27293d;
+  border-color: #2b3553; // Match panel border
+}
+.el-popper[data-popper-placement^="bottom"] .el-popper__arrow::before {
+  background: #27293d;
+  border-top-color: #2b3553 !important;
+  border-left-color: #2b3553 !important;
+}
+.el-popper[data-popper-placement^="top"] .el-popper__arrow::before {
+  background: #27293d;
+  border-bottom-color: #2b3553 !important;
+  border-right-color: #2b3553 !important;
+}
+.el-popper[data-popper-placement^="left"] .el-popper__arrow::before {
+  background: #27293d;
+  border-top-color: #2b3553 !important;
+  border-right-color: #2b3553 !important;
+}
+.el-popper[data-popper-placement^="right"] .el-popper__arrow::before {
+  background: #27293d;
+  border-bottom-color: #2b3553 !important;
+  border-left-color: #2b3553 !important;
+}
+
+
 // Light theme overrides
 .white-content {
   .form-group.has-search {
