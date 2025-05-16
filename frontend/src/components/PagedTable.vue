@@ -7,7 +7,7 @@
         <el-select
           v-if="showPageSize"
           class="select-primary pagination-select mb-0 col-auto"
-          style="width: auto;"
+          style="min-width: 6rem; width: auto;"
           v-model="localPageSize"
           placeholder="Per page"
           @change="handlePageSizeChange"
