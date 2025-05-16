@@ -27,6 +27,7 @@
 
 // Bootstrap components
 
+// Import root directly after variables and mixins
 @import "~bootstrap/scss/root";
 @import "~bootstrap/scss/reboot";
 @import "~bootstrap/scss/type";
@@ -105,12 +106,12 @@
 @import "dashboard/custom/vendor/plugin-card-wizard.scss";
 
 // Vendor Element UI plugins
-@import "dashboard/custom/vendor/element-ui/plugin-tags";
-@import "dashboard/custom/vendor/element-ui/plugin-slider";
-@import "dashboard/custom/vendor/element-ui/plugin-select";
-@import "dashboard/custom/vendor/element-ui/plugin-inputs";
-@import "dashboard/custom/vendor/element-ui/plugin-tables";
-@import "dashboard/custom/vendor/element-ui/plugin-datepicker";
+//@import "dashboard/custom/vendor/element-ui/plugin-tags";
+//@import "dashboard/custom/vendor/element-ui/plugin-slider";
+//@import "dashboard/custom/vendor/element-ui/plugin-select";
+//@import "dashboard/custom/vendor/element-ui/plugin-inputs";
+//@import "dashboard/custom/vendor/element-ui/plugin-tables";
+//@import "dashboard/custom/vendor/element-ui/plugin-datepicker";
 
 
 
