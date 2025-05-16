@@ -17,10 +17,10 @@
           {{ formatCurrency(row.profit, '$', 4) }}
         </td>
         <td class="text-center">
-          <BaseButton 
-            type="info" 
-            icon 
-            size="sm" 
+          <BaseButton
+            type="info"
+            icon
+            size="sm"
             class="btn-link"
             @click="viewTradeDetails(row)"
           >
@@ -77,8 +77,8 @@ const tableColumns = [
   { key: 'exitPrice', label: 'EXIT PRICE' },
   { key: 'quantity', label: 'QUANTITY' },
   { key: 'fees', label: 'FEES' },
-  { key: 'profit', label: 'PROFIT', align: 'right' },
-  { key: 'actions', label: 'ACTIONS', align: 'center' }
+  { key: 'profit', label: 'PROFIT'},
+  { key: 'actions', label: 'ACTIONS'}
 ];
 
 // SignalR subscription for order updates

@@ -34,23 +34,46 @@
         </base-input>
       </div>
 
-      <!-- Table -->
+      <!-- Table state: loading, full-row slot, or column-based -->
       <div v-if="effectiveLoading" class="text-center py-4">
         <div class="spinner-border text-primary" role="status">
           <span class="sr-only">Loading...</span>
         </div>
       </div>
-      <el-table v-else :data="displayedData" :class="cardBodyClasses">
-        <el-table-column
-          v-for="column in columns"
-          :key="column.label || column.key || column.prop"
-          :prop="column.prop || column.key"
-          :label="column.label"
-          :min-width="column.minWidth"
-          :align="column.align"
-          :sortable="sortable && column.sortable !== false ? 'custom' : false"
-          @sort-change="handleSort"
-        />
+      <div v-else-if="hasRowSlot">
+        <table :class="['el-table', cardBodyClasses]">
+          <thead :class="theadClasses">
+            <tr>
+              <th v-for="col in columns" :key="col.key || col.prop">
+                {{ col.label }}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in displayedData" :key="row.id">
+              <slot name="row" :row="row" />
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div v-else>
+        <el-table :data="displayedData" :class="cardBodyClasses">
+          <el-table-column
+            v-for="column in columns"
+            :key="column.label || column.key || column.prop"
+            :prop="column.prop || column.key"
+            :label="column.label"
+            :min-width="column.minWidth"
+            :align="column.align"
+            :sortable="sortable && column.sortable !== false ? 'custom' : false"
+            @sort-change="handleSort"
+          >
+            <template v-if="column.slot" #default="scope">
+              <slot :name="`cell-${column.prop || column.key}`" v-bind="scope" />
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
       </el-table>
     </div>
 
@@ -80,7 +103,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, defineExpose } from 'vue';
+import { ref, computed, watch, onMounted, defineExpose, useSlots } from 'vue';
 import { Search } from '@element-plus/icons-vue';
 import BaseInput from "@/components/Inputs/BaseInput.vue";
 import BasePagination from "@/components/BasePagination.vue";
@@ -121,6 +144,10 @@ const localSortDirection = ref('asc');
 const internalLoading = ref(false);
 const items = ref([]);
 const totalCount = ref(0);
+
+// detect if parent provided a full-row slot
+const slots = useSlots();
+const hasRowSlot = computed(() => !!slots.row);
 
 const effectiveLoading = computed(() => {
   return props.fetchData ? internalLoading.value : props.isLoading;
