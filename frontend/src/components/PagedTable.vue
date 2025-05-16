@@ -1,85 +1,80 @@
 <template>
   <div>
-    <card :card-body-classes="cardBodyClasses">
-      <h4 v-if="title" slot="header" class="card-title">{{ title }}</h4>
-      <div>
-        <!-- Controls: Search, Page Size -->
-        <div class="col-12 d-flex justify-content-center justify-content-sm-between flex-wrap">
-          <el-select
-            v-if="showPageSize"
-            class="select-primary mb-3 pagination-select"
-            v-model="localPageSize"
-            placeholder="Per page"
-            @change="handlePageSizeChange"
-          >
-            <el-option
-              v-for="size in pageSizeOptions"
-              :key="size"
-              :label="size"
-              :value="size"
-            />
-          </el-select>
-
-          <base-input v-if="searchable">
-            <el-input
-              type="search"
-              class="mb-3 search-input"
-              clearable
-              :prefix-icon="Search"
-              :placeholder="searchPlaceholder"
-              v-model="localSearchQuery"
-              aria-controls="datatables"
-            />
-          </base-input>
-        </div>
-
-        <!-- Table -->
-        <div v-if="effectiveLoading" class="text-center py-4">
-          <div class="spinner-border text-primary" role="status">
-            <span class="sr-only">Loading...</span>
-          </div>
-        </div>
-        <el-table v-else :data="displayedData">
-          <el-table-column
-            v-for="column in columns"
-            :key="column.label || column.key || column.prop"
-            :prop="column.prop || column.key"
-            :label="column.label"
-            :min-width="column.minWidth"
-            :align="column.align"
-            :sortable="sortable && column.sortable !== false ? 'custom' : false"
-            @sort-change="handleSort"
+    <h4 v-if="title" class="card-title mb-3">{{ title }}</h4>
+    <div>
+      <!-- Controls: Search, Page Size -->
+      <div class="col-12 d-flex justify-content-center justify-content-sm-between flex-wrap">
+        <el-select
+          v-if="showPageSize"
+          class="select-primary mb-3 pagination-select"
+          v-model="localPageSize"
+          placeholder="Per page"
+          @change="handlePageSizeChange"
+        >
+          <el-option
+            class="select-primary"
+            v-for="item in pageSizeOptions"
+            :key="item"
+            :label="item"
+            :value="item"
           />
-          <slot name="actions" />
-        </el-table>
+        </el-select>
+
+        <base-input v-if="searchable">
+          <el-input
+            type="search"
+            class="mb-3 search-input"
+            clearable
+            :prefix-icon="Search"
+            :placeholder="searchPlaceholder"
+            v-model="localSearchQuery"
+            aria-controls="datatables"
+          />
+        </base-input>
       </div>
 
-      <!-- Pagination Footer -->
-      <div
-        slot="footer"
-        class="col-12 d-flex justify-content-center justify-content-sm-between flex-wrap"
-      >
-        <div>
-          <p class="card-category">
-            <slot name="footer-info">
-              <span v-if="totalCount > 0">
-                Showing {{ displayedEntryStart }} to {{ displayedEntryEnd }} of {{ totalCount }} entries
-              </span>
-              <span v-else>
-                No entries found
-              </span>
-            </slot>
-          </p>
+      <!-- Table -->
+      <div v-if="effectiveLoading" class="text-center py-4">
+        <div class="spinner-border text-primary" role="status">
+          <span class="sr-only">Loading...</span>
         </div>
-        <base-pagination
-          class="pagination-no-border"
-          v-model="localCurrentPage" 
-          :per-page="localPageSize"
-          :total="totalCount"
-          @update:modelValue="handlePageChange"
-        />
       </div>
-    </card>
+      <el-table v-else :data="displayedData" :class="cardBodyClasses">
+        <el-table-column
+          v-for="column in columns"
+          :key="column.label || column.key || column.prop"
+          :prop="column.prop || column.key"
+          :label="column.label"
+          :min-width="column.minWidth"
+          :align="column.align"
+          :sortable="sortable && column.sortable !== false ? 'custom' : false"
+          @sort-change="handleSort"
+        />
+      </el-table>
+    </div>
+
+    <!-- Pagination Footer -->
+    <div class="col-12 d-flex justify-content-center justify-content-sm-between flex-wrap mt-3">
+      <div>
+        <p class="card-category">
+          <slot name="footer-info">
+            <span v-if="totalCount > 0">
+              Showing {{ displayedEntryStart }} to {{ displayedEntryEnd }} of {{ totalCount }} entries
+            </span>
+            <span v-else>
+              No entries found
+            </span>
+          </slot>
+        </p>
+      </div>
+      <base-pagination
+        class="pagination-no-border"
+        v-model="localCurrentPage" 
+        :per-page="localPageSize"
+        :total="totalCount"
+        @update:modelValue="handlePageChange"
+      />
+    </div>
   </div>
 </template>
 
@@ -87,7 +82,6 @@
 import { ref, computed, watch, onMounted, defineExpose } from 'vue';
 import { Search } from '@element-plus/icons-vue';
 import BaseInput from "@/components/Inputs/BaseInput.vue";
-import Card from "@/components/Cards/Card.vue";
 import BasePagination from "@/components/BasePagination.vue";
 
 const props = defineProps({
@@ -103,10 +97,19 @@ const props = defineProps({
   serverSide: { type: Boolean, default: false },
   isLoading: { type: Boolean, default: false },
   title: { type: String, default: '' },
-  cardBodyClasses: { type: String, default: 'table-full-width' }
+  cardBodyClasses: { type: String, default: 'table-full-width' },
+  showActions: { type: Boolean, default: true }
 });
 
-const emit = defineEmits(['update:page', 'update:pageSize', 'search', 'sort']);
+const emit = defineEmits([
+  'update:page',
+  'update:pageSize',
+  'search',
+  'sort',
+  'like',
+  'edit',
+  'delete'
+]);
 
 // Local state
 const localSearchQuery = ref('');
