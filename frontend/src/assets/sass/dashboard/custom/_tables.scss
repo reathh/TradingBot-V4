@@ -1,4 +1,3 @@
-@use "sass:color";
 .table{
 
   > tbody > tr > td {
@@ -20,7 +19,7 @@
   > tbody > tr.table-success{
     &,
     > td {
-      background-color: color.adjust($success, $lightness: -10%);
+      background-color: darken($success, 10%);
     }
   }
 

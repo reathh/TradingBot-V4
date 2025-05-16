@@ -1,4 +1,3 @@
-@use "sass:color";
 .card-wizard {
     min-height: 410px;
     background: transparent !important;
@@ -17,7 +16,7 @@
     }
 
     &[data-color="green"]{
-        @include set-wizard-color(color.adjust($success,$lightness: -10%));
+        @include set-wizard-color(darken($success,10%));
     }
 
     &[data-color="blue"]{

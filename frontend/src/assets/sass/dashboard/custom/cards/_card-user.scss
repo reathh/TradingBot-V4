@@ -1,4 +1,3 @@
-@use "sass:color";
 .card-user{
   overflow: hidden;
     .image{
@@ -53,7 +52,7 @@
     .avatar{
       width: 124px;
       height: 124px;
-      border: 5px solid color.adjust($black,$lightness: 5%);
+      border: 5px solid lighten($black,5%);
       border-bottom-color: $transparent-bg;
       background-color: $transparent-bg;
       position: relative;

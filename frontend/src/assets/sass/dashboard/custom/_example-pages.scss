@@ -1,4 +1,3 @@
-@use "sass:color";
 .login-page {
     .card-login {
         border-radius: $border-radius-lg;
@@ -149,7 +148,7 @@
           }
 
           .has-success .form-control:focus, .has-success.input-group-focus .input-group-append .input-group-text, .has-success.input-group-focus .input-group-prepend .input-group-text {
-            border-color: color.adjust($success, $lightness: -10%);
+            border-color: darken($success, 10%);
           }
 
         }

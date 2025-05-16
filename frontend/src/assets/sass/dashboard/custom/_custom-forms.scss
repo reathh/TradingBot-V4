@@ -1,4 +1,3 @@
-@use "sass:color";
 .custom-control-label {
     // Background-color and (when enabled) gradient
     &::before {
@@ -153,7 +152,7 @@
                     border: $custom-control-indicator-border-width solid $custom-control-indicator-disabled-bg;
 
                     &:before {
-                        background-color: color.adjust($custom-control-indicator-checked-bg, $lightness: 10%);
+                        background-color: lighten($custom-control-indicator-checked-bg, 10%);
                     }
                 }
             }

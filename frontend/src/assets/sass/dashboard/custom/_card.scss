@@ -1,4 +1,3 @@
-@use "sass:color";
 .card{
     background: $card-black-background;
     border: 0;
@@ -168,7 +167,7 @@
       }
 
       .has-success .form-control:focus, .has-success.input-group-focus .input-group-append .input-group-text, .has-success.input-group-focus .input-group-prepend .input-group-text {
-        border-color: color.adjust($success, $lightness: -10%);
+        border-color: darken($success, 10%);
       }
     }
 

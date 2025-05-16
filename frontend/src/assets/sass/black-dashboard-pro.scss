@@ -27,7 +27,6 @@
 
 // Bootstrap components
 
-// Import root directly after variables and mixins
 @import "~bootstrap/scss/root";
 @import "~bootstrap/scss/reboot";
 @import "~bootstrap/scss/type";
@@ -94,11 +93,13 @@
 @import "dashboard/custom/fixed-plugin";
 @import "dashboard/custom/sidebar-and-main-panel.scss";
 @import "dashboard/custom/misc.scss";
+@import "dashboard/custom/rtl.scss";
 @import "dashboard/custom/timeline.scss";
 
 // Vendor / Plugins
 
 @import "dashboard/custom/vendor/plugin-nouislider.scss";
+@import "dashboard/custom/vendor/plugin-fullcalendar.scss";
 @import "dashboard/custom/vendor/plugin-sweetalert2.scss";
 @import "dashboard/custom/vendor/plugin-bootstrap-switch.scss";
 @import "dashboard/custom/vendor/plugin-jasny-fileupload.scss";
@@ -106,14 +107,12 @@
 @import "dashboard/custom/vendor/plugin-card-wizard.scss";
 
 // Vendor Element UI plugins
-//@import "dashboard/custom/vendor/element-ui/plugin-tags";
-//@import "dashboard/custom/vendor/element-ui/plugin-slider";
-//@import "dashboard/custom/vendor/element-ui/plugin-select";
-//@import "dashboard/custom/vendor/element-ui/plugin-inputs";
-//@import "dashboard/custom/vendor/element-ui/plugin-tables";
-//@import "dashboard/custom/vendor/element-ui/plugin-datepicker";
-
-
+// @import "dashboard/custom/vendor/element-ui/plugin-tags";
+// @import "dashboard/custom/vendor/element-ui/plugin-slider";
+// @import "dashboard/custom/vendor/element-ui/plugin-select";
+// @import "dashboard/custom/vendor/element-ui/plugin-inputs";
+// @import "dashboard/custom/vendor/element-ui/plugin-tables";
+// @import "dashboard/custom/vendor/element-ui/plugin-datepicker";
 
 // example pages and sections
 
