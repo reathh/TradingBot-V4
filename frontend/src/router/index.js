@@ -31,13 +31,16 @@ const routes = [
   {
     path: "/",
     component: DashboardLayout,
-    redirect: "/dashboard",
     children: [
       {
-        path: "dashboard",
+        path: "",
         name: "Dashboard",
         component: Dashboard,
         meta: { requiresAuth: true },
+      },
+      {
+        path: "dashboard",
+        redirect: "/",
       },
       {
         path: "bots",
@@ -78,9 +81,8 @@ const routes = [
     ],
   },
   {
-    path: "/pages",
+    path: "/",
     component: AuthLayout,
-    redirect: "/pages/login",
     children: [
       {
         path: "login",
@@ -170,12 +172,12 @@ router.beforeEach( ( to, from, next ) =>
   // If route requires auth and user is not logged in, redirect to login
   if ( requiresAuth && !authStore.isAuthenticated )
   {
-    return next( '/pages/login' );
+    return next( '/login' );
   }
   // If route is for guests only and user is logged in, redirect to home
   if ( guestOnly && authStore.isAuthenticated )
   {
-    return next( '/dashboard' );
+    return next( '/' );
   }
   // If route requires specific roles
   if ( requiredRoles )
