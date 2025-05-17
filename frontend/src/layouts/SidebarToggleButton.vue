@@ -2,7 +2,8 @@
   <el-tooltip
     content="Sidebar toggle"
     effect="light"
-    :open-delay="300"
+    :teleported="true"
+    :show-after="300"
     placement="right"
   >
     <button
@@ -19,21 +20,13 @@
 </template>
 
 <script setup>
-import { getCurrentInstance } from "vue";
 import { useSidebarStore } from "@/stores/sidebar";
 
-const { proxy } = getCurrentInstance();
 const sidebarStore = useSidebarStore();
 
 function minimizeSidebar() {
   const isMinimized = sidebarStore.isMinimized;
   const status = isMinimized ? "deactivated" : "activated";
-
-  proxy.$notify({
-    type: "primary",
-    message: `Sidebar mini ${status}...`,
-    icon: "tim-icons icon-bell-55",
-  });
 
   sidebarStore.toggleMinimize();
 }
