@@ -18,9 +18,11 @@
       </slot>
       <slot>
         <input
-          :value="value"
+          :value="modelValue"
           v-bind="$attrs"
-          v-on="listeners"
+          @input="onInput"
+          @focus="onFocus"
+          @blur="onBlur"
           class="form-control"
           aria-describedby="addon-right addon-left"
         />

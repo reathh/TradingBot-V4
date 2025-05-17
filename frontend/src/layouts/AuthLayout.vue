@@ -30,9 +30,11 @@
     <div class="wrapper wrapper-full-page">
       <div class="full-page" :class="pageClass">
         <div class="content">
-          <Transition name="zoomIn" mode="out-in">
-            <RouterView />
-          </Transition>
+          <RouterView v-slot="{ Component }">
+            <Transition name="zoomIn" mode="out-in">
+              <component :is="Component" />
+            </Transition>
+          </RouterView>
         </div>
         <footer class="footer">
           <div class="container-fluid">
