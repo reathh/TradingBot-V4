@@ -11,14 +11,14 @@
     <!-- <sidebar-share v-model:backgroundColor="sidebarBackground"> </sidebar-share> -->
     <div class="main-panel" :data="sidebarBackground">
       <dashboard-navbar></dashboard-navbar>
-      <div class="content" @click="toggleSidebar">
+      <div class="content" @click="sidebarStore.showSidebar ? sidebarStore.setShowSidebar(false) : null">
         <router-view v-slot="{ Component }">
           <fade-in-out :duration="200" mode="out-in">
             <component :is="Component" />
           </fade-in-out>
         </router-view>
       </div>
-      
+
       <!-- SignalR connection status indicator -->
       <div v-if="!signalRConnected" class="signalr-indicator">
         <i class="tim-icons icon-simple-remove"></i> Reconnecting...
@@ -132,12 +132,6 @@ const menuItems = ref([
     name: "Charts",
     icon: "tim-icons icon-chart-pie-36",
     path: "/charts",
-  },
-  {
-    name: computed(() => isDarkMode.value ? "Dark Mode" : "Light Mode"),
-    icon: darkModeIcon,
-    click: toggleDarkMode,
-    position: 'bottom'
   },
 ]);
 </script>

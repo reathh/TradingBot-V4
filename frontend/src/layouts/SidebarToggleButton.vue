@@ -20,11 +20,13 @@
 
 <script setup>
 import { getCurrentInstance } from "vue";
+import { useSidebarStore } from "@/stores/sidebar";
 
 const { proxy } = getCurrentInstance();
+const sidebarStore = useSidebarStore();
 
 function minimizeSidebar() {
-  const isMinimized = proxy.$sidebar.isMinimized;
+  const isMinimized = sidebarStore.isMinimized;
   const status = isMinimized ? "deactivated" : "activated";
 
   proxy.$notify({
@@ -33,7 +35,7 @@ function minimizeSidebar() {
     icon: "tim-icons icon-bell-55",
   });
 
-  proxy.$sidebar.toggleMinimize();
+  sidebarStore.toggleMinimize();
 }
 </script>
 
