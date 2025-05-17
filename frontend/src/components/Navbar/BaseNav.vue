@@ -5,7 +5,7 @@
 
       <slot name="toggle-button">
         <button
-          class="navbar-toggler collapsed"
+          class="navbar-toggler ml-auto collapsed"
           v-if="hasMenu"
           type="button"
           @click="toggleMenu"
@@ -76,7 +76,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["change"]);
+const emit = defineEmits(["update:show", "change"]);
 
 const slots = useSlots();
 const transitionFinished = ref(true);
@@ -102,7 +102,9 @@ const classes = computed(() => {
 });
 
 function toggleMenu() {
-  emit("change", !props.show);
+  const nextState = !props.show;
+  emit("update:show", nextState);
+  emit("change", nextState);
 }
 
 function onTransitionStart() {

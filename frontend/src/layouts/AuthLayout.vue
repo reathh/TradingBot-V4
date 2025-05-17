@@ -1,7 +1,7 @@
 <template>
   <div>
     <BaseNav
-      v-model:showMenu="showMenu"
+      v-model:show="showMenu"
       type="white"
       :transparent="true"
       menu-classes="justify-between w-full items-center"
