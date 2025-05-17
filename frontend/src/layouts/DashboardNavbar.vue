@@ -103,7 +103,7 @@
         </li>
         <div class="dropdown-divider"></div>
         <li class="nav-link">
-          <a href="#" class="nav-item dropdown-item">Log out</a>
+          <a href="#" class="nav-item dropdown-item" @click.prevent="handleLogout">Log out</a>
         </li>
       </BaseDropdown>
     </ul>
@@ -112,7 +112,8 @@
 
 <script setup>
 import { ref, computed, inject } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
+import { useAuthStore } from "@/stores/auth";
 
 import Modal from "@/components/Modal.vue";
 import BaseNav from "@/components/Navbar/BaseNav.vue";
@@ -120,6 +121,8 @@ import BaseDropdown from "@/components/BaseDropdown.vue";
 import SidebarToggleButton from "./SidebarToggleButton.vue";
 
 const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore();
 const $sidebar = inject("$sidebar", {
   showSidebar: false,
   displaySidebar: () => {},
@@ -136,6 +139,10 @@ const routeName = computed(() => {
 
 function toggleSidebar() {
   $sidebar.displaySidebar(!$sidebar.showSidebar);
+}
+
+async function handleLogout() {
+  await authStore.logout();
 }
 </script>
 
