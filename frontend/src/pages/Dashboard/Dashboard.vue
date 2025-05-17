@@ -16,7 +16,7 @@
                 type="datetimerange"
                 :shortcuts="rangeShortcuts"
                 size="large"
-                class="select-primary me-md-3 mb-2 mb-md-0 w-100"
+                class="select-primary me-md-2 mb-2 mb-md-0 w-100"
                 start-placeholder="Start"
                 end-placeholder="End"
                 @change="fetchStatsData"
@@ -24,8 +24,7 @@
 
               <el-select
                 v-model="selectedInterval"
-                class="select-primary w-100 w-md-auto"
-                style="min-width: 150px; max-width: 200px;"
+                class="select-primary w-100"
                 size="large"
                 placeholder="Select Interval"
                 @change="fetchStatsData"
