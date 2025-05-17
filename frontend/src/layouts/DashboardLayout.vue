@@ -133,12 +133,6 @@ const menuItems = ref([
     icon: "tim-icons icon-chart-pie-36",
     path: "/charts",
   },
-  {
-    name: computed(() => isDarkMode.value ? "Dark Mode" : "Light Mode"),
-    icon: darkModeIcon,
-    click: toggleDarkMode,
-    position: 'bottom'
-  },
 ]);
 </script>
 

@@ -37,7 +37,16 @@
 <script setup>
 import { ref } from "vue";
 
-const props = defineProps({
+const {
+  tag,
+  titleTag,
+  title,
+  direction,
+  icon,
+  titleClasses,
+  menuClasses,
+  menuOnRight,
+} = defineProps({
   tag: {
     type: String,
     default: "div",

@@ -33,12 +33,6 @@
             />
             <span class="label-switch label-right">ON</span>
           </div>
-
-          <div class="togglebutton switch-change-color mt-3">
-            <span class="label-switch">LIGHT MODE</span>
-            <BaseSwitch v-model="darkMode" @update:modelValue="toggleMode" />
-            <span class="label-switch label-right">DARK MODE</span>
-          </div>
         </li>
 
         <li class="button-container mt-4">
@@ -87,17 +81,6 @@ const emit = defineEmits(["update:backgroundColor"]);
 const isOpen = ref(false);
 const sidebarMiniLocal = ref(false); // Use a local ref for the switch
 const themeStore = useThemeStore();
-const darkMode = ref(themeStore.isDarkMode);
-
-// Watch for changes to the theme store
-watch(() => themeStore.isDarkMode, (newValue) => {
-  darkMode.value = newValue;
-});
-
-// Watch for changes to the darkMode ref and update the theme store
-watch(darkMode, (newValue) => {
-  themeStore.setDarkMode(newValue);
-});
 
 const sidebarColors = ref([
   { color: "primary", active: false, value: "primary" },
@@ -128,10 +111,6 @@ function toggleList(list, itemToActivate) {
 function changeSidebarBackground(item) {
   emit("update:backgroundColor", item.value);
   toggleList(sidebarColors.value, item);
-}
-
-function toggleMode(isDark) {
-  themeStore.setDarkMode(isDark);
 }
 
 function minimizeSidebar(value) {
