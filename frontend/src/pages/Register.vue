@@ -78,6 +78,10 @@
               ]"
             />
 
+            <div v-if="authError" class="text-danger mb-3">
+              {{ authError }}
+            </div>
+
             <BaseCheckbox class="text-left">
               I agree to the <a href="#something">terms and conditions</a>.
             </BaseCheckbox>
@@ -89,6 +93,7 @@
                 round
                 block
                 size="lg"
+                :loading="loading"
               >
                 Get Started
               </BaseButton>
@@ -103,10 +108,16 @@
 <script setup>
 import { useForm, useField } from "vee-validate";
 import * as yup from "yup";
+import { ref, computed } from "vue";
+import { useAuthStore } from "@/stores/auth";
 import Card from "@/components/Cards/Card.vue";
 import BaseInput from "@/components/Inputs/BaseInput.vue";
 import BaseButton from "@/components/BaseButton.vue";
 import BaseCheckbox from "@/components/Inputs/BaseCheckbox.vue";
+
+const authStore = useAuthStore();
+const authError = computed(() => authStore.error);
+const loading = computed(() => authStore.loading);
 
 useForm({
   validationSchema: yup.object({
@@ -133,9 +144,14 @@ const {
   meta: passwordMeta,
 } = useField("password");
 
-const submit = () => {
-  alert(
-    `Registered with:\nEmail: ${email.value}\nPassword: ${password.value}`
-  );
+const submit = async () => {
+  try {
+    await authStore.register({
+      email: email.value,
+      password: password.value
+    });
+  } catch (error) {
+    // Error is already handled in the store
+  }
 };
 </script>

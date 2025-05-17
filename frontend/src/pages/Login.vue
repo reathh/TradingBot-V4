@@ -32,6 +32,10 @@
             ]"
           />
 
+          <div v-if="authError" class="text-danger mb-3">
+            {{ authError }}
+          </div>
+
           <template #footer>
             <BaseButton
               native-type="submit"
@@ -39,6 +43,7 @@
               class="mb-3"
               size="lg"
               block
+              :loading="loading"
             >
               Get Started
             </BaseButton>
@@ -62,9 +67,15 @@
 <script setup>
 import { useForm, useField } from "vee-validate";
 import * as yup from "yup";
+import { ref, computed } from "vue";
+import { useAuthStore } from "@/stores/auth";
 import Card from "@/components/Cards/Card.vue";
 import BaseInput from "@/components/Inputs/BaseInput.vue";
 import BaseButton from "@/components/BaseButton.vue";
+
+const authStore = useAuthStore();
+const authError = computed(() => authStore.error);
+const loading = computed(() => authStore.loading);
 
 useForm({
   validationSchema: yup.object({
@@ -84,7 +95,14 @@ const {
   meta: passwordMeta,
 } = useField("password");
 
-const submit = () => {
-  alert(`Logging in with\nEmail: ${email.value}\nPassword: ${password.value}`);
+const submit = async () => {
+  try {
+    await authStore.login({
+      email: email.value,
+      password: password.value
+    });
+  } catch (error) {
+    // Error is already handled in the store
+  }
 };
 </script>
