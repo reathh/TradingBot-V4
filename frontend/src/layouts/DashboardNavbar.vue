@@ -9,7 +9,7 @@
       <div class="navbar-minimize d-inline"><sidebar-toggle-button /></div>
       <div
         class="navbar-toggle d-inline"
-        :class="{ toggled: $sidebar.showSidebar }"
+        :class="{ toggled: sidebarStore.showSidebar }"
       >
         <button type="button" class="navbar-toggler" @click="toggleSidebar">
           <span class="navbar-toggler-bar bar1"></span>
