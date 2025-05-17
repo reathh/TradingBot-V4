@@ -5,6 +5,7 @@
       'input-group-focus': focused,
       'has-label': label,
       'has-icon': hasIcon,
+      'has-danger': error
     }"
   >
     <slot name="label">
