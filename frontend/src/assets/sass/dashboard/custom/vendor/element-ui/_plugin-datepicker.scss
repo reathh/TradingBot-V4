@@ -51,7 +51,6 @@ $box-shadow-lg: 0px 10px 50px 0px rgba(0, 0, 0, 0.2);
 
 .el-date-picker,
 .time-select{
-
   .time-select-item.selected:not(.disabled) {
     color: $primary;
   }
@@ -163,4 +162,8 @@ $box-shadow-lg: 0px 10px 50px 0px rgba(0, 0, 0, 0.2);
 
 .el-picker-panel .el-time-spinner.has-seconds .el-time-spinner__wrapper:nth-child(2) {
   margin-left: 0;
+}
+
+.el-date-editor {
+  background-color: transparent !important;
 }
