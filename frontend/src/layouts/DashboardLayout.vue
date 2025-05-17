@@ -88,12 +88,6 @@ const menuItems = computed(() => [
     path: "/dashboard",
   },
   {
-    name: "Dark Mode",
-    icon: isDarkMode.value ? "fas fa-sun" : "fas fa-moon",
-    click: () => toggleDarkMode(),
-    position: "bottom"
-  },
-  {
     name: "Logout",
     icon: "tim-icons icon-button-power",
     click: () => authStore.logout(),

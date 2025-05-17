@@ -23,6 +23,17 @@
         <a class="navbar-brand" href="#">{{ routeName }}</a>
       </div>
     </template>
+    <template #default>
+      <div class="navbar-toolbar ml-auto d-flex align-items-center" style="margin-left:auto;">
+        <button
+          class="btn btn-link btn-just-icon"
+          :aria-label="darkMode ? 'Switch to light mode' : 'Switch to dark mode'"
+          @click="themeStore.toggleDarkMode()"
+        >
+          <i :class="darkMode ? 'fas fa-sun sun-icon' : 'fas fa-moon moon-icon'" />
+        </button>
+      </div>
+    </template>
   </BaseNav>
 </template>
 
@@ -49,7 +60,7 @@ const showMenu = ref(false);
 const searchModalVisible = ref(false);
 const searchQuery = ref("");
 
-const darkMode = ref(themeStore.isDarkMode);
+const darkMode = computed(() => themeStore.isDarkMode);
 watch(() => themeStore.isDarkMode, (newValue) => {
   darkMode.value = newValue;
 });
@@ -78,5 +89,12 @@ async function handleLogout() {
 <style scoped>
 .top-navbar {
   top: 0px;
+}
+.sun-icon {
+  color: #fff !important;
+  font-size: 1.5em !important;
+}
+.moon-icon {
+  font-size: 1.5em !important;
 }
 </style>
