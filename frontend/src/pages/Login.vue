@@ -49,7 +49,7 @@
             </BaseButton>
             <div class="pull-left">
               <h6>
-                <router-link class="link footer-link" to="/auth/register"
+                <router-link class="link footer-link" to="/register"
                   >Create Account</router-link
                 >
               </h6>

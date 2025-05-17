@@ -136,7 +136,7 @@
       </Card>
     </div>
     <div class="col-lg-7">
-      <card class="card" :header-classes="{ 'text-right': isRTL }">
+      <card class="card">
         <h5 slot="header" class="card-title">Trades</h5>
         <div class="table-responsive"><TradesTable :period="selectedInterval" /></div>
       </card>
