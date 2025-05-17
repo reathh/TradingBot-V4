@@ -75,7 +75,7 @@
 <script setup>
 import { ref, watch, onMounted } from "vue";
 import BaseSwitch from "@/components/BaseSwitch.vue";
-import { useSidebar } from "@/components/SidebarPlugin/index.js";
+import { useSidebar } from "@/layouts/index.js";
 import { useThemeStore } from "@/stores/theme";
 
 const props = defineProps({

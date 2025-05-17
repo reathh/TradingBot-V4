@@ -63,7 +63,7 @@
   </SlideYUpTransition>
 </template>
 <script>
-import { SlideYUpTransition } from "@/components/SidebarPlugin/transitions.js";
+import { SlideYUpTransition } from "@/layouts/transitions.js";
 
 export default {
   name: "modal",

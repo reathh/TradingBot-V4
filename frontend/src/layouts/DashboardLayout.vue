@@ -35,7 +35,7 @@ import { useSidebarStore } from "@/stores/sidebar";
 import { useThemeStore } from "@/stores/theme";
 import { useAuthStore } from "@/stores/auth";
 import DashboardNavbar from "./DashboardNavbar.vue";
-import SideBar from "@/components/SidebarPlugin/SideBar.vue";
+import SideBar from "./SideBar.vue";
 import Notifications from "@/components/Notifications/Notifications.vue";
 import SidebarFixedToggleButton from "./SidebarFixedToggleButton.vue";
 // import SidebarShare from "./SidebarSharePlugin.vue";
@@ -89,7 +89,7 @@ const menuItems = ref([
   },
   {
     name: "Dark Mode",
-    icon: computed(() => isDarkMode.value ? "tim-icons icon-bulb-63" : "tim-icons icon-button-power"),
+    icon: computed(() => isDarkMode.value ? "fas fa-sun" : "fas fa-moon"),
     path: "#",
     click: toggleDarkMode,
     position: "bottom"

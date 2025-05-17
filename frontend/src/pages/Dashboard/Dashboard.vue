@@ -153,7 +153,6 @@
         </div>
       </Card>
     </div>
-    <div class="col-lg-12"><CountryMapCard></CountryMapCard></div>
   </div>
 </template>
 <script setup>

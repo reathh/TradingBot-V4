@@ -3,9 +3,9 @@ import { createPinia } from "pinia";
 import router from "./router";
 import App from "./App.vue";
 import NotificationPlugin from "./components/Notifications/NotificationPlugin";
-import SidebarItem from "./components/SidebarPlugin/SidebarItem.vue";
+import SidebarItem from "./layouts/SidebarItem.vue";
 import Vue3Transitions from "vue3-transitions";
-import SidebarPlugin from "@/components/SidebarPlugin/index.js";
+import SidebarPlugin from "@/layouts/index.js";
 import ClickOutsideDirective from "./directives/click-outside";
 // Styles
 import "./assets/sass/black-dashboard-pro.scss";
