@@ -2,20 +2,20 @@
   <component
     :is="tag"
     class="dropdown"
-    :class="[{ show: isOpen.value }, `drop${direction}`]"
+    :class="[{ show: isOpen }, `drop${direction}`]"
     @click="toggleDropDown"
     v-click-outside="closeDropDown"
   >
-    <slot name="title-container" :is-open="isOpen.value">
+    <slot name="title-container" :is-open="isOpen">
       <component
         :is="titleTag"
         class="dropdown-toggle no-caret"
         :class="titleClasses"
         :aria-label="title || 'dropdown'"
-        :aria-expanded="isOpen.value"
+        :aria-expanded="isOpen"
         data-toggle="dropdown"
       >
-        <slot name="title" :is-open="isOpen.value">
+        <slot name="title" :is-open="isOpen">
           <i :class="icon"></i> {{ title }}
         </slot>
       </component>
@@ -24,7 +24,7 @@
     <ul
       class="dropdown-menu"
       :class="[
-        { show: isOpen.value },
+        { show: isOpen },
         { 'dropdown-menu-right': menuOnRight },
         menuClasses,
       ]"
