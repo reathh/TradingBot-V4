@@ -8,15 +8,15 @@
               <h5 class="card-category">Trading Analytics</h5>
               <h2 class="card-title">Bot Profit Performance</h2>
             </div>
-            <div class="col-md-6 col-sm-12 d-flex justify-content-md-end justify-content-sm-start align-items-center">
+            <div class="col-md-6 col-sm-12 d-flex flex-md-row flex-column justify-content-md-end justify-content-sm-start align-items-start align-items-md-center">
               <!-- Date range picker with quick shortcuts -->
-              
+
               <el-date-picker
                 v-model="dateRange"
                 type="datetimerange"
                 :shortcuts="rangeShortcuts"
                 size="large"
-                class="select-primary me-2"
+                class="select-primary me-md-3 mb-2 mb-md-0 w-100"
                 start-placeholder="Start"
                 end-placeholder="End"
                 @change="fetchStatsData"
@@ -24,7 +24,8 @@
 
               <el-select
                 v-model="selectedInterval"
-                class="select-primary"
+                class="select-primary w-100 w-md-auto"
+                style="min-width: 150px; max-width: 200px;"
                 size="large"
                 placeholder="Select Interval"
                 @change="fetchStatsData"
@@ -147,7 +148,7 @@
           <h5 class="card-title mb-0">Active Orders</h5>
         </template>
         <div class="table-responsive">
-          <OrdersTable 
+          <OrdersTable
             :period="selectedInterval"
           />
         </div>
@@ -313,7 +314,7 @@ const rangeShortcuts = [
 const intervalChoices = computed(() => {
   const [start, end] = dateRange.value;
   if (!start || !end) return [];
-  
+
   const diffMs = Math.abs(end - start);
   const diffMinutes = diffMs / (1000 * 60);
   const diffHours = diffMs / (1000 * 60 * 60);
@@ -369,7 +370,7 @@ const selectedInterval = ref('Day');
 watch(dateRange, () => {
   // Get available interval options
   const availableIntervals = intervalChoices.value.map(option => option.value);
-  
+
   // If currently selected interval is not available, select the first available option
   if (!availableIntervals.includes(selectedInterval.value) && availableIntervals.length > 0) {
     selectedInterval.value = availableIntervals[0];
@@ -399,10 +400,10 @@ const fetchStatsData = async () => {
       roi24h.value = roi;
       quoteVolume24h.value = quoteVol;
       baseVolume24h.value = baseVol;
-      
+
       // Transform aggregated data for chart format
       profitData.sort((a, b) => new Date(a.periodStart || a.PeriodStart) - new Date(b.periodStart || b.PeriodStart));
-      
+
       // Extract labels and data points
       const labels = profitData.map(item => {
         const start = item.periodStart || item.PeriodStart;
@@ -418,7 +419,7 @@ const fetchStatsData = async () => {
           default: return item.timePeriod || item.TimePeriod;
         }
       });
-      
+
       const totalProfitSeries = profitData.map(item => item.totalProfit ?? item.TotalProfit);
 
       const roiSeries = profitData.map(item => item.profitPct ?? item.ProfitPct);
@@ -496,7 +497,7 @@ const isEndNearNow = () => {
 
 onMounted(() => {
   fetchStatsData();
-  
+
   // Subscribe to order updates from SignalR - when an order changes, refresh profit data
   unsubscribeOrderUpdated = signalrService.onOrderUpdated(() => {
     if (isEndNearNow()) {
