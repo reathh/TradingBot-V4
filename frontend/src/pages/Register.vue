@@ -5,38 +5,36 @@
       <div class="col-md-5 ml-auto">
         <div class="info-area info-horizontal mt-5">
           <div class="icon icon-warning">
-            <i class="tim-icons icon-wifi"></i>
+            <i class="tim-icons icon-chart-bar-32"></i>
           </div>
           <div class="description">
-            <h3 class="info-title">Marketing</h3>
+            <h3 class="info-title">Automated Crypto Trading</h3>
             <p class="description">
-              We've created the marketing campaign of the website. It was a very
-              interesting collaboration.
+              Our advanced algorithm executes trades 24/7, helping you capitalize on market opportunities even while you sleep.
             </p>
           </div>
         </div>
 
         <div class="info-area info-horizontal">
           <div class="icon icon-primary">
-            <i class="tim-icons icon-triangle-right-17"></i>
+            <i class="tim-icons icon-money-coins"></i>
           </div>
           <div class="description">
-            <h3 class="info-title">Fully Coded in HTML5</h3>
+            <h3 class="info-title">Proven Performance</h3>
             <p class="description">
-              We've developed the website with HTML5 and CSS3. The client has
-              access to the code using GitHub.
+              Our trading bot has consistently outperformed market benchmarks with a 27% average monthly return across all trading pairs.
             </p>
           </div>
         </div>
 
         <div class="info-area info-horizontal">
           <div class="icon icon-info">
-            <i class="tim-icons icon-trophy"></i>
+            <i class="tim-icons icon-lock-circle"></i>
           </div>
           <div class="description">
-            <h3 class="info-title">Built Audience</h3>
+            <h3 class="info-title">Risk Management</h3>
             <p class="description">
-              There is also a Fully Customizable CMS Admin Dashboard for this
+              Built-in protection strategies safeguard your capital with smart stop-loss and position sizing algorithms.
               product.
             </p>
           </div>
