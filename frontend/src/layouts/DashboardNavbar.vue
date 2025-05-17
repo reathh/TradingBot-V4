@@ -23,31 +23,6 @@
         <a class="navbar-brand" href="#">{{ routeName }}</a>
       </div>
     </template>
-
-    <ul class="navbar-nav ml-auto">
-      <BaseDropdown
-        tag="li"
-        menu-on-right
-        title-tag="a"
-        title-classes="nav-link"
-        class="nav-item"
-        menu-classes="dropdown-navbar"
-      >
-        <template #title>
-          <div class="photo"><img src="/img/mike.jpg" /></div>
-          <b class="caret d-none d-lg-block d-xl-block"></b>
-          <p class="d-lg-none">Log out</p>
-        </template>
-        <li class="nav-link px-3 py-2 d-flex align-items-center">
-          <span class="me-2">Dark Mode</span>
-          <BaseSwitch v-model="darkMode" @update:modelValue="toggleMode" />
-        </li>
-        <div class="dropdown-divider"></div>
-        <li class="nav-link">
-          <a href="#" class="nav-item dropdown-item" @click.prevent="handleLogout">Log out</a>
-        </li>
-      </BaseDropdown>
-    </ul>
   </BaseNav>
 </template>
 

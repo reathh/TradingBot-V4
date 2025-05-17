@@ -3,7 +3,6 @@
     :is="tag"
     class="dropdown"
     :class="[{ show: isOpen }, `drop${direction}`]"
-    @click="toggleDropDown"
     v-click-outside="closeDropDown"
   >
     <slot name="title-container" :is-open="isOpen">
@@ -14,6 +13,7 @@
         :aria-label="title || 'dropdown'"
         :aria-expanded="isOpen"
         data-toggle="dropdown"
+        @click.stop="toggleDropDown"
       >
         <slot name="title" :is-open="isOpen">
           <i :class="icon"></i> {{ title }}

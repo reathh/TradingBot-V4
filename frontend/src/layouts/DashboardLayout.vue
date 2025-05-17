@@ -33,6 +33,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { useSidebarStore } from "@/stores/sidebar";
 import { useThemeStore } from "@/stores/theme";
+import { useAuthStore } from "@/stores/auth";
 import DashboardNavbar from "./DashboardNavbar.vue";
 import SideBar from "@/components/SidebarPlugin/SideBar.vue";
 import Notifications from "@/components/Notifications/Notifications.vue";
@@ -43,6 +44,7 @@ import signalrService from "@/services/signalrService";
 
 const sidebarStore = useSidebarStore();
 const themeStore = useThemeStore();
+const authStore = useAuthStore();
 const sidebarBackground = ref("vue");
 const title = ref("DASHBOARD");
 const shortTitle = ref("DB");
@@ -86,52 +88,20 @@ const menuItems = ref([
     path: "/dashboard",
   },
   {
-    name: "Bots",
-    icon: "tim-icons icon-settings",
-    path: "/bots",
+    name: "Dark Mode",
+    icon: computed(() => isDarkMode.value ? "tim-icons icon-bulb-63" : "tim-icons icon-button-power"),
+    path: "#",
+    click: toggleDarkMode,
+    position: "bottom"
   },
   {
-    name: "Trades",
-    icon: "tim-icons icon-chart-bar-32",
-    path: "/trades",
-  },
-  {
-    name: "Orders",
-    icon: "tim-icons icon-cart",
-    path: "/orders",
-  },
-  {
-    name: "Pages",
-    icon: "tim-icons icon-image-02",
-    children: [
-      { name: "Pricing", path: "/pages/pricing" },
-      { name: "Login", path: "/pages/login" },
-      { name: "Register", path: "/pages/register" },
-      { name: "User Profile", path: "/pages/user" },
-    ],
-  },
-  {
-    name: "Forms",
-    icon: "tim-icons icon-notes",
-    children: [
-      { name: "Regular Forms", path: "/forms/regular" },
-      { name: "Extended Forms", path: "/forms/extended" },
-      { name: "Validation Forms", path: "/forms/validation" },
-    ],
-  },
-  {
-    name: "Tables",
-    icon: "tim-icons icon-puzzle-10",
-    children: [
-      { name: "Regular Tables", path: "/table-list/regular" },
-      { name: "Extended Tables", path: "/table-list/extended" },
-      { name: "Paginated Tables", path: "/table-list/paginated" },
-    ],
-  },
-  {
-    name: "Charts",
-    icon: "tim-icons icon-chart-pie-36",
-    path: "/charts",
+    name: "Logout",
+    icon: "tim-icons icon-button-power",
+    path: "#",
+    click: async () => {
+      await authStore.logout();
+    },
+    position: "bottom"
   },
 ]);
 </script>
