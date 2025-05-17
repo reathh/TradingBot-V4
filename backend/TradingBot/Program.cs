@@ -44,17 +44,28 @@ try
     builder.Services.AddSignalR();
 
     // Add IdentityCore and JWT authentication
-    builder.Services.AddIdentityCore<ApplicationUser>(options =>
+    builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     {
         options.User.RequireUniqueEmail = true;
         options.Password.RequiredLength = 6;
         options.Password.RequireNonAlphanumeric = false;
         options.Password.RequireDigit = true;
         options.Password.RequireUppercase = false;
+        
+        // Configure cookie settings if needed
+        options.SignIn.RequireConfirmedAccount = false;
+        options.SignIn.RequireConfirmedEmail = false;
     })
-        .AddRoles<IdentityRole>()
         .AddEntityFrameworkStores<TradingBotDbContext>()
         .AddDefaultTokenProviders();
+
+    // Add cookie configuration
+    builder.Services.ConfigureApplicationCookie(options =>
+    {
+        options.Cookie.HttpOnly = true;
+        options.ExpireTimeSpan = TimeSpan.FromDays(7);
+        options.SlidingExpiration = true;
+    });
 
     builder.Services.AddAuthentication(options =>
     {
@@ -73,7 +84,26 @@ try
                 ValidAudience = cfg["Jwt:Audience"],
                 IssuerSigningKey = new SymmetricSecurityKey(
                     Encoding.UTF8.GetBytes(cfg["Jwt:Key"] ?? string.Empty)
-                )
+                ),
+                // Add token expiration validation
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero
+            };
+            
+            // Enable using JWT tokens in SignalR
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    var accessToken = context.Request.Query["access_token"];
+                    var path = context.HttpContext.Request.Path;
+                    
+                    if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                    {
+                        context.Token = accessToken;
+                    }
+                    return Task.CompletedTask;
+                }
             };
         });
 
