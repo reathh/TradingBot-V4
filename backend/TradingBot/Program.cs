@@ -45,7 +45,7 @@ try
     builder.Services.AddSignalR();
 
     // Add IdentityCore and JWT authentication
-    builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+    builder.Services.AddIdentity<User, IdentityRole>(options =>
     {
         options.User.RequireUniqueEmail = true;
         options.Password.RequiredLength = 6;
@@ -188,16 +188,16 @@ try
 
         // Seed Identity: roles and admin user
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var userManager = services.GetRequiredService<UserManager<User>>();
         
-        if (!await roleManager.RoleExistsAsync(ApplicationRoles.Admin))
+        if (!await roleManager.RoleExistsAsync(Roles.Admin))
         {
-            await roleManager.CreateAsync(new IdentityRole(ApplicationRoles.Admin));
+            await roleManager.CreateAsync(new IdentityRole(Roles.Admin));
         }
         
-        if (!await roleManager.RoleExistsAsync(ApplicationRoles.User))
+        if (!await roleManager.RoleExistsAsync(Roles.User))
         {
-            await roleManager.CreateAsync(new IdentityRole(ApplicationRoles.User));
+            await roleManager.CreateAsync(new IdentityRole(Roles.User));
         }
         
         var adminEmail = builder.Configuration["Admin:Email"] ?? "admin@tradingbot.local";
@@ -205,9 +205,9 @@ try
         var adminUser = await userManager.FindByEmailAsync(adminEmail);
         if (adminUser == null)
         {
-            adminUser = new ApplicationUser { UserName = adminEmail, Email = adminEmail, EmailConfirmed = true };
+            adminUser = new User { UserName = adminEmail, Email = adminEmail, EmailConfirmed = true };
             await userManager.CreateAsync(adminUser, adminPassword);
-            await userManager.AddToRoleAsync(adminUser, ApplicationRoles.Admin);
+            await userManager.AddToRoleAsync(adminUser, Roles.Admin);
         }
 
         // Seed application data (bots, trades) for admin if none

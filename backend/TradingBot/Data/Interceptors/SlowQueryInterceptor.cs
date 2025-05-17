@@ -64,19 +64,19 @@ public class SlowQueryInterceptor(ILogger<SlowQueryInterceptor> logger, double w
         return await ValueTask.FromResult(result);
     }
 
-    public override object ScalarExecuted(
+    public override object? ScalarExecuted(
         DbCommand command, 
         CommandExecutedEventData eventData, 
-        object result)
+        object? result)
     {
         LogIfSlow(command, eventData.Duration, "Scalar");
         return result;
     }
 
-    public override async ValueTask<object> ScalarExecutedAsync(
+    public override async ValueTask<object?> ScalarExecutedAsync(
         DbCommand command, 
         CommandExecutedEventData eventData, 
-        object result, 
+        object? result, 
         CancellationToken cancellationToken = default)
     {
         LogIfSlow(command, eventData.Duration, "Async Scalar");

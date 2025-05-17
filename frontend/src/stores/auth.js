@@ -1,6 +1,6 @@
-import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
-import { authService } from '@/services/auth';
+import {defineStore} from 'pinia';
+import {computed, ref} from 'vue';
+import {authService} from '@/services/auth';
 import router from '@/router';
 
 export const useAuthStore = defineStore( 'auth', () =>
@@ -22,7 +22,7 @@ export const useAuthStore = defineStore( 'auth', () =>
       token.value = response.token;
       user.value = response.user;
       localStorage.setItem( 'token', response.token );
-      router.push( '/dashboard' );
+      await router.push('/dashboard');
     } catch ( err )
     {
       error.value = err.response?.data?.message || 'Login failed';
@@ -59,7 +59,7 @@ export const useAuthStore = defineStore( 'auth', () =>
     token.value = null;
     user.value = null;
     localStorage.removeItem( 'token' );
-    router.push( '/auth/login' );
+    await router.push( '/login' );
   }
 
   async function checkAuth ()
@@ -68,8 +68,7 @@ export const useAuthStore = defineStore( 'auth', () =>
     {
       try
       {
-        const userData = await authService.getCurrentUser();
-        user.value = userData;
+        user.value = await authService.getCurrentUser();
       } catch ( err )
       {
         token.value = null;

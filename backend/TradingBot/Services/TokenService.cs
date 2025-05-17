@@ -11,7 +11,7 @@ namespace TradingBot.Services
 {
     public interface ITokenService
     {
-        string CreateToken(ApplicationUser user, IList<string> roles);
+        string CreateToken(User user, IList<string> roles);
     }
 
     public class TokenService : ITokenService
@@ -19,7 +19,7 @@ namespace TradingBot.Services
         private readonly IConfiguration _config;
         public TokenService(IConfiguration config) => _config = config;
 
-        public string CreateToken(ApplicationUser user, IList<string> roles)
+        public string CreateToken(User user, IList<string> roles)
         {
             var claims = new List<Claim>
             {

@@ -4,7 +4,7 @@ using TradingBot.Data;
 
 namespace TradingBot.Data
 {
-    public class TradingBotDbContext : IdentityDbContext<ApplicationUser>
+    public class TradingBotDbContext : IdentityDbContext<User>
     {
         public DbSet<Bot> Bots { get; set; } = null!;
         public DbSet<Order> Orders { get; set; } = null!;
