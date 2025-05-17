@@ -55,18 +55,6 @@
             </template>
 
             <BaseInput
-              v-model="fullname"
-              placeholder="Full Name"
-              addon-left-icon="tim-icons icon-single-02"
-              type="text"
-              :error="fullnameError"
-              :class="[
-                { 'has-success': fullnameMeta.valid },
-                { 'has-danger': fullnameMeta.invalid },
-              ]"
-            />
-
-            <BaseInput
               v-model="email"
               placeholder="Email"
               addon-left-icon="tim-icons icon-email-85"
@@ -122,7 +110,6 @@ import BaseCheckbox from "@/components/Inputs/BaseCheckbox.vue";
 
 useForm({
   validationSchema: yup.object({
-    fullname: yup.string().required("Full name is required"),
     email: yup
       .string()
       .required("Email is required")
@@ -136,11 +123,6 @@ useForm({
 
 // Form fields
 const {
-  value: fullname,
-  errorMessage: fullnameError,
-  meta: fullnameMeta,
-} = useField("fullname");
-const {
   value: email,
   errorMessage: emailError,
   meta: emailMeta,
@@ -153,7 +135,7 @@ const {
 
 const submit = () => {
   alert(
-    `Registered with:\nName: ${fullname.value}\nEmail: ${email.value}\nPassword: ${password.value}`
+    `Registered with:\nEmail: ${email.value}\nPassword: ${password.value}`
   );
 };
 </script>

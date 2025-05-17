@@ -19,11 +19,6 @@ public class UpdateStaleOrdersCommandHandler(
     TradingNotificationService notificationService,
     ILogger<UpdateStaleOrdersCommandHandler> logger) : BaseCommandHandler<UpdateStaleOrdersCommand, int>(logger)
 {
-    private sealed class NullTradingNotificationService() : TradingNotificationService(null!, NullLogger<TradingNotificationService>.Instance)
-    {
-        public new Task NotifyOrderUpdated(string orderId) => Task.CompletedTask;
-    }
-
     protected override async Task<Result<int>> HandleCore(UpdateStaleOrdersCommand request, CancellationToken cancellationToken)
     {
         var currentTime = timeProvider.GetUtcNow().DateTime;
@@ -44,11 +39,11 @@ public class UpdateStaleOrdersCommandHandler(
 
         if (staleOrders.Count == 0)
         {
-            logger.LogInformation("No stale orders found");
+            logger.LogDebug("No stale orders found");
             return Result<int>.SuccessWith(0);
         }
 
-        logger.LogInformation("Found {OrderCount} stale orders", staleOrders.Count);
+        logger.LogDebug("Found {OrderCount} stale orders", staleOrders.Count);
         int updatedCount = 0;
 
         // Group by Bot for exchange API reuse
@@ -87,7 +82,7 @@ public class UpdateStaleOrdersCommandHandler(
 
         await Task.WhenAll(updateTasks);
         await dbContext.SaveChangesAsync(cancellationToken);
-        logger.LogInformation("Successfully updated {UpdatedCount} stale orders", updatedCount);
+        logger.LogDebug("Successfully updated {UpdatedCount} stale orders", updatedCount);
         
         return Result<int>.SuccessWith(updatedCount);
     }
