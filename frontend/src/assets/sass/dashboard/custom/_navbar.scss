@@ -171,19 +171,9 @@
       }
 
       .navbar-collapse{
-        flex-basis: 100%;
-        flex-direction: column;
-        width: 100%;
-
         .input-group{
           margin: 0;
           margin-top: 5px;
-        }
-
-        .navbar-nav{
-          flex-direction: column;
-          width: 100%;
-          align-items: flex-start;
         }
       }
 
