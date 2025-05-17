@@ -76,7 +76,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["update:show", "change"]);
+const emit = defineEmits(["update:show"]);
 
 const slots = useSlots();
 const transitionFinished = ref(true);
@@ -104,7 +104,6 @@ const classes = computed(() => {
 function toggleMenu() {
   const nextState = !props.show;
   emit("update:show", nextState);
-  emit("change", nextState);
 }
 
 function onTransitionStart() {
