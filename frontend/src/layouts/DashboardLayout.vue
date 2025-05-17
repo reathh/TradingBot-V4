@@ -81,7 +81,7 @@ const toggleSidebar = () => {
     sidebarStore.displaySidebar(false);
   }
 };
-const menuItems = ref([
+const menuItems = computed(() => [
   {
     name: "Dashboard",
     icon: "tim-icons icon-chart-pie-36",
@@ -89,18 +89,14 @@ const menuItems = ref([
   },
   {
     name: "Dark Mode",
-    icon: computed(() => isDarkMode.value ? "fas fa-sun" : "fas fa-moon"),
-    path: "#",
-    click: toggleDarkMode,
+    icon: isDarkMode.value ? "fas fa-sun" : "fas fa-moon",
+    click: () => toggleDarkMode(),
     position: "bottom"
   },
   {
     name: "Logout",
     icon: "tim-icons icon-button-power",
-    path: "#",
-    click: async () => {
-      await authStore.logout();
-    },
+    click: () => authStore.logout(),
     position: "bottom"
   },
 ]);
