@@ -210,6 +210,7 @@ import SidebarFixedToggleButton from "./SidebarFixedToggleButton.vue";
 import { FadeInOut } from "vue3-transitions";
 import signalrService from "@/services/signalrService";
 import ContentFooter from "@/layouts/ContentFooter.vue";
+import SidebarItem from "@/components/SidebarPlugin/SidebarItem.vue";
 
 const route = useRoute();
 const sidebarStore = useSidebarStore();
