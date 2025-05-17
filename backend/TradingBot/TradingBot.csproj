@@ -6,6 +6,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <LangVersion>preview</LangVersion>
+        <DefaultItemExcludes>$(DefaultItemExcludes);**/obj/**;**/bin/**</DefaultItemExcludes>
     </PropertyGroup>
 
     <ItemGroup>
@@ -23,6 +24,15 @@
         <PackageReference Include="Scrutor" Version="6.0.1" />
         <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
         <PackageReference Include="Serilog.Sinks.Seq" Version="9.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Remove="Controllers/obj/**" />
+        <Compile Remove="Controllers/bin/**" />
+        <EmbeddedResource Remove="Controllers/obj/**" />
+        <EmbeddedResource Remove="Controllers/bin/**" />
+        <None Remove="Controllers/obj/**" />
+        <None Remove="Controllers/bin/**" />
     </ItemGroup>
 
     <ItemGroup>
