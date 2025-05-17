@@ -163,16 +163,30 @@ const router = createRouter( {
 router.beforeEach( ( to, from, next ) =>
 {
   const authStore = useAuthStore();
-  const requiresAuth = to.matched.some( ( record ) => record.meta.requiresAuth );
-  const guestOnly = to.matched.some( ( record ) => record.meta.guestOnly );
-  next();
-  // if (requiresAuth && !authStore.isAuthenticated) {
-  //   next("/auth/login");
-  // } else if (guestOnly && authStore.isAuthenticated) {
-  //   next("/dashboard");
-  // } else {
-  //   next();
-  // }
+  const requiresAuth = to.matched.some( record => record.meta.requiresAuth );
+  const guestOnly = to.matched.some( record => record.meta.guestOnly );
+  const requiredRoles = to.meta.roles;
+
+  // If route requires auth and user is not logged in, redirect to login
+  if ( requiresAuth && !authStore.isAuthenticated )
+  {
+    return next( '/pages/login' );
+  }
+  // If route is for guests only and user is logged in, redirect to home
+  if ( guestOnly && authStore.isAuthenticated )
+  {
+    return next( '/dashboard' );
+  }
+  // If route requires specific roles
+  if ( requiredRoles )
+  {
+    const userRole = authStore.userRole;
+    if ( !userRole || !requiredRoles.includes( userRole ) )
+    {
+      return next( '/' );
+    }
+  }
+  return next();
 } );
 
 export default router;

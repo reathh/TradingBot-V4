@@ -1,13 +1,19 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using TradingBot.Data;
 
 namespace TradingBot.Data
 {
-    public class TradingBotDbContext(DbContextOptions<TradingBotDbContext> options) : DbContext(options)
+    public class TradingBotDbContext : IdentityDbContext<ApplicationUser>
     {
         public DbSet<Bot> Bots { get; set; } = null!;
         public DbSet<Order> Orders { get; set; } = null!;
         public DbSet<Trade> Trades { get; set; } = null!;
         public DbSet<Ticker> Tickers { get; set; } = null!;
+
+        public TradingBotDbContext(DbContextOptions<TradingBotDbContext> options) : base(options)
+        {
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

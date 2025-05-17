@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TradingBot.Data;
@@ -5,6 +7,7 @@ using TradingBot.Models;
 
 namespace TradingBot.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class BotsController(TradingBotDbContext context) : ControllerBase

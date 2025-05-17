@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TradingBot.Data;
@@ -5,6 +7,7 @@ using TradingBot.Models;
 
 namespace TradingBot.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class TradesController(TradingBotDbContext context) : ControllerBase
@@ -20,11 +23,18 @@ namespace TradingBot.Controllers
             page = Math.Max(page, 1);
             pageSize = Math.Clamp(pageSize, 1, 100);
 
-            // Base query – only completed trades (exit filled)
+            // Determine user scope
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var isAdmin = User.IsInRole("Admin");
+            // Base query – only completed trades
             var baseQuery = context.Trades
                 .Where(t => t.ExitOrder != null &&
                             t.ExitOrder.Status == OrderStatus.Filled);
 
+            if (!isAdmin)
+            {
+                baseQuery = baseQuery.Where(t => t.Bot.OwnerId == userId);
+            }
             if (botId.HasValue)
             {
                 baseQuery = baseQuery.Where(t => t.BotId == botId.Value);
@@ -81,6 +91,12 @@ namespace TradingBot.Controllers
             {
                 return NotFound();
             }
+            // Only owner or admin
+            var userId2 = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            if (!User.IsInRole("Admin") && trade.Bot.OwnerId != userId2)
+            {
+                return Forbid();
+            }
 
             var tradeDto = new TradeDto
             {
@@ -117,6 +133,8 @@ namespace TradingBot.Controllers
             startDate ??= DateTime.UtcNow.AddMonths(-1);
             endDate ??= DateTime.UtcNow;
 
+            var userId3 = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var isAdmin3 = User.IsInRole("Admin");
             var baseQuery = context.Trades
                 .Where(t => t.ExitOrder != null &&
                             t.ExitOrder.Status == OrderStatus.Filled &&
@@ -126,6 +144,10 @@ namespace TradingBot.Controllers
             if (botId.HasValue)
             {
                 baseQuery = baseQuery.Where(t => t.BotId == botId.Value);
+            }
+            if (!isAdmin3)
+            {
+                baseQuery = baseQuery.Where(t => t.Bot.OwnerId == userId3);
             }
 
             IQueryable<ProfitAggregation> groupedQuery;
@@ -364,7 +386,7 @@ namespace TradingBot.Controllers
                 .ToListAsync();
 
             decimal quoteVol24h = lastDayAggregates.Sum(a => a.QuoteVolume);
-            decimal baseVol24h  = lastDayAggregates.Sum(a => a.BaseVolume);
+            decimal baseVol24h = lastDayAggregates.Sum(a => a.BaseVolume);
             decimal availableCapital24h = lastDayAggregates.Any() ? lastDayAggregates.OrderByDescending(a => a.ExitTime).First().AvailableCapital : 0m;
             decimal profit24h = lastDayAggregates.Sum(a => a.Profit);
             decimal roi24h = availableCapital24h == 0 ? 0 : 100m * profit24h / availableCapital24h;
@@ -474,7 +496,7 @@ namespace TradingBot.Controllers
                 // For yearly, normalize to January 1st
                 return new DateTime(date.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
             }
-            
+
             // Default normalization
             return new DateTime(date.Year, date.Month, date.Day, date.Hour, 0, 0, DateTimeKind.Utc);
         }

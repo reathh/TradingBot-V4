@@ -4,8 +4,12 @@ namespace TradingBot.Data
     {
         public HashSet<Trade> Trades { get; set; } = [];
 
+        // Ownership: each bot belongs to a user
+        public string OwnerId { get; set; } = string.Empty;
+        public ApplicationUser Owner { get; set; } = null!;
+
         public int Id { get; set; } = id;
-        
+
         public string Name { get; set; } = name;
         public string PublicKey { get; set; } = publicKey;
         public string PrivateKey { get; set; } = privateKey;
@@ -39,7 +43,7 @@ namespace TradingBot.Data
         public OrderType EntryOrderType { get; set; } = OrderType.LimitMaker;
         public OrderType ExitOrderType { get; set; } = OrderType.LimitMaker;
     }
-    
+
     public enum TradingMode
     {
         Spot,
