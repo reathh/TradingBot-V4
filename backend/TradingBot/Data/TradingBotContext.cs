@@ -17,7 +17,9 @@ namespace TradingBot.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Apply all configurations
+            // Ensure Identity tables are configured
+            base.OnModelCreating(modelBuilder);
+            // Apply all custom configurations
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(TradingBotDbContext).Assembly);
 
             // Ensure all DateTime properties are stored as UTC
