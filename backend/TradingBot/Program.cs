@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using TradingBot.Data;
 using TradingBot.Data.Interceptors;
+using TradingBot.Models;
 using TradingBot.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -188,11 +189,17 @@ try
         // Seed Identity: roles and admin user
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-        const string adminRole = "Admin";
-        if (!await roleManager.RoleExistsAsync(adminRole))
+        
+        if (!await roleManager.RoleExistsAsync(ApplicationRoles.Admin))
         {
-            await roleManager.CreateAsync(new IdentityRole(adminRole));
+            await roleManager.CreateAsync(new IdentityRole(ApplicationRoles.Admin));
         }
+        
+        if (!await roleManager.RoleExistsAsync(ApplicationRoles.User))
+        {
+            await roleManager.CreateAsync(new IdentityRole(ApplicationRoles.User));
+        }
+        
         var adminEmail = builder.Configuration["Admin:Email"] ?? "admin@tradingbot.local";
         var adminPassword = builder.Configuration["Admin:Password"] ?? "ChangeMe123!";
         var adminUser = await userManager.FindByEmailAsync(adminEmail);
@@ -200,7 +207,7 @@ try
         {
             adminUser = new ApplicationUser { UserName = adminEmail, Email = adminEmail, EmailConfirmed = true };
             await userManager.CreateAsync(adminUser, adminPassword);
-            await userManager.AddToRoleAsync(adminUser, adminRole);
+            await userManager.AddToRoleAsync(adminUser, ApplicationRoles.Admin);
         }
 
         // Seed application data (bots, trades) for admin if none

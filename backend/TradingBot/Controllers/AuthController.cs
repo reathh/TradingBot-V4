@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using TradingBot.Data;
+using TradingBot.Models;
 using TradingBot.Services;
 
 namespace TradingBot.Controllers
@@ -41,7 +42,7 @@ namespace TradingBot.Controllers
             if (!result.Succeeded)
                 return BadRequest(result.Errors);
 
-            await _userManager.AddToRoleAsync(user, "User");
+            await _userManager.AddToRoleAsync(user, ApplicationRoles.User);
 
             // Generate token
             var roles = await _userManager.GetRolesAsync(user);
